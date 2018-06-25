@@ -1,0 +1,26 @@
+general:
+  listen_addr:        127.0.0.1
+  listen_port:        8670
+  charset:            utf-8
+  content_type:       'text/plain; version=0.0.4'
+  max_workers:        5
+  max_requests:       1000
+  max_life_time:      3600
+  lock_timeout:       10
+endpoints:
+  rabbitmq1:
+    credentials: credentials.yml.example?__section=rabbitmq
+    plugin: http
+    vars:
+      format: json
+      timeout: 2
+      url: http://localhost:15672/api
+    import_metrics: metrics.d/rabbitmq.yml
+modules:
+  metrics:
+    routes:
+      metrics:
+        handler:   'metrics'
+        regexp:    '^metrics/(?P<endpoint>[^\/]+)$'
+        op:        'GET'
+        safe_init: true

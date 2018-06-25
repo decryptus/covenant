@@ -1,0 +1,141 @@
+- name: overview
+  config:
+    timeout: ${vars['timeout']}
+    uri: ${vars['url']}/overview
+    format: ${vars['format']}
+    labels:
+      - name: node
+        label_tasks:
+          - '@filter': pyjq
+            func: 'all'
+            script: '.node'
+  collects:
+    - connections_total:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.object_totals.connections'
+        documentation: Total number of open connections
+    - channels_total:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.object_totals.channels'
+        documentation: Total number of open channels
+    - queues_total:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.object_totals.queues'
+        documentation: Total number of queues in use
+    - consumers_total:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.object_totals.consumers'
+        documentation: Total number of consumers
+    - exchanges_total:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.object_totals.exchanges'
+        documentation: Total number of exchanges in use
+- name: nodes
+  config:
+    timeout: ${vars['timeout']}
+    uri: ${vars['url']}/nodes
+    format: ${vars['format']}
+    labels:
+      - name: node
+        label_tasks:
+          - '@filter': pyjq
+            func: 'all'
+            script: '.name'
+  collects:
+    - running:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.[] | .running'
+          - '@filter': builtins
+            func: ['bool', 'int']
+        documentation: Boolean for whether this node is up
+    - fd_used:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.[] | .fd_used'
+        documentation: Used File descriptors
+    - fd_limit:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.[] | .fd_total'
+        documentation: File descriptors available
+    - socket_used:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.[] | .sockets_used'
+        documentation: File descriptors used as sockets
+    - socket_limit:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.[] | .sockets_total'
+        documentation: File descriptors available for use as sockets
+    - mem_used:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.[] | .mem_used'
+        documentation: Memory used in bytes
+    - mem_limit:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.[] | .mem_limit'
+        documentation: Point at which the memory alarm will go off
+    - mem_alarm:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.[] | .mem_alarm'
+        documentation: Whether the memory alarm has gone off
+    - disk_free:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.[] | .disk_free'
+        documentation: Disk free space in bytes
+    - disk_free_limit:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.[] | .disk_free_limit'
+        documentation: Point at which the disk alarm will go off
+    - disk_free_alarm:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.[] | .disk_free_alarm'
+        documentation: Whether the disk alarm has gone off
+- name: queues
+  config:
+    timeout: ${vars['timeout']}
+    uri: ${vars['url']}/queues
+    format: ${vars['format']}
+    labels:
+      - name: queue
+        label_tasks:
+          - '@filter': pyjq
+            func: 'all'
+            script: '.name'
+  collects:
+    - messages_total:
+        type: gauge
+        value_tasks:
+          - '@filter': pyjq
+            script: '.[] | select(.name == $__labelvalue) | .backing_queue_status.len'
+            default: 0
+        documentation: Total number of messages in queue

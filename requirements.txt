@@ -1,0 +1,6 @@
+dwho>=0.2.27
+pycurl
+pyyaml>=3.10
+prometheus-client>=0.2.0
+sonicprobe>=0.2.40
+requests
