@@ -28,7 +28,7 @@ import re
 import threading
 import uuid
 
-from covenant.classes.filters import FILTERS
+from covenant.classes.filters import FILTERS, CovenantNoResult
 from dwho.classes.plugins import DWhoPluginBase
 from dwho.config import load_credentials
 from prometheus_client import (CollectorRegistry,
@@ -44,6 +44,14 @@ _DEFAULT_PROM_METHODS = {'prom_counter':   'inc',
                          'prom_gauge':     'set',
                          'prom_histogram': 'observe',
                          'prom_summary':   'observe'}
+
+
+class CovenantTargetFailed(Exception):
+    def __init__(self, message = None, args = None):
+        if isinstance(message, Exception):
+            return Exception.__init__(self, message.message, message.args)
+        else:
+            return Exception.__init__(self, message, args)
 
 
 class CovenantPlugins(dict):
@@ -171,13 +179,32 @@ class CovenantLabelValue(object):
 
 
 class CovenantLabels(object):
-    def __init__(self, labelname, labelvalues = None, labeldefault = None, labelstatic = True, label_tasks = None, value_tasks = None):
+    def __init__(self, labelname,
+                       labelvalues  = None,
+                       labeldefault = None,
+                       labelstatic  = True,
+                       label_tasks  = None,
+                       value_tasks  = None,
+                       on_fail      = None,
+                       on_noresult  = None):
         self.labelname    = labelname
         self.labelvalues  = []
         self.labeldefault = labeldefault
         self.labelstatic  = labelstatic
         self.label_tasks  = label_tasks
         self.value_tasks  = value_tasks
+
+        def_on_fail       = {'labelvalue': None,
+                             'value':      None}
+        if isinstance(on_fail, dict):
+            def_on_fail.update(on_fail)
+        self.on_fail = def_on_fail.copy()
+
+        def_noresult      = {'labelvalue': None,
+                             'value':      None}
+        if isinstance(on_noresult, dict):
+            def_noresult.update(on_noresult)
+        self.on_noresult = def_noresult.copy()
 
         if labelvalues is not None:
             if not isinstance(labelvalues, list):
@@ -192,6 +219,15 @@ class CovenantLabels(object):
         if self.labelstatic:
             return
 
+        (failed, noresult) = (False, False)
+
+        if isinstance(data, CovenantTargetFailed):
+            failed   = True
+            data     = self.on_fail['labelvalue']
+        elif isinstance(data, CovenantNoResult):
+            noresult = True
+            data     = self.on_noresult['labelvalue']
+
         self.labelvalues = []
         nvalues          = []
         values           = copy.copy(data)
@@ -201,11 +237,22 @@ class CovenantLabels(object):
 
         if not self.label_tasks:
             nvalues = values
-        else:
+        elif not failed and not noresult:
+            nolabelvalue = False
+
             for value in values:
+                if nolabelvalue or isinstance(value, CovenantNoResult):
+                    nolabelvalue = True
+                    break
                 for task in self.label_tasks:
+                    if isinstance(value, CovenantNoResult):
+                        nolabelvalue = True
+                        break
                     value = task(value = value)
                 nvalues.append(value)
+
+            if nolabelvalue:
+                nvalues = [self.on_noresult['labelvalue']]
 
         for value in nvalues:
             self.labelvalues.append(CovenantLabelValue(self.labelname,
@@ -219,17 +266,42 @@ class CovenantLabels(object):
         if not tasks:
             return self
 
+        (failed, noresult) = (False, False)
+
+        if isinstance(data, CovenantTargetFailed):
+            failed   = True
+            data     = copy.copy(self.on_fail['value'])
+        elif isinstance(data, CovenantNoResult):
+            noresult = True
+            data     = copy.copy(self.on_noresult['value'])
+
         for labelvalue in self.labelvalues:
             value = copy.copy(data)
-            for task in tasks:
-                value = task(value = value, labelvalue = labelvalue)
+            if not failed and not noresult:
+                for task in tasks:
+                    if not isinstance(value, CovenantNoResult):
+                        value = task(value = value, labelvalue = labelvalue)
+                    else:
+                        value = self.on_noresult['value']
+                        break
+            if isinstance(value, CovenantNoResult):
+                value = self.on_noresult['value']
             labelvalue.set(value)
 
         return self
 
 
 class CovenantCollect(object):
-    def __init__(self, metric, method = None, value = None, default = None, labels = None, value_tasks = None):
+    def __init__(self, name,
+                       metric,
+                       method      = None,
+                       value       = None,
+                       default     = None,
+                       labels      = None,
+                       value_tasks = None,
+                       on_fail     = None,
+                       on_noresult = None):
+        self.name        = name
         self.metric      = metric
         self.method      = method
         self.value       = value
@@ -237,8 +309,19 @@ class CovenantCollect(object):
         self.labels      = labels
         self.value_tasks = value_tasks
 
+        def_on_fail      = {'value': None}
+        if isinstance(on_fail, dict):
+            def_on_fail.update(on_fail)
+        self.on_fail     = def_on_fail.copy()
+
+        def_noresult     = {'value': None}
+        if isinstance(on_noresult, dict):
+            def_noresult.update(on_noresult)
+        self.on_noresult = def_noresult.copy()
+
     def __call__(self, data):
-        if self.value is not None:
+        if not isinstance(data, CovenantTargetFailed) \
+           and self.value is not None:
             data = self.value
 
         data = copy.copy(data)
@@ -248,8 +331,18 @@ class CovenantCollect(object):
                 label.task_label(data)
                 label.task_value(data, self.value_tasks)
         elif self.value_tasks:
-            for task in self.value_tasks:
-                data = task(value = data)
+            if isinstance(data, CovenantTargetFailed):
+                data = copy.copy(self.on_fail['value'])
+            else:
+                for task in self.value_tasks:
+                    if isinstance(data, CovenantNoResult):
+                        data = self.on_noresult['value']
+                        break
+                    else:
+                        data = task(value = data)
+
+        if isinstance(data, CovenantTargetFailed):
+            data = self.on_fail['value']
 
         if self.default is not None and data is None:
             data = self.default
@@ -258,7 +351,7 @@ class CovenantCollect(object):
             try:
                 getattr(self.metric, self.method)(data)
             except Exception, e:
-                LOG.exception("metric: %r, data: %r, error: %r", self.metric._name, data, e)
+                LOG.exception("metric: %r, data: %r, error: %r", self.name, data, e)
                 raise
             return
 
@@ -271,7 +364,12 @@ class CovenantCollect(object):
                 try:
                     method(labelvalue.get())
                 except Exception, e:
-                    LOG.exception("metric: %r, data: %r, error: %r", self.metric._name, labelvalue.get(), e)
+                    LOG.exception("metric: %r, labelname: %r, labelvalue: %r, data: %r, error: %r",
+                                  self.name,
+                                  labelvalue.labelname,
+                                  labelvalue.labelvalue,
+                                  labelvalue.get(),
+                                  e)
                     raise
 
 
@@ -382,6 +480,9 @@ class CovenantTarget(object):
         if 'value_tasks' in self.config:
             self.value_tasks = self.load_tasks(self.config['value_tasks'])
 
+        self.on_fail     = self.config.get('on_fail')
+        self.on_noresult = self.config.get('on_noresult')
+
         if 'credentials' in self.config:
             if self.config['credentials'] is None:
                 self.credentials = None
@@ -432,40 +533,50 @@ class CovenantTarget(object):
 
         return r
 
-    def load_labels(self, labels, label_tasks = [], value_tasks = []):
-        labelnames = []
+    def load_labels(self, labels, label_tasks = [], value_tasks = [], on_fail = None, on_noresult = None):
+        labelnames = set()
         clabels    = []
 
         for label in labels:
-            name     = label['name']
-            value    = None
-            default  = label.get('default')
-            static   = label.get('static')
-            ltasks   = copy.copy(label_tasks)
-            vtasks   = copy.copy(value_tasks)
+            name        = label['name']
+            static      = label.get('static')
+            ltasks      = copy.copy(label_tasks)
+            vtasks      = copy.copy(value_tasks)
+            on_fail     = copy.copy(on_fail)
+            on_noresult = copy.copy(on_noresult)
 
             if 'label_tasks' in label:
+                ltasks = []
                 if label['label_tasks']:
                     ltasks = self.load_tasks(label['label_tasks'])
                     if static is None:
                         static = False
-                else:
-                    ltasks = []
 
-            if 'value_tasks' in label and value is None:
+            if 'value_tasks' in label:
+                vtasks = []
                 if label['value_tasks']:
                     vtasks = self.load_tasks(label['value_tasks'])
-                else:
-                    vtasks = []
 
-            labelnames.append(name)
+            if 'on_fail' in label:
+                on_fail = None
+                if label['on_fail']:
+                    on_fail = label['on_fail']
+
+            if 'on_noresult' in label:
+                on_noresult = None
+                if label['on_noresult']:
+                    on_noresult = label['on_noresult']
+
+            labelnames.add(name)
             clabels.append(CovenantLabels(
                                name,
-                               value,
-                               default,
+                               label.get('value'),
+                               label.get('default'),
                                bool(static),
                                ltasks,
-                               vtasks))
+                               vtasks,
+                               on_fail,
+                               on_noresult))
 
         return (labelnames, clabels)
 
@@ -489,20 +600,24 @@ class CovenantTarget(object):
                     raise ValueError("unknown method %r for %r in %r"
                                      % (method, value['type'], key))
 
-                kwds    = {'name':          value.get('name') or key,
-                           'documentation': value.pop('documentation'),
-                           'registry':      self.registry}
+                kwds        = {'name':          value.get('name') or key,
+                               'documentation': value.pop('documentation'),
+                               'registry':      self.registry}
 
-                labels  = copy.copy(self.labels)
-                clabels = []
-                vtasks  = copy.copy(self.value_tasks)
+                labels      = copy.copy(self.labels)
+                clabels     = []
+                vtasks      = copy.copy(self.value_tasks)
+                on_fail     = copy.copy(self.on_fail)
+                on_noresult = copy.copy(self.on_noresult)
 
                 if 'labels' in value:
                     labels = []
                     if value['labels']:
                         labels = self.load_labels(value['labels'],
                                                   copy.copy(self.label_tasks),
-                                                  copy.copy(self.value_tasks))
+                                                  copy.copy(self.value_tasks),
+                                                  copy.copy(self.on_fail),
+                                                  copy.copy(self.on_noresult))
 
                 if labels:
                     (kwds['labelnames'], clabels) = labels
@@ -512,13 +627,26 @@ class CovenantTarget(object):
                     if value['value_tasks']:
                         vtasks = self.load_tasks(value['value_tasks'])
 
+                if 'on_fail' in value:
+                    on_fail = None
+                    if value['on_fail']:
+                        on_fail = value['on_fail']
+
+                if 'on_noresult' in value:
+                    on_noresult = None
+                    if value['on_noresult']:
+                        on_noresult = value['on_noresult']
+
                 self.collects.append(CovenantCollect(
+                                        name          = value.get('name') or key,
                                         metric        = metric(**kwds),
                                         method        = method,
                                         value         = value.get('value'),
                                         default       = value.get('default'),
                                         labels        = clabels,
-                                        value_tasks   = vtasks))
+                                        value_tasks   = vtasks,
+                                        on_fail       = on_fail,
+                                        on_noresult   = on_noresult))
 
     def __call__(self, data):
         for collect in self.collects:

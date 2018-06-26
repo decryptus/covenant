@@ -36,6 +36,10 @@ class CovenantFilters(dict):
 FILTERS    = CovenantFilters()
 
 
+class CovenantNoResult(object):
+    pass
+
+
 class CovenantFilterBase(object):
     __metaclass__ = abc.ABCMeta
 

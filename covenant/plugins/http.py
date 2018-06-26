@@ -23,7 +23,7 @@ __license__ = """
 import logging
 import requests
 
-from covenant.classes.plugins import CovenantPlugBase, PLUGINS
+from covenant.classes.plugins import CovenantPlugBase, CovenantTargetFailed, PLUGINS
 
 LOG = logging.getLogger('covenant.plugins.http')
 
@@ -33,9 +33,10 @@ class CovenantHttpPlugin(CovenantPlugBase):
 
     def do_metrics(self, obj):
         for target in self.targets:
-            cfg  = target.config
-            req  = None
-            auth = None
+            (auth, data, req) = (None, None, None)
+            cfg        = target.config
+            timeout    = cfg.get('timeout', 10)
+            ssl_verify = cfg.get('ssl_verify', True)
 
             if target.credentials:
                 auth = (target.credentials['username'],
@@ -44,17 +45,22 @@ class CovenantHttpPlugin(CovenantPlugBase):
             try:
                 req = requests.get(cfg['uri'],
                                    auth    = auth,
-                                   timeout = cfg['timeout'])
+                                   timeout = timeout,
+                                   verify  = ssl_verify)
 
                 if req.status_code != requests.codes.ok:
-                    raise LookupError("invalid status code: %r. (error: %r)" % (req.status_code, req.text))
+                    raise LookupError("invalid status code: %r. (error: %r)"
+                                      % (req.status_code, req.text))
 
                 if cfg.get('format') == 'json':
                     data = req.json()
                 else:
                     data = req.text
-            except Exception:
-                raise
+            except Exception, e:
+                data = CovenantTargetFailed(e)
+                LOG.exception("error on target: %r. exception: %r",
+                              target.name,
+                              e)
             finally:
                 if req:
                     req.close()

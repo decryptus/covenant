@@ -16,6 +16,13 @@ endpoints:
       timeout: 2
       url: http://localhost:15672/api
     import_metrics: metrics.d/rabbitmq.yml
+  apache1:
+    plugin: http
+    vars:
+      format: text
+      timeout: 2
+      url: 'http://localhost:8080/server-status/?auto'
+    import_metrics: metrics.d/apache.yml
 modules:
   metrics:
     routes:

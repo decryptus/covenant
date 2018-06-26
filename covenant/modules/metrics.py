@@ -82,9 +82,6 @@ class MetricsModule(DWhoModuleBase):
                                          self._set_result))
         return uid
 
-    def _do_response(self, result):
-        return result
-
 
     METRICS_QSCHEMA = xys.load("""
     endpoint: !!str
@@ -106,7 +103,7 @@ class MetricsModule(DWhoModuleBase):
             uid = self._push_epts_sync(params['endpoint'], 'metrics', params)
             res = self._get_result(uid)
             if res['error']:
-                raise HttpReqError(409, "failed to get results. (errors: %r)" % res['error'])
+                raise HttpReqError(500, "failed to get results. (errors: %r)" % res['error'])
 
             return HttpResponse(data = res['result'])
         except HttpReqError, e:
