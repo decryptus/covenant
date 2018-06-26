@@ -1,0 +1,265 @@
+- name: status
+  config:
+    timeout: ${vars['timeout']}
+    uri: ${vars['url']}
+    format: text
+    on_fail:
+      labelvalue: 0
+      value: 0
+    on_noresult:
+      labelvalue: 0
+      value: 0
+  collects:
+    - accesses_total:
+        type: counter
+        value_tasks:
+          - '@filter': regex
+            func: search
+            pattern: '^Total Accesses:\s*([0-9]+)$'
+            flags: MULTILINE
+          - '@filter': builtins
+            'func': float
+        documentation: 'Current total apache accesses (*)'
+    - sent_kilobytes_total:
+        type: counter
+        value_tasks:
+          - '@filter': regex
+            func: search
+            pattern: '^Total kBytes:\s*([0-9]+)$'
+            flags: MULTILINE
+          - '@filter': builtins
+            func: float
+        documentation: 'Current total kbytes sent (*)'
+    - cpuload:
+        type: gauge
+        value_tasks:
+          - '@filter': regex
+            func: search
+            pattern: '^CPULoad:\s*([\.0-9]+)$'
+            flags: MULTILINE
+        documentation: 'The current percentage CPU used by each worker and in total by all workers combined (*)'
+    - up:
+        type: gauge
+        value: 1
+        documentation: 'Could the apache server be reached'
+    - uptime_seconds_total:
+        type: counter
+        value_tasks:
+          - '@filter': regex
+            func: search
+            pattern: '^Uptime:\s*([0-9]+)$'
+            flags: MULTILINE
+          - '@filter': builtins
+            func: float
+        documentation: 'Current uptime in seconds (*)'
+    - requests_per_second:
+        type: gauge
+        value_tasks:
+          - '@filter': regex
+            func: search
+            pattern: '^ReqPerSec:\s*([\.0-9]+)$'
+            flags: MULTILINE
+          - '@filter': builtins
+            func: float
+        documentation: 'Average number of requests per second (*)'
+    - bytes_per_request:
+        type: gauge
+        value_tasks:
+          - '@filter': regex
+            func: search
+            pattern: '^BytesPerReq:\s*([\.0-9]+)$'
+            flags: MULTILINE
+          - '@filter': builtins
+            func: float
+        documentation: 'Average number of bytes per request (*)'
+    - bytes_per_second:
+        type: gauge
+        value_tasks:
+          - '@filter': regex
+            func: search
+            pattern: '^BytesPerSec:\s*([\.0-9]+)$'
+            flags: MULTILINE
+          - '@filter': builtins
+            func: float
+        documentation: 'Number of bytes served per second (*)'
+    - connections:
+        type: gauge
+        labels:
+          - name: state
+            static: true
+            value: 'total'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^ConnsTotal:\s*([\.0-9]+)$'
+                flags: MULTILINE
+          - name: state
+            static: true
+            value: 'writing'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^ConnsAsyncWriting:\s*([\.0-9]+)$'
+                flags: MULTILINE
+          - name: state
+            static: true
+            value: 'keepalive'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^ConnsAsyncKeepAlive:\s*([\.0-9]+)$'
+                flags: MULTILINE
+          - name: state
+            static: true
+            value: 'closing'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^ConnsAsyncClosing:\s*([\.0-9]+)$'
+                flags: MULTILINE
+        documentation: connection statuses
+    - workers:
+        type: gauge
+        labels:
+          - name: state
+            static: true
+            value: 'idle'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^IdleWorkers:\s*([0-9]+)$'
+                flags: MULTILINE
+          - name: state
+            static: true
+            value: 'busy'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^BusyWorkers:\s*([0-9]+)$'
+                flags: MULTILINE
+        documentation: worker statuses
+    - scoreboard:
+        type: gauge
+        labels:
+          - name: state
+            static: true
+            value: 'idle'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Scoreboard:\s*(.+)$'
+                flags: MULTILINE
+              - '@filter': builtintypes
+                func: count
+                args: ['_']
+          - name: state
+            static: true
+            value: 'startup'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Scoreboard:\s*(.+)$'
+                flags: MULTILINE
+              - '@filter': builtintypes
+                func: count
+                args: ['S']
+          - name: state
+            static: true
+            value: 'read'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Scoreboard:\s*(.+)$'
+                flags: MULTILINE
+              - '@filter': builtintypes
+                func: count
+                args: ['R']
+          - name: state
+            static: true
+            value: 'reply'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Scoreboard:\s*(.+)$'
+                flags: MULTILINE
+              - '@filter': builtintypes
+                func: count
+                args: ['W']
+          - name: state
+            static: true
+            value: 'keepalive'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Scoreboard:\s*(.+)$'
+                flags: MULTILINE
+              - '@filter': builtintypes
+                func: count
+                args: ['K']
+          - name: state
+            static: true
+            value: 'dns'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Scoreboard:\s*(.+)$'
+                flags: MULTILINE
+              - '@filter': builtintypes
+                func: count
+                args: ['D']
+          - name: state
+            static: true
+            value: 'closing'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Scoreboard:\s*(.+)$'
+                flags: MULTILINE
+              - '@filter': builtintypes
+                func: count
+                args: ['C']
+          - name: state
+            static: true
+            value: 'logging'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Scoreboard:\s*(.+)$'
+                flags: MULTILINE
+              - '@filter': builtintypes
+                func: count
+                args: ['L']
+          - name: state
+            static: true
+            value: 'graceful_stop'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Scoreboard:\s*(.+)$'
+                flags: MULTILINE
+              - '@filter': builtintypes
+                func: count
+                args: ['G']
+          - name: state
+            static: true
+            value: 'idle_cleanup'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Scoreboard:\s*(.+)$'
+                flags: MULTILINE
+              - '@filter': builtintypes
+                func: count
+                args: ['I']
+          - name: state
+            static: true
+            value: 'open_slot'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Scoreboard:\s*(.+)$'
+                flags: MULTILINE
+              - '@filter': builtintypes
+                func: count
+                args: ['.']
+        documentation: scoreboard statuses
