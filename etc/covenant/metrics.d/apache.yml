@@ -3,12 +3,6 @@
     timeout: ${vars['timeout']}
     uri: ${vars['url']}
     format: text
-    on_fail:
-      labelvalue: 0
-      value: 0
-    on_noresult:
-      labelvalue: 0
-      value: 0
   collects:
     - accesses_total:
         type: counter
@@ -39,6 +33,10 @@
             flags: MULTILINE
         documentation: 'The current percentage CPU used by each worker and in total by all workers combined (*)'
     - up:
+        on_fail:
+          value: 0
+        on_noresult:
+          value: 0
         type: gauge
         value: 1
         documentation: 'Could the apache server be reached'

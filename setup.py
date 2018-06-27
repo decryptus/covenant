@@ -4,21 +4,33 @@
 import os
 from setuptools import find_packages, setup
 
-requirements = [line.strip() for line in open('requirements.txt', 'r').readlines()]
-version      = '0.0.3'
+version                = '0.0.4'
 
-if os.path.isfile('VERSION'):
-    version = open('VERSION', 'r').readline().strip() or version
+current_dir            = os.path.abspath(os.path.dirname(__file__))
+requirements           = [line.strip() for line in open(os.path.join(current_dir, 'requirements.txt'), 'r').readlines()]
+version_file           = os.path.join(current_dir, 'VERSION')
+readme_file            = os.path.join(current_dir, 'README.md')
+long_desc              = None
+long_desc_content_type = None
+
+if os.path.isfile(version_file):
+    version = open(version_file, 'r').readline().strip() or version
+
+if os.path.isfile(readme_file):
+    long_desc = open(readme_file, mode = 'r', encoding = 'utf-8').read()
+    long_desc_content_type = 'text/markdown'
 
 setup(
-    name                = 'covenant',
-    version             = version,
-    description         = 'covenant',
-    author              = 'Adrien Delle Cave',
-    author_email        = 'pypi@doowan.net',
-    license             = 'License GPL-2',
-    url                 = 'https://github.com/decryptus/covenant',
-    scripts             = ['bin/covenant'],
-    packages		= find_packages(),
-    install_requires    = requirements
+    name                   = 'covenant',
+    version                = version,
+    description            = 'covenant',
+    author                 = 'Adrien Delle Cave',
+    author_email           = 'pypi@doowan.net',
+    license                = 'License GPL-2',
+    url                    = 'https://github.com/decryptus/covenant',
+    scripts                = ['bin/covenant'],
+    packages               = find_packages(),
+    install_requires       = requirements,
+    long_desc              = long_desc,
+    long_desc_content_type = long_desc_content_type
 )

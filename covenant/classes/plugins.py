@@ -179,32 +179,25 @@ class CovenantLabelValue(object):
 
 
 class CovenantLabels(object):
-    def __init__(self, labelname,
-                       labelvalues  = None,
-                       labeldefault = None,
-                       labelstatic  = True,
-                       label_tasks  = None,
-                       value_tasks  = None,
-                       on_fail      = None,
-                       on_noresult  = None):
+    def __init__(self,
+                 labelname,
+                 labelvalues  = None,
+                 labeldefault = None,
+                 labelstatic  = True,
+                 label_tasks  = None,
+                 value_tasks  = None,
+                 on_fail      = None,
+                 on_noresult  = None):
         self.labelname    = labelname
         self.labelvalues  = []
         self.labeldefault = labeldefault
         self.labelstatic  = labelstatic
         self.label_tasks  = label_tasks
         self.value_tasks  = value_tasks
+        self._removed     = False
 
-        def_on_fail       = {'labelvalue': None,
-                             'value':      None}
-        if isinstance(on_fail, dict):
-            def_on_fail.update(on_fail)
-        self.on_fail = def_on_fail.copy()
-
-        def_noresult      = {'labelvalue': None,
-                             'value':      None}
-        if isinstance(on_noresult, dict):
-            def_noresult.update(on_noresult)
-        self.on_noresult = def_noresult.copy()
+        self.on_fail      = self._on(on_fail)
+        self.on_noresult  = self._on(on_noresult)
 
         if labelvalues is not None:
             if not isinstance(labelvalues, list):
@@ -215,6 +208,22 @@ class CovenantLabels(object):
                                                            labelvalue,
                                                            labeldefault))
 
+    def _on(self, cfg):
+        default = {'labelvalue': None,
+                   'value':      None,
+                   'remove':     True}
+
+        if isinstance(cfg, dict):
+            default['remove'] = False
+            default.update(cfg)
+        elif cfg not in (None, 'remove'):
+            default['remove'] = False
+
+        return default.copy()
+
+    def removed(self):
+        return self._removed
+
     def task_label(self, data):
         if self.labelstatic:
             return
@@ -222,9 +231,15 @@ class CovenantLabels(object):
         (failed, noresult) = (False, False)
 
         if isinstance(data, CovenantTargetFailed):
+            if self.on_fail['remove']:
+                self._removed = True
+                return
             failed   = True
             data     = self.on_fail['labelvalue']
         elif isinstance(data, CovenantNoResult):
+            if self.on_noresult['remove']:
+                self._removed = True
+                return
             noresult = True
             data     = self.on_noresult['labelvalue']
 
@@ -242,10 +257,17 @@ class CovenantLabels(object):
 
             for value in values:
                 if nolabelvalue or isinstance(value, CovenantNoResult):
+                    if self.on_noresult['remove']:
+                        self._removed = True
+                        return self
                     nolabelvalue = True
                     break
+
                 for task in self.label_tasks:
                     if isinstance(value, CovenantNoResult):
+                        if self.on_noresult['remove']:
+                            self._removed = True
+                            return self
                         nolabelvalue = True
                         break
                     value = task(value = value)
@@ -269,9 +291,15 @@ class CovenantLabels(object):
         (failed, noresult) = (False, False)
 
         if isinstance(data, CovenantTargetFailed):
+            if self.on_fail['remove']:
+                self._removed = True
+                return
             failed   = True
             data     = copy.copy(self.on_fail['value'])
         elif isinstance(data, CovenantNoResult):
+            if self.on_noresult['remove']:
+                self._removed = True
+                return
             noresult = True
             data     = copy.copy(self.on_noresult['value'])
 
@@ -279,12 +307,17 @@ class CovenantLabels(object):
             value = copy.copy(data)
             if not failed and not noresult:
                 for task in tasks:
-                    if not isinstance(value, CovenantNoResult):
-                        value = task(value = value, labelvalue = labelvalue)
-                    else:
+                    if isinstance(value, CovenantNoResult):
+                        if self.on_noresult['remove']:
+                            self._removed = True
+                            return
                         value = self.on_noresult['value']
                         break
+                    value = task(value = value, labelvalue = labelvalue)
             if isinstance(value, CovenantNoResult):
+                if self.on_noresult['remove']:
+                    self._removed = True
+                    return
                 value = self.on_noresult['value']
             labelvalue.set(value)
 
@@ -292,15 +325,16 @@ class CovenantLabels(object):
 
 
 class CovenantCollect(object):
-    def __init__(self, name,
-                       metric,
-                       method      = None,
-                       value       = None,
-                       default     = None,
-                       labels      = None,
-                       value_tasks = None,
-                       on_fail     = None,
-                       on_noresult = None):
+    def __init__(self,
+                 name,
+                 metric,
+                 method      = None,
+                 value       = None,
+                 default     = None,
+                 labels      = None,
+                 value_tasks = None,
+                 on_fail     = None,
+                 on_noresult = None):
         self.name        = name
         self.metric      = metric
         self.method      = method
@@ -308,16 +342,25 @@ class CovenantCollect(object):
         self.default     = default
         self.labels      = labels
         self.value_tasks = value_tasks
+        self._removed    = False
 
-        def_on_fail      = {'value': None}
-        if isinstance(on_fail, dict):
-            def_on_fail.update(on_fail)
-        self.on_fail     = def_on_fail.copy()
+        self.on_fail     = self._on(on_fail)
+        self.on_noresult = self._on(on_noresult)
 
-        def_noresult     = {'value': None}
-        if isinstance(on_noresult, dict):
-            def_noresult.update(on_noresult)
-        self.on_noresult = def_noresult.copy()
+    def _on(self, cfg):
+        default = {'value':  None,
+                   'remove': True}
+
+        if isinstance(cfg, dict):
+            default['remove'] = False
+            default.update(cfg)
+        elif cfg not in (None, 'remove'):
+            default['remove'] = False
+
+        return default.copy()
+
+    def removed(self):
+        return self._removed
 
     def __call__(self, data):
         if not isinstance(data, CovenantTargetFailed) \
@@ -332,16 +375,24 @@ class CovenantCollect(object):
                 label.task_value(data, self.value_tasks)
         elif self.value_tasks:
             if isinstance(data, CovenantTargetFailed):
+                if self.on_fail['remove']:
+                    self._removed = True
+                    return
                 data = copy.copy(self.on_fail['value'])
             else:
                 for task in self.value_tasks:
                     if isinstance(data, CovenantNoResult):
+                        if self.on_noresult['remove']:
+                            self._removed = True
+                            return
                         data = self.on_noresult['value']
                         break
-                    else:
-                        data = task(value = data)
+                    data = task(value = data)
 
         if isinstance(data, CovenantTargetFailed):
+            if self.on_fail['remove']:
+                self._removed = True
+                return
             data = self.on_fail['value']
 
         if self.default is not None and data is None:
@@ -356,6 +407,8 @@ class CovenantCollect(object):
             return
 
         for label in self.labels:
+            if label._removed:
+                continue
             for labelvalue in label.labelvalues:
                 method = getattr(self.metric.labels(
                                     **{labelvalue.labelname: labelvalue.labelvalue}),
@@ -638,19 +691,21 @@ class CovenantTarget(object):
                         on_noresult = value['on_noresult']
 
                 self.collects.append(CovenantCollect(
-                                        name          = value.get('name') or key,
-                                        metric        = metric(**kwds),
-                                        method        = method,
-                                        value         = value.get('value'),
-                                        default       = value.get('default'),
-                                        labels        = clabels,
-                                        value_tasks   = vtasks,
-                                        on_fail       = on_fail,
-                                        on_noresult   = on_noresult))
+                                        name        = value.get('name') or key,
+                                        metric      = metric(**kwds),
+                                        method      = method,
+                                        value       = value.get('value'),
+                                        default     = value.get('default'),
+                                        labels      = clabels,
+                                        value_tasks = vtasks,
+                                        on_fail     = on_fail,
+                                        on_noresult = on_noresult))
 
     def __call__(self, data):
         for collect in self.collects:
             collect(data)
+            if collect.removed():
+                self.registry.unregister(collect.metric)
 
 
 class CovenantPlugBase(threading.Thread, DWhoPluginBase):
