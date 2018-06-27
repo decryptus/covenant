@@ -17,7 +17,7 @@ if os.path.isfile(version_file):
     version = open(version_file, 'r').readline().strip() or version
 
 if os.path.isfile(readme_file):
-    long_desc = open(readme_file, mode = 'r', encoding = 'utf-8').read()
+    long_desc = open(readme_file, 'r').read()
     long_desc_content_type = 'text/markdown'
 
 setup(
