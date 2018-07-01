@@ -1,0 +1,5 @@
+# defaults file for covenant
+
+# Service can be enabled by setting
+# COVENANT_ENABLE="yes"
+COVENANT_ENABLE="yes"

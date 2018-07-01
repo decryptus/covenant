@@ -1,0 +1,61 @@
+#!/bin/sh
+
+set -e
+
+USER="covenant"
+GROUP="covenant"
+
+DIRS="/etc/covenant
+      /usr/share/covenant
+      /var/lib/covenant
+      /var/log/covenant
+      /var/run/covenant"
+
+case "$1" in
+    configure|reconfigure)
+        # create covenant group
+        if ! getent group "${GROUP}" >/dev/null;
+        then
+            addgroup --system "${GROUP}"
+        fi
+
+        # create covenant user
+        if ! getent passwd "${USER}" >/dev/null;
+        then
+            adduser --system \
+            --ingroup "${GROUP}" \
+            --home /var/lib/covenant \
+            --no-create-home \
+            --gecos "Covenant" \
+            --disabled-login "${USER}"
+        fi
+
+        echo "${DIRS}" | while read -r dir;
+        do
+            chown -R "${USER}.${GROUP}" "${dir}"
+        done
+
+        if [ "`lsb_release -cs`" = "wheezy" ];
+        then
+            pip install -q -U -i https://pypi.python.org/simple/ pip==9.0.3 2>/dev/null
+            hash -r
+            pip install -q -i https://pypi.python.org/simple/ -r /usr/share/covenant/requirements.txt 2>/dev/null
+        else
+            pip install -q -r /usr/share/covenant/requirements.txt
+        fi
+
+        update-rc.d covenant defaults
+        if [ -f /etc/covenant/covenant.yml ];
+        then
+            invoke-rc.d covenant start || true
+        fi
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac

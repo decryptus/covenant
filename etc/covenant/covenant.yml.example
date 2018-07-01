@@ -7,13 +7,16 @@ general:
   max_requests:       1000
   max_life_time:      3600
   lock_timeout:       10
+  modules_path:       /usr/local/lib/covenant/modules
+  filters_path:       /usr/local/lib/covenant/filters
+  plugins_path:       /usr/local/lib/covenant/plugins
 endpoints:
   rabbitmq1:
     credentials: credentials.yml.example?__section=rabbitmq
     plugin: http
     vars:
       format: json
-      timeout: 2
+      timeout: 10
       url: http://localhost:15672/api
     import_metrics: metrics.d/rabbitmq.yml
   apache1:

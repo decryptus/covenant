@@ -1,0 +1,5 @@
+bin/  usr/
+etc/* etc/
+requirements.txt usr/share/covenant
+setup.py usr/share/covenant
+VERSION usr/share/covenant

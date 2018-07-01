@@ -83,6 +83,7 @@ class CovenantBuiltinsFilter(CovenantFilterBase):
     def run(self):
         fargs = list(self._fargs)
         fargs.insert(self._value_arg_pos, self.value)
+        fargs = self.build_args(fargs)
 
         for func in self._funcs:
             fargs = [func(*fargs)]

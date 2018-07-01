@@ -22,7 +22,7 @@ __license__ = """
 
 import logging
 
-from covenant.classes.filters import CovenantFilterBase, FILTERS
+from covenant.classes.filters import CovenantFilterBase, CovenantNoResult, FILTERS
 
 LOG               = logging.getLogger('covenant.filters.builtintypes')
 
@@ -42,6 +42,7 @@ _BUILTIN_TYPES    = ('basestring',
                      'unicode')
 
 _FUNCS_VALUE_ARG  = ('join',)
+_FUNCS_LIST       = ('first', 'last', 'get')
 
 
 def _builtin_types_funcs():
@@ -63,15 +64,36 @@ class CovenantBuiltinTypesFilter(CovenantFilterBase):
         self._func = self.kwargs.pop('func')
 
         if self._func not in _BUILTIN_TYPES_FUNCS:
-            raise ValueError("unable to found function: %r in builtin types" % self._func)
+            raise ValueError("unable to find function: %r in builtin types" % self._func)
 
         self._args = list(self.kwargs.get('args', []) or [])
 
     def run(self):
-        if self._func in _FUNCS_VALUE_ARG:
-            return getattr(self._args[0], self._func)(self.value)
+        fargs = self.build_args(list(self._args))
 
-        return getattr(self.value, self._func)(*self._args)
+        if isinstance(self.value, (list, tuple)) \
+           and self._func in _FUNCS_LIST:
+            func = self._func
+            xlen = len(fargs)
+            if xlen == 0:
+                func = 'first'
+
+            if not self.value:
+                return CovenantNoResult()
+            elif func == 'first':
+                return self.value[0]
+            elif func == 'last':
+                return self.value[-1]
+            elif func == 'get':
+                if xlen == 1:
+                    return self.value[fargs[0]]
+                else:
+                    return self.value[fargs[0]:fargs[1]]
+
+        if self._func in _FUNCS_VALUE_ARG:
+            return getattr(fargs[0], self._func)(self.value)
+
+        return getattr(self.value, self._func)(*fargs)
 
 
 if __name__ != "__main__":

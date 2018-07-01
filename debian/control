@@ -1,0 +1,16 @@
+Source: covenant
+Section: net
+Priority: optional
+Maintainer: DevOps Team Fjord Technologies
+Uploaders: DevOps Team Fjord Technologies
+Build-Depends: debhelper (>= 7), dh-python, python (>= 2.7), python-setuptools
+Standards-Version: 3.9.4
+X-Python-Version: >= 2.7
+Homepage: https://www.commandersact.com
+
+Package: covenant
+Architecture: all
+Homepage: https://www.commandersact.com
+Depends: ${misc:Depends}, python-pycurl, python (>= 2.7~), python (<< 2.8)
+Pre-Depends: adduser, autoconf, automake, build-essential, libtool, lsb-release, python-dev (>= 2.7), python-pip, python-setuptools
+Description: Fjord Technologies covenant package

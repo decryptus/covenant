@@ -1,0 +1,95 @@
+covenant (0.0.6.15) unstable; urgency=medium
+
+  * Added possibility to load custom filters, modules and plugins.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Sun, 01 Jul 2018 16:43:43 +0200
+
+covenant (0.0.6.14) unstable; urgency=medium
+
+  * Reviewed pip installation in postinst.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 29 Jun 2018 19:10:17 +0200
+
+covenant (0.0.6.13) unstable; urgency=medium
+
+  * Reviewed pip installation in postinst.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 29 Jun 2018 19:04:32 +0200
+
+covenant (0.0.6.12) unstable; urgency=medium
+
+  * Reviewed debian pre-dependencies.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 29 Jun 2018 18:53:59 +0200
+
+covenant (0.0.6.11) unstable; urgency=medium
+
+  * Fixed covenant user and group in daemon. 
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 29 Jun 2018 18:36:31 +0200
+
+covenant (0.0.6.10) unstable; urgency=medium
+
+  * Added covenant user and group in postinst.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 29 Jun 2018 18:16:01 +0200
+
+covenant (0.0.6.9) unstable; urgency=medium
+
+  * Fixed pip version for wheezy.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 29 Jun 2018 12:54:45 +0200
+
+covenant (0.0.6.8) unstable; urgency=medium
+
+  * Fixed debian dependencies.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 29 Jun 2018 12:28:56 +0200
+
+covenant (0.0.6.7) unstable; urgency=medium
+
+  * Fixed pip version.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 29 Jun 2018 12:04:47 +0200
+
+covenant (0.0.6.6) unstable; urgency=medium
+
+  * Fixed setuptools version.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 29 Jun 2018 11:49:40 +0200
+
+covenant (0.0.6.5) unstable; urgency=medium
+
+  * Fixed pip install.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 29 Jun 2018 11:30:18 +0200
+
+covenant (0.0.6.4) unstable; urgency=medium
+
+  * Fixed debian dependencies.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 29 Jun 2018 11:21:14 +0200
+
+covenant (0.0.6.3) unstable; urgency=medium
+
+  * Fixed debian dependencies.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 29 Jun 2018 11:12:40 +0200
+
+covenant (0.0.6.2) unstable; urgency=medium
+
+  * Fixed debian dependencies.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 29 Jun 2018 11:09:46 +0200
+
+covenant (0.0.6.1) unstable; urgency=medium
+
+  * Fixed requirements.txt.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Thu, 28 Jun 2018 16:27:40 +0200
+
+covenant (0.0.6) unstable; urgency=medium
+
+  * First version package
+
+ -- Abdelhamid Bouchelaghem <abdelhamid.bouchelaghem@commandersact.com>  Thu, 28 Jun 2018 16:14:50 +0200

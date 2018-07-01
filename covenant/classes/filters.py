@@ -24,6 +24,8 @@ import abc
 import copy
 import logging
 
+from sonicprobe.helpers import linesubst
+
 LOG        = logging.getLogger('covenant.plugins')
 
 
@@ -89,3 +91,36 @@ class CovenantFilterBase(object):
     @abc.abstractmethod
     def run(self):
         return
+
+    def get_vars(self, xvars = None):
+        if isinstance(xvars, dict) and self.labelvalue:
+            xvars.update(self.labelvalue.vars())
+
+        return xvars
+
+    def build_args(self, args, xvars = None, step = 1):
+        if step and self.labelvalue:
+            if isinstance(xvars, dict):
+                xvars.update(self.labelvalue.vars())
+            else:
+                xvars = self.labelvalue.vars()
+
+        if not xvars:
+            return args
+
+        if isinstance(args, basestring):
+            return linesubst(args, xvars)
+        elif isinstance(args, (int, long, float)):
+            return linesubst(str(args), xvars)
+        elif isinstance(args, (list, tuple)):
+            r = []
+            for arg in args:
+                r.append(self.build_args(arg, xvars, 0))
+            return r
+        elif isinstance(args, dict):
+            r = {}
+            for k, v in args.iteritems():
+                r[k] = self.build_args(v, xvars, 0)
+            return r
+
+        return args

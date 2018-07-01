@@ -27,6 +27,7 @@ import yaml
 
 from covenant.classes.plugins import ENDPOINTS, PLUGINS
 from dwho.config import parse_conf, stop, DWHO_THREADS
+from dwho.classes.libloader import DwhoLibLoader
 from dwho.classes.modules import MODULES
 from mako.template import Template
 from sonicprobe.helpers import load_yaml
@@ -60,6 +61,11 @@ def load_conf(xfile, options = None):
     for name, module in MODULES.iteritems():
         LOG.info("module init: %r", name)
         module.init(conf)
+
+    for x in ('module', 'plugin', 'filter'):
+        path = conf['general'].get('%ss_path' % x)
+        if path and os.path.isdir(path):
+            DwhoLibLoader.load_dir(x, path)
 
     if not conf.get('endpoints'):
         raise CovenantConfigurationError("Missing 'endpoints' section in configuration")

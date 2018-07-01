@@ -20,7 +20,7 @@ __license__ = """
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-__version__ = '0.0.5'
+__version__ = '0.0.6.15'
 
 # TODO: load Python logging configuration (using standard logging.config)
 
@@ -42,6 +42,16 @@ from sonicprobe.libs import daemonize, http_json_server
 
 SYSLOG_NAME = "covenant"
 LOG         = logging.getLogger(SYSLOG_NAME)
+
+try:
+    COVENANT_USER  = pwd.getpwnam(os.environ.get('COVENANT_USER') or 'covenant').pw_name
+except KeyError:
+    COVENANT_USER  = pwd.getpwuid(os.geteuid())[0]
+
+try:
+    COVENANT_GROUP = grp.getgrnam(os.environ.get('COVENANT_USER') or 'covenant').gr_name
+except KeyError:
+    COVENANT_GROUP = grp.getgrgid(os.getegid())[0]
 
 
 def argv_parse_check():
@@ -77,12 +87,12 @@ def argv_parse_check():
     parser.add_option("-u",
                       dest      = 'username',
                       type      = 'string',
-                      default   = pwd.getpwuid(os.geteuid())[0],
+                      default   = COVENANT_USER,
                       help      = "Use username for the process instead of %default")
     parser.add_option("-g",
                       dest      = 'groupname',
                       type      = 'string',
-                      default   = grp.getgrgid(os.getegid())[0],
+                      default   = COVENANT_GROUP,
                       help      = "Use groupname for the process instead of %default")
     parser.add_option("--logfile",
                       dest      = 'logfile',

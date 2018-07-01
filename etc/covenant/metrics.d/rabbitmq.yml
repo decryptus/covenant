@@ -40,6 +40,15 @@
           - '@filter': pyjq
             script: '.object_totals.exchanges'
         documentation: Total number of exchanges in use
+    - up:
+        labels: ~
+        on_fail:
+          value: 0
+        on_noresult:
+          value: 0
+        type: gauge
+        value: 1
+        documentation: 'Could the rabbitmq server be reached'
 - name: nodes
   config:
     timeout: ${vars['timeout']}
@@ -125,17 +134,13 @@
     timeout: ${vars['timeout']}
     uri: ${vars['url']}/queues
     format: ${vars['format']}
-    labels:
-      - name: queue
-        label_tasks:
-          - '@filter': pyjq
-            func: 'all'
-            script: '.name'
   collects:
     - messages_total:
         type: gauge
-        value_tasks:
-          - '@filter': pyjq
-            script: '.[] | select(.name == $__labelvalue) | .backing_queue_status.len'
-            default: 0
+        labels:
+          - name: queue
+            label_tasks:
+              - '@filter': pyjq
+                script: '{(.name): .backing_queue_status.len}'
+                '@labelize': dict
         documentation: Total number of messages in queue

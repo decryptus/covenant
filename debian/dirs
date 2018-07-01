@@ -1,0 +1,7 @@
+usr/local/lib/covenant/modules
+usr/local/lib/covenant/filters
+usr/local/lib/covenant/plugins
+usr/share/covenant
+var/lib/covenant
+var/log/covenant
+var/run/covenant

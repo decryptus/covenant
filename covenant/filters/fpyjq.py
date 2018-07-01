@@ -24,7 +24,6 @@ import logging
 import pyjq
 
 from covenant.classes.filters import CovenantFilterBase, FILTERS
-from sonicprobe.helpers import linesubst
 
 LOG = logging.getLogger('covenant.filters.pyjq')
 
@@ -47,11 +46,9 @@ class CovenantPyJqFilter(CovenantFilterBase):
         if 'vars' not in self._fargs:
             self._fargs['vars'] = {}
 
-        fargs = self._fargs.copy()
-
-        if self.labelvalue:
-            fargs['vars'].update(self.labelvalue.vars())
-            fargs['script'] = linesubst(fargs['script'], fargs['vars'])
+        fargs           = self._fargs.copy()
+        fargs['vars']   = self.get_vars(fargs['vars'])
+        fargs['script'] = self.build_args(fargs['script'], fargs['vars'])
 
         return self._func(**fargs)
 

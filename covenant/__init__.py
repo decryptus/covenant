@@ -1,1 +1,1 @@
-__all__ = ['modules', 'objects', 'plugins']
+__all__ = ['classes', 'filters', 'modules', 'objects', 'plugins']

@@ -1,5 +1,6 @@
-dwho>=0.2.27
+dwho>=0.2.28
 pycurl
+pyjq
 pyyaml>=3.10
 prometheus-client>=0.2.0
 sonicprobe>=0.2.40
