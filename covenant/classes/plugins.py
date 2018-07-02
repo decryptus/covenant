@@ -159,11 +159,12 @@ class CovenantRegistry(CollectorRegistry):
 
 
 class CovenantLabelValue(object):
-    def __init__(self, labelname = None, labelvalue = None, labeldefault = None, metricvalue = None):
+    def __init__(self, labelname = None, labelvalue = None, labeldefault = None, metricvalue = None, remove = False):
         self.labelname    = labelname
         self.labelvalue   = labelvalue
         self.labeldefault = labeldefault
         self.metricvalue  = metricvalue
+        self._removed     = bool(remove)
 
         if labelvalue is None:
             self.labelvalue = self.labeldefault
@@ -184,6 +185,13 @@ class CovenantLabelValue(object):
 
     def get(self):
         return self.metricvalue
+
+    def remove(self, val = True):
+        self._removed = bool(val)
+        return self
+
+    def removed(self):
+        return self._removed
 
     def vars(self):
         return {'__labelname':    self.labelname,
@@ -297,7 +305,7 @@ class CovenantLabels(object):
                 self.labelvalues.append(CovenantLabelValue(self.labelname,
                                                            value,
                                                            self.labeldefault))
-            else:
+            elif not value.removed():
                 value.labelname    = self.labelname
                 value.labeldefault = self.labeldefault
                 self.labelvalues.append(value)
@@ -427,9 +435,14 @@ class CovenantCollect(object):
                 raise
             return
 
+        has_label = False
+
         for label in self.labels:
-            if label.removed():
+            if label.removed() or not label.labelvalues:
                 continue
+
+            has_label = True
+
             for labelvalue in label.labelvalues:
                 method = getattr(self.metric.labels(
                                     **{labelvalue.labelname: labelvalue.labelvalue}),
@@ -446,10 +459,13 @@ class CovenantCollect(object):
                                   e)
                     raise
 
+        if not has_label:
+            self.remove(True)
+
 
 class CovenantCtrlLabelize(object):
     @classmethod
-    def dict(cls):
+    def dict(cls, *largs, **lkargs):
         def g(*args, **kwargs):
             r     = []
             kargs = copy.copy(kwargs)
@@ -460,8 +476,24 @@ class CovenantCtrlLabelize(object):
             xlen = len(kwargs['value'])
 
             for k, v in kwargs['value'].iteritems():
+                remove = False
+
+                if 'include' in lkargs:
+                    remove = k not in lkargs['include']
+
+                if 'exclude' in lkargs and k in lkargs['exclude']:
+                    remove = k in lkargs['exclude']
+
+                if 'include_regex' in lkargs:
+                    remove = not re.match(lkargs['include_regex'], k)
+
+                if 'exclude_regex' in lkargs:
+                    remove = bool(re.match(lkargs['exclude_regex'], k))
+
                 kargs['value'] = CovenantLabelValue(labelvalue  = k,
-                                                    metricvalue = v)
+                                                    metricvalue = v,
+                                                    remove      = remove)
+
                 if xlen == 1:
                     return kargs['value']
                 else:
@@ -608,6 +640,16 @@ class CovenantTarget(object):
             name, func = (None, None)
             taskargs   = cls._sanitize_task_args(task)
 
+            if xtype == 'label' and '@labelize' in task:
+                name = task.pop('@labelize')
+                if name is True:
+                    name = 'dict'
+                if not hasattr(CovenantCtrlLabelize, name) or name.startswith('_'):
+                    raise ValueError("unknown @labelize: %r" % name)
+
+                r.append(getattr(CovenantCtrlLabelize, name)(**taskargs))
+                continue
+
             if '@filter' in task:
                 name = task.pop('@filter')
                 if name not in FILTERS:
@@ -626,18 +668,6 @@ class CovenantTarget(object):
                     func = getattr(CovenantCtrlLoop, name)(func)
                 else:
                     func = getattr(CovenantCtrlLoop, name)(**taskargs)
-
-            if xtype == 'label' and '@labelize' in task:
-                name = task.pop('@labelize')
-                if name is True:
-                    name = 'dict'
-                if not hasattr(CovenantCtrlLabelize, name) or name.startswith('_'):
-                    raise ValueError("unknown @labelize: %r" % name)
-
-                if func:
-                    r.append(func)
-
-                func = getattr(CovenantCtrlLabelize, name)()
 
             if func:
                 r.append(func)

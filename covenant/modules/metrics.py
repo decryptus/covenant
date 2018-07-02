@@ -20,6 +20,7 @@ __license__ = """
 """
 
 import json
+import gc
 import logging
 import requests
 import time
@@ -111,6 +112,7 @@ class MetricsModule(DWhoModuleBase):
         except Exception, e:
             LOG.exception("%r", e)
         finally:
+            gc.collect()
             self.LOCK.release()
 
 

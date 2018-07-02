@@ -4,4 +4,4 @@ pyjq
 pyyaml>=3.10
 prometheus-client>=0.2.0
 sonicprobe>=0.2.40
-requests
+requests>=2.0

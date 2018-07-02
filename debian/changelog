@@ -1,3 +1,33 @@
+covenant (0.0.6.20) unstable; urgency=medium
+
+  * Fixed python-requests version.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 02 Jul 2018 10:57:17 +0200
+
+covenant (0.0.6.19) unstable; urgency=medium
+
+  * Moved gc.collect in module metrics.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 02 Jul 2018 10:39:39 +0200
+
+covenant (0.0.6.18) unstable; urgency=medium
+
+  * Added gc.collect in module metrics.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 02 Jul 2018 10:37:09 +0200
+
+covenant (0.0.6.17) unstable; urgency=medium
+
+  * Added possibitily to exclude or include label by regex.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 02 Jul 2018 10:25:15 +0200
+
+covenant (0.0.6.16) unstable; urgency=medium
+
+  * Added possibility to exclude or include label.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 02 Jul 2018 10:01:47 +0200
+
 covenant (0.0.6.15) unstable; urgency=medium
 
   * Added possibility to load custom filters, modules and plugins.
