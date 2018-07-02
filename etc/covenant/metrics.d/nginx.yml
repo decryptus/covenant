@@ -1,0 +1,88 @@
+- name: status
+  config:
+    timeout: ${vars['timeout']}
+    uri: ${vars['url']}
+    format: text
+  collects:
+    - up:
+        on_fail:
+          value: 0
+        on_noresult:
+          value: 0
+        type: gauge
+        value: 1
+        documentation: 'Could the nginx server be reached'
+    - connections:
+        type: gauge
+        labels:
+          - name: state
+            static: true
+            value: 'active'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Active connections:\s*([0-9]+)\s*$'
+                flags: MULTILINE
+          - name: state
+            static: true
+            value: 'reading'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Reading:\s*([0-9]+)\s*Writing:[\s0-9]*Waiting:[\s0-9]*$'
+                flags: MULTILINE
+          - name: state
+            static: true
+            value: 'reading'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Reading:\s*([0-9]+)\s*Writing:[\s0-9]*Waiting:[\s0-9]*$'
+                flags: MULTILINE
+          - name: state
+            static: true
+            value: 'writing'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Reading:[\s0-9]*Writing:\s*([0-9]+)\s*Waiting:[\s0-9]*$'
+                flags: MULTILINE
+          - name: state
+            static: true
+            value: 'waiting'
+            value_tasks:
+              - '@filter': regex
+                func: search
+                pattern: '^Reading:[\s0-9]*Writing:[\s0-9]*Waiting:\s*([0-9]+)\s*$'
+                flags: MULTILINE
+        documentation: current connections statuses
+    - connections_accepted:
+        type: gauge
+        value_tasks:
+          - '@filter': regex
+            func: search
+            pattern: '^server accepts handled requests\s+([0-9]+)\s+[0-9\s]+$'
+            flags: MULTILINE
+          - '@filter': builtins
+            func: float
+        documentation: 'The total number of accepted client connections'
+    - connections_handled:
+        type: gauge
+        value_tasks:
+          - '@filter': regex
+            func: search
+            pattern: '^server accepts handled requests\s+[0-9]+\s+([0-9]+)[0-9\s]+$'
+            flags: MULTILINE
+          - '@filter': builtins
+            func: float
+        documentation: 'The total number of handled connections'
+    - connections_requests:
+        type: gauge
+        value_tasks:
+          - '@filter': regex
+            func: search
+            pattern: '^server accepts handled requests\s+[0-9]+\s+[0-9]+\s+([0-9]+)\s+$'
+            flags: MULTILINE
+          - '@filter': builtins
+            func: float
+        documentation: 'The total number of client requests'

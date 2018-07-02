@@ -1,3 +1,15 @@
+covenant (0.0.6.22) unstable; urgency=medium
+
+  * Added nginx stub metrics.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 02 Jul 2018 13:27:55 +0200
+
+covenant (0.0.6.21) unstable; urgency=medium
+
+  * Fixed debian/postinst for jessie.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 02 Jul 2018 11:46:25 +0200
+
 covenant (0.0.6.20) unstable; urgency=medium
 
   * Fixed python-requests version.

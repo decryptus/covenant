@@ -35,14 +35,21 @@ case "$1" in
             chown -R "${USER}.${GROUP}" "${dir}"
         done
 
-        if [ "`lsb_release -cs`" = "wheezy" ];
-        then
-            pip install -q -U -i https://pypi.python.org/simple/ pip==9.0.3 2>/dev/null
-            hash -r
-            pip install -q -i https://pypi.python.org/simple/ -r /usr/share/covenant/requirements.txt 2>/dev/null
-        else
-            pip install -q -r /usr/share/covenant/requirements.txt
-        fi
+        case "`lsb_release -cs`" in
+            wheezy)
+                pip install -q -U -i https://pypi.python.org/simple/ pip==9.0.3 2>/dev/null
+                hash -r
+                pip install -q -i https://pypi.python.org/simple/ -r /usr/share/covenant/requirements.txt 2>/dev/null
+                ;;
+            jessie)
+                pip install -q -U pip
+                hash -r
+                pip install -q -r /usr/share/covenant/requirements.txt
+                ;;
+            *)
+                pip install -q -r /usr/share/covenant/requirements.txt
+            ;;
+        esac
 
         update-rc.d covenant defaults
         if [ -f /etc/covenant/covenant.yml ];
