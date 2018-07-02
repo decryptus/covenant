@@ -33,14 +33,6 @@
                 flags: MULTILINE
           - name: state
             static: true
-            value: 'reading'
-            value_tasks:
-              - '@filter': regex
-                func: search
-                pattern: '^Reading:\s*([0-9]+)\s*Writing:[\s0-9]*Waiting:[\s0-9]*$'
-                flags: MULTILINE
-          - name: state
-            static: true
             value: 'writing'
             value_tasks:
               - '@filter': regex
