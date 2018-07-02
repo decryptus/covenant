@@ -3,5 +3,6 @@ pycurl
 pyjq
 pyyaml>=3.10
 prometheus-client>=0.2.0
+six>=1.4.0
 sonicprobe>=0.2.40
 requests>=2.0
