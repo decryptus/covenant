@@ -1,3 +1,9 @@
+covenant (0.0.6.26) unstable; urgency=medium
+
+  * Reviewed apache metrics.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Tue, 03 Jul 2018 15:22:13 +0200
+
 covenant (0.0.6.25) unstable; urgency=medium
 
   * Added jmespath filter.
@@ -12,7 +18,7 @@ covenant (0.0.6.24) unstable; urgency=medium
 
 covenant (0.0.6.23) unstable; urgency=medium
 
-  * Clean nginx metrics. 
+  * Clean nginx metrics.
 
  -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 02 Jul 2018 13:38:36 +0200
 
@@ -84,7 +90,7 @@ covenant (0.0.6.12) unstable; urgency=medium
 
 covenant (0.0.6.11) unstable; urgency=medium
 
-  * Fixed covenant user and group in daemon. 
+  * Fixed covenant user and group in daemon.
 
  -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 29 Jun 2018 18:36:31 +0200
 
