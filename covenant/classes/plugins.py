@@ -433,6 +433,7 @@ class CovenantCollect(object):
             except Exception, e:
                 LOG.exception("metric: %r, data: %r, error: %r", self.name, data, e)
                 raise
+            del data
             return
 
         has_label = False
@@ -462,8 +463,28 @@ class CovenantCollect(object):
         if not has_label:
             self.remove(True)
 
+        del data
+
 
 class CovenantCtrlLabelize(object):
+    @staticmethod
+    def _to_remove(key, kargs):
+        r = False
+
+        if 'include' in kargs:
+            r = key not in lkargs['include']
+
+        if 'exclude' in kargs and key in kargs['exclude']:
+            r = key in kargs['exclude']
+
+        if 'include_regex' in kargs:
+            r = not re.match(kargs['include_regex'], key)
+
+        if 'exclude_regex' in kargs:
+            r = bool(re.match(kargs['exclude_regex'], key))
+
+        return r
+
     @classmethod
     def dict(cls, *largs, **lkargs):
         def g(*args, **kwargs):
@@ -471,28 +492,23 @@ class CovenantCtrlLabelize(object):
             kargs = copy.copy(kwargs)
 
             if not isinstance(kwargs['value'], dict):
-                return copy.copy(kwargs['value'])
+                return kwargs['value']
+
+            if 'key' in lkargs and 'value' in lkargs:
+                metricvalue = kwargs['value'].get(lkargs['value'])
+                if metricvalue is None:
+                    metricvalue = lkargs.get('default')
+                kargs['value'] = CovenantLabelValue(labelvalue  = kwargs['value'][lkargs['key']],
+                                                    metricvalue = metricvalue,
+                                                    remove      = cls._to_remove(kwargs['value'][lkargs['key']], lkargs))
+                return kargs['value']
 
             xlen = len(kwargs['value'])
 
             for k, v in kwargs['value'].iteritems():
-                remove = False
-
-                if 'include' in lkargs:
-                    remove = k not in lkargs['include']
-
-                if 'exclude' in lkargs and k in lkargs['exclude']:
-                    remove = k in lkargs['exclude']
-
-                if 'include_regex' in lkargs:
-                    remove = not re.match(lkargs['include_regex'], k)
-
-                if 'exclude_regex' in lkargs:
-                    remove = bool(re.match(lkargs['exclude_regex'], k))
-
                 kargs['value'] = CovenantLabelValue(labelvalue  = k,
                                                     metricvalue = v,
-                                                    remove      = remove)
+                                                    remove      = cls._to_remove(k, lkargs))
 
                 if xlen == 1:
                     return kargs['value']
@@ -512,7 +528,7 @@ class CovenantCtrlLoop(object):
 
             if not hasattr(kwargs['value'], '__iter__'):
                 if not f:
-                    return copy.copy(kargs['value'])
+                    return kargs['value']
                 return f(*args, **kargs)
 
             for v in kwargs['value']:
@@ -533,7 +549,7 @@ class CovenantCtrlLoop(object):
 
             if not isinstance(kwargs['value'], dict):
                 if not f:
-                    return copy.copy(kwargs['value'])
+                    return kwargs['value']
                 return f(*args, **kargs)
 
             for k, v in kwargs['value'].iteritems():

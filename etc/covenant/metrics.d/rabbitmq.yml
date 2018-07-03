@@ -1,3 +1,4 @@
+# based on: https://github.com/kbudde/rabbitmq_exporter
 - name: overview
   config:
     timeout: ${vars['timeout']}
@@ -6,40 +7,57 @@
     labels:
       - name: node
         label_tasks:
-          - '@filter': pyjq
-            func: 'all'
-            script: '.node'
+          - '@filter': jmespath
+            expression: 'node'
   collects:
     - connections_total:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.object_totals.connections'
-        documentation: Total number of open connections
+          - '@filter': jmespath
+            expression: 'object_totals.connections'
+        documentation: Total number of open connections.
     - channels_total:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.object_totals.channels'
-        documentation: Total number of open channels
+          - '@filter': jmespath
+            expression: 'object_totals.channels'
+        documentation: Total number of open channels.
     - queues_total:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.object_totals.queues'
-        documentation: Total number of queues in use
+          - '@filter': jmespath
+            expression: 'object_totals.queues'
+        documentation: Total number of queues in use.
     - consumers_total:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.object_totals.consumers'
-        documentation: Total number of consumers
+          - '@filter': jmespath
+            expression: 'object_totals.consumers'
+        documentation: Total number of consumers.
     - exchanges_total:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.object_totals.exchanges'
-        documentation: Total number of exchanges in use
+          - '@filter': jmespath
+            expression: 'object_totals.exchanges'
+        documentation: Total number of exchanges in use.
+    - queue_messages_total:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'queue_totals.messages'
+        documentation: Total number ready and unacknowledged messages in cluster.
+    - queue_messages_ready_total:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'queue_totals.messages_ready'
+        documentation: Total number of messages ready to be delivered to clients.
+    - queue_messages_unacknowledged_total:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'queue_totals.messages_unacknowledged'
+        documentation: Total number of messages delivered to clients but not yet acknowledged.
     - up:
         labels: ~
         on_fail:
@@ -48,7 +66,31 @@
           value: 0
         type: gauge
         value: 1
-        documentation: 'Could the rabbitmq server be reached'
+        documentation: Could the rabbitmq server be reached.
+- name: exchanges
+  config:
+    timeout: ${vars['timeout']}
+    uri: ${vars['url']}/exchanges
+    format: ${vars['format']}
+  collects:
+    - exchange_messages_published_total:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'sum([sum([].message_stats.publish_in), sum([].message_stats.publish_out)])'
+        documentation: Count of messages published.
+    - exchange_messages_published_in_total:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'sum([].message_stats.publish_in)'
+        documentation: Count of messages published in to an exchange, i.e. not taking account of routing.
+    - exchange_messages_published_out_total:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'sum([].message_stats.publish_out)'
+        documentation: Count of messages published out to an exchange, i.e. not taking account of routing.
 - name: nodes
   config:
     timeout: ${vars['timeout']}
@@ -57,90 +99,232 @@
     labels:
       - name: node
         label_tasks:
-          - '@filter': pyjq
-            func: 'all'
-            script: '.name'
+          - '@filter': jmespath
+            expression: 'name'
   collects:
     - running:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.[] | .running'
+          - '@filter': jmespath
+            expression: '[0].running'
           - '@filter': builtins
             func: ['bool', 'int']
-        documentation: Boolean for whether this node is up
+        documentation: Boolean for whether this node is up.
     - fd_used:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.[] | .fd_used'
-        documentation: Used File descriptors
-    - fd_limit:
+          - '@filter': jmespath
+            expression: '[0].fd_used'
+        documentation: Used File descriptors.
+    - fd_total:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.[] | .fd_total'
-        documentation: File descriptors available
-    - socket_used:
+          - '@filter': jmespath
+            expression: '[0].fd_total'
+        documentation: File descriptors available.
+    - sockets_used:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.[] | .sockets_used'
-        documentation: File descriptors used as sockets
-    - socket_limit:
+          - '@filter': jmespath
+            expression: '[0].sockets_used'
+        documentation: File descriptors used as sockets.
+    - sockets_total:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.[] | .sockets_total'
-        documentation: File descriptors available for use as sockets
+          - '@filter': jmespath
+            expression: '[0].sockets_total'
+        documentation: File descriptors available for use as sockets.
     - mem_used:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.[] | .mem_used'
-        documentation: Memory used in bytes
+          - '@filter': jmespath
+            expression: '[0].mem_used'
+        documentation: Memory used in bytes.
     - mem_limit:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.[] | .mem_limit'
-        documentation: Point at which the memory alarm will go off
+          - '@filter': jmespath
+            expression: '[0].mem_limit'
+        documentation: Point at which the memory alarm will go off.
     - mem_alarm:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.[] | .mem_alarm'
-        documentation: Whether the memory alarm has gone off
+          - '@filter': jmespath
+            expression: '[0].mem_alarm'
+        documentation: Whether the memory alarm has gone off.
     - disk_free:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.[] | .disk_free'
-        documentation: Disk free space in bytes
+          - '@filter': jmespath
+            expression: '[0].disk_free'
+        documentation: Disk free space in bytes.
     - disk_free_limit:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.[] | .disk_free_limit'
-        documentation: Point at which the disk alarm will go off
+          - '@filter': jmespath
+            expression: '[0].disk_free_limit'
+        documentation: Point at which the disk alarm will go off.
     - disk_free_alarm:
         type: gauge
         value_tasks:
-          - '@filter': pyjq
-            script: '.[] | .disk_free_alarm'
-        documentation: Whether the disk alarm has gone off
+          - '@filter': jmespath
+            expression: '[0].disk_free_alarm'
+        documentation: Whether the disk alarm has gone off.
 - name: queues
   config:
     timeout: ${vars['timeout']}
     uri: ${vars['url']}/queues
     format: ${vars['format']}
   collects:
-    - messages_total:
+    - queue_messages_ready:
         type: gauge
         labels:
           - name: queue
             label_tasks:
-              - '@filter': pyjq
-                script: '{(.name): .backing_queue_status.len}'
               - '@labelize': dict
-        documentation: Total number of messages in queue
+                'key': name
+                'value': messages_ready
+        documentation: Number of messages ready to be delivered to clients.
+    - queue_messages:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': messages
+        documentation: Sum of ready and unacknowledged messages (queue depth).
+    - queue_messages_unacknowledged:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': messages_unacknowledged
+        documentation: Number of messages delivered to clients but not yet acknowledged.
+    - queue_messages_ready_ram:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': messages_ready_ram
+        documentation: Number of messages from messages_ready which are resident in ram.
+    - queue_messages_unacknowledged_ram:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': messages_unacknowledged_ram
+        documentation: Number of messages from messages_unacknowledged which are resident in ram.
+    - queue_messages_ram:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': messages_ram
+        documentation: Total number of messages which are resident in ram.
+    - queue_messages_persistent:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': messages_persistent
+        documentation: Total number of persistent messages in the queue (will always be 0 for transient queues).
+    - queue_message_bytes:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': message_bytes
+        documentation: >-
+                         Sum of the size of all message bodies in the queue.
+                         This does not include the message properties (including headers) or any overhead.
+    - queue_message_bytes_ready:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': message_bytes_ready
+        documentation: Like message_bytes but counting only those messages ready to be delivered to clients.
+    - queue_message_bytes_unacknowledged:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': message_bytes_unacknowledged
+        documentation: Like message_bytes but counting only those messages delivered to clients but not yet acknowledged.
+    - queue_message_bytes_ram:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': message_bytes_ram
+        documentation: Like message_bytes but counting only those messages which are in RAM.
+    - queue_message_bytes_persistent:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': message_bytes_persistent
+        documentation: Like message_bytes but counting only those messages which are persistent.
+    - queue_consumers:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': consumers
+        documentation: Number of consumers.
+    - queue_consumer_utilisation:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': consumer_utilisation
+                'default': 0
+        documentation: >-
+                         Fraction of the time (between 0.0 and 1.0) that the queue is able to immediately deliver messages to consumers.
+                         This can be less than 1.0 if consumers are limited by network congestion or prefetch count.
+    - queue_memory:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': memory
+        documentation: Bytes of memory consumed by the Erlang process associated with the queue, including stack, heap and internal structures.
+    - queue_head_message_timestamp:
+        type: gauge
+        labels:
+          - name: queue
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': head_message_timestamp
+                'default': 0
+        documentation: >-
+                         The timestamp property of the first message in the queue, if present.
+                         Timestamps of messages only appear when they are in the paged-in state.

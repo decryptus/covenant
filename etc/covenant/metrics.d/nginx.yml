@@ -11,7 +11,7 @@
           value: 0
         type: gauge
         value: 1
-        documentation: 'Could the nginx server be reached'
+        documentation: Could the nginx server be reached.
     - connections:
         type: gauge
         labels:
@@ -57,7 +57,7 @@
             flags: MULTILINE
           - '@filter': builtins
             func: float
-        documentation: 'The total number of accepted client connections'
+        documentation: The total number of accepted client connections.
     - connections_handled:
         type: gauge
         value_tasks:
@@ -67,7 +67,7 @@
             flags: MULTILINE
           - '@filter': builtins
             func: float
-        documentation: 'The total number of handled connections'
+        documentation: The total number of handled connections.
     - connections_requests:
         type: gauge
         value_tasks:
@@ -77,4 +77,4 @@
             flags: MULTILINE
           - '@filter': builtins
             func: float
-        documentation: 'The total number of client requests'
+        documentation: The total number of client requests.

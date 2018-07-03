@@ -41,6 +41,10 @@ FILTERS    = CovenantFilters()
 class CovenantNoResult(object):
     pass
 
+# TODO
+class CovenantResultFailed(object):
+    pass
+
 
 class CovenantFilterBase(object):
     __metaclass__ = abc.ABCMeta

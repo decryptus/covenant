@@ -13,7 +13,7 @@
             flags: MULTILINE
           - '@filter': builtins
             'func': float
-        documentation: 'Current total apache accesses (*)'
+        documentation: Current total apache accesses (*).
     - sent_kilobytes_total:
         type: counter
         value_tasks:
@@ -23,7 +23,7 @@
             flags: MULTILINE
           - '@filter': builtins
             func: float
-        documentation: 'Current total kbytes sent (*)'
+        documentation: Current total kbytes sent (*).
     - cpuload:
         type: gauge
         value_tasks:
@@ -31,7 +31,7 @@
             func: search
             pattern: '^CPULoad:\s*([\.0-9]+)$'
             flags: MULTILINE
-        documentation: 'The current percentage CPU used by each worker and in total by all workers combined (*)'
+        documentation: The current percentage CPU used by each worker and in total by all workers combined (*).
     - up:
         on_fail:
           value: 0
@@ -39,7 +39,7 @@
           value: 0
         type: gauge
         value: 1
-        documentation: 'Could the apache server be reached'
+        documentation: Could the apache server be reached.
     - uptime_seconds_total:
         type: counter
         value_tasks:
@@ -49,7 +49,7 @@
             flags: MULTILINE
           - '@filter': builtins
             func: float
-        documentation: 'Current uptime in seconds (*)'
+        documentation: Current uptime in seconds (*).
     - requests_per_second:
         type: gauge
         value_tasks:
@@ -59,7 +59,7 @@
             flags: MULTILINE
           - '@filter': builtins
             func: float
-        documentation: 'Average number of requests per second (*)'
+        documentation: Average number of requests per second (*).
     - bytes_per_request:
         type: gauge
         value_tasks:
@@ -69,7 +69,7 @@
             flags: MULTILINE
           - '@filter': builtins
             func: float
-        documentation: 'Average number of bytes per request (*)'
+        documentation: Average number of bytes per request (*).
     - bytes_per_second:
         type: gauge
         value_tasks:
@@ -79,7 +79,7 @@
             flags: MULTILINE
           - '@filter': builtins
             func: float
-        documentation: 'Number of bytes served per second (*)'
+        documentation: Number of bytes served per second (*).
     - connections:
         type: gauge
         labels:
@@ -260,4 +260,4 @@
               - '@filter': builtintypes
                 func: count
                 args: ['.']
-        documentation: scoreboard statuses
+        documentation: scoreboard statuses.
