@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""http plugin"""
+"""covenant plugin http"""
 
 __author__  = "Adrien DELLE CAVE"
 __license__ = """
