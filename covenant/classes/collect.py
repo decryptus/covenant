@@ -144,4 +144,3 @@ class CovenantCollect(object):
             self.remove(True)
 
         del data
-

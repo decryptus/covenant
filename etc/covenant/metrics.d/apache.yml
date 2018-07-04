@@ -1,3 +1,4 @@
+# based on: https://github.com/neezgee/apache_exporter
 - name: status
   config:
     timeout: ${vars['timeout']}
@@ -5,7 +6,7 @@
     format: text
   collects:
     - accesses_total:
-        type: gauge
+        type: const_counter
         value_tasks:
           - '@filter': regex
             func: search
@@ -15,7 +16,7 @@
             'func': float
         documentation: Current total apache accesses (*).
     - sent_kilobytes_total:
-        type: gauge
+        type: const_counter
         value_tasks:
           - '@filter': regex
             func: search
@@ -41,7 +42,7 @@
         value: 1
         documentation: Could the apache server be reached.
     - uptime_seconds_total:
-        type: gauge
+        type: const_counter
         value_tasks:
           - '@filter': regex
             func: search

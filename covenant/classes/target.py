@@ -28,19 +28,11 @@ from covenant.classes.collect import CovenantCollect
 from covenant.classes.controls import CovenantCtrlLabelize, CovenantCtrlLoop
 from covenant.classes.filters import FILTERS
 from covenant.classes.label import CovenantLabels
+from covenant.classes.metrictypes import get_metric_type_default_func, METRICTYPES
 from dwho.config import load_credentials
-from prometheus_client import (CollectorRegistry,
-                               Counter as prom_counter,
-                               Gauge as prom_gauge,
-                               Histogram as prom_histogram,
-                               Summary as prom_summary)
+from prometheus_client import CollectorRegistry
 
 LOG                   = logging.getLogger('covenant.target')
-
-_DEFAULT_PROM_METHODS = {'prom_counter':   'inc',
-                         'prom_gauge':     'set',
-                         'prom_histogram': 'observe',
-                         'prom_summary':   'observe'}
 
 
 class CovenantRegistry(CollectorRegistry):
@@ -190,12 +182,12 @@ class CovenantTarget(object):
     def load_collects(self, collects):
         for c in collects:
             for key, value in c.iteritems():
-                xtype = "prom_%s" % value['type'].lower()
-                if xtype not in globals():
+                xtype = value['type'].lower()
+                if xtype not in METRICTYPES:
                     raise ValueError("unknown metric type: %r in %r" % (xtype, key))
 
-                metric = globals()[xtype]
-                method = _DEFAULT_PROM_METHODS[xtype]
+                metric = METRICTYPES[xtype]
+                method = get_metric_type_default_func(xtype)
 
                 if 'method' in value:
                     method = value['method'].strip('_')
