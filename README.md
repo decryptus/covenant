@@ -13,3 +13,9 @@ pip install covenant
 ### Running foreground
 
 `covenant -f -c <conffile> -p <pidfile> --logfile <logfile>`
+
+### Examples:
+
+curl http://localhost:9118/metrics/apache1
+curl http://localhost:9118/metrics/nginx1
+curl http://localhost:9118/metrics/rabbitmq1

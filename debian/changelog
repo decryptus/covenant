@@ -1,3 +1,9 @@
+covenant (0.0.6.30) unstable; urgency=medium
+
+  * Added examples in README.md
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Thu, 05 Jul 2018 09:21:10 +0200
+
 covenant (0.0.6.29) unstable; urgency=medium
 
   * Added exporter_scrape_failures_total for all exporters.

@@ -1,6 +1,6 @@
 general:
   listen_addr:        127.0.0.1
-  listen_port:        8670
+  listen_port:        9118
   charset:            utf-8
   content_type:       'text/plain; version=0.0.4'
   max_workers:        5
@@ -11,14 +11,6 @@ general:
   filters_path:       /usr/local/lib/covenant/filters
   plugins_path:       /usr/local/lib/covenant/plugins
 endpoints:
-  rabbitmq1:
-    credentials: credentials.yml.example?__section=rabbitmq
-    plugin: http
-    vars:
-      format: json
-      timeout: 10
-      url: http://localhost:15672/api
-    import_metrics: metrics.d/rabbitmq.yml
   apache1:
     plugin: http
     vars:
@@ -33,6 +25,14 @@ endpoints:
       timeout: 2
       url: 'http://localhost:8081/nginx_status'
     import_metrics: metrics.d/nginx.yml
+  rabbitmq1:
+    credentials: credentials.yml.example?__section=rabbitmq
+    plugin: http
+    vars:
+      format: json
+      timeout: 10
+      url: http://localhost:15672/api
+    import_metrics: metrics.d/rabbitmq.yml
 modules:
   metrics:
     routes:
