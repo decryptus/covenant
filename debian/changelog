@@ -1,3 +1,9 @@
+covenant (0.0.6.31) unstable; urgency=medium
+
+  * Reviewed README.md
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Thu, 05 Jul 2018 09:23:01 +0200
+
 covenant (0.0.6.30) unstable; urgency=medium
 
   * Added examples in README.md
