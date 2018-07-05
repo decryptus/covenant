@@ -5,6 +5,22 @@
     uri: ${vars['url']}
     format: text
   collects:
+    - up:
+        on_fail:
+          value: 0
+        on_noresult:
+          value: 0
+        type: gauge
+        value: 1
+        documentation: Could the apache server be reached.
+    - exporter_scrape_failures_total:
+        on_fail:
+          value: 1
+        on_noresult:
+          value: 1
+        type: counter
+        value: 0
+        documentation: Number of errors while scraping apache.
     - accesses_total:
         type: const_counter
         value_tasks:
@@ -33,14 +49,6 @@
             pattern: '^CPULoad:\s*([\.0-9]+)$'
             flags: MULTILINE
         documentation: The current percentage CPU used by each worker and in total by all workers combined (*).
-    - up:
-        on_fail:
-          value: 0
-        on_noresult:
-          value: 0
-        type: gauge
-        value: 1
-        documentation: Could the apache server be reached.
     - uptime_seconds_total:
         type: const_counter
         value_tasks:

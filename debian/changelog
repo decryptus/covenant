@@ -1,3 +1,9 @@
+covenant (0.0.6.29) unstable; urgency=medium
+
+  * Added exporter_scrape_failures_total for all exporters.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Thu, 05 Jul 2018 09:04:50 +0200
+
 covenant (0.0.6.28) unstable; urgency=medium
 
   * Added constants metric types. (const_counter, const_gauge,
@@ -13,7 +19,7 @@ covenant (0.0.6.27) unstable; urgency=medium
 
 covenant (0.0.6.26) unstable; urgency=medium
 
-  * Reviewed apache filter.
+  * Reviewed apache metrics.
 
  -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Tue, 03 Jul 2018 15:22:13 +0200
 

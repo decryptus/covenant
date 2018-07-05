@@ -12,6 +12,14 @@
         type: gauge
         value: 1
         documentation: Could the nginx server be reached.
+    - exporter_scrape_failures_total:
+        on_fail:
+          value: 1
+        on_noresult:
+          value: 1
+        type: counter
+        value: 0
+        documentation: Number of errors while scraping nginx.
     - connections:
         type: gauge
         labels:

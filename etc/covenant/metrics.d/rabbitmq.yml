@@ -10,6 +10,24 @@
           - '@filter': jmespath
             expression: 'node'
   collects:
+    - up:
+        labels: ~
+        on_fail:
+          value: 0
+        on_noresult:
+          value: 0
+        type: gauge
+        value: 1
+        documentation: Could the rabbitmq server be reached.
+    - exporter_scrape_failures_total:
+        labels: ~
+        on_fail:
+          value: 1
+        on_noresult:
+          value: 1
+        type: counter
+        value: 0
+        documentation: Number of errors while scraping rabbitmq.
     - connections_total:
         type: gauge
         value_tasks:
@@ -58,15 +76,6 @@
           - '@filter': jmespath
             expression: 'queue_totals.messages_unacknowledged'
         documentation: Total number of messages delivered to clients but not yet acknowledged.
-    - up:
-        labels: ~
-        on_fail:
-          value: 0
-        on_noresult:
-          value: 0
-        type: gauge
-        value: 1
-        documentation: Could the rabbitmq server be reached.
 - name: exchanges
   config:
     timeout: ${vars['timeout']}
@@ -74,19 +83,19 @@
     format: ${vars['format']}
   collects:
     - exchange_messages_published_total:
-        type: gauge
+        type: const_counter
         value_tasks:
           - '@filter': jmespath
             expression: 'sum([sum([].message_stats.publish_in), sum([].message_stats.publish_out)])'
         documentation: Count of messages published.
     - exchange_messages_published_in_total:
-        type: gauge
+        type: const_counter
         value_tasks:
           - '@filter': jmespath
             expression: 'sum([].message_stats.publish_in)'
         documentation: Count of messages published in to an exchange, i.e. not taking account of routing.
     - exchange_messages_published_out_total:
-        type: gauge
+        type: const_counter
         value_tasks:
           - '@filter': jmespath
             expression: 'sum([].message_stats.publish_out)'
