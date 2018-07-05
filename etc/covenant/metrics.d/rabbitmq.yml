@@ -193,6 +193,7 @@
               - '@labelize': dict
                 'key': name
                 'value': messages_ready
+                'default': 0
         documentation: Number of messages ready to be delivered to clients.
     - queue_messages:
         type: gauge
@@ -202,6 +203,7 @@
               - '@labelize': dict
                 'key': name
                 'value': messages
+                'default': 0
         documentation: Sum of ready and unacknowledged messages (queue depth).
     - queue_messages_unacknowledged:
         type: gauge
@@ -211,6 +213,7 @@
               - '@labelize': dict
                 'key': name
                 'value': messages_unacknowledged
+                'default': 0
         documentation: Number of messages delivered to clients but not yet acknowledged.
     - queue_messages_ready_ram:
         type: gauge
@@ -220,6 +223,7 @@
               - '@labelize': dict
                 'key': name
                 'value': messages_ready_ram
+                'default': 0
         documentation: Number of messages from messages_ready which are resident in ram.
     - queue_messages_unacknowledged_ram:
         type: gauge
@@ -229,6 +233,7 @@
               - '@labelize': dict
                 'key': name
                 'value': messages_unacknowledged_ram
+                'default': 0
         documentation: Number of messages from messages_unacknowledged which are resident in ram.
     - queue_messages_ram:
         type: gauge
@@ -238,6 +243,7 @@
               - '@labelize': dict
                 'key': name
                 'value': messages_ram
+                'default': 0
         documentation: Total number of messages which are resident in ram.
     - queue_messages_persistent:
         type: gauge
@@ -247,6 +253,7 @@
               - '@labelize': dict
                 'key': name
                 'value': messages_persistent
+                'default': 0
         documentation: Total number of persistent messages in the queue (will always be 0 for transient queues).
     - queue_message_bytes:
         type: gauge
@@ -256,6 +263,7 @@
               - '@labelize': dict
                 'key': name
                 'value': message_bytes
+                'default': 0
         documentation: >-
                          Sum of the size of all message bodies in the queue.
                          This does not include the message properties (including headers) or any overhead.
@@ -267,6 +275,7 @@
               - '@labelize': dict
                 'key': name
                 'value': message_bytes_ready
+                'default': 0
         documentation: Like message_bytes but counting only those messages ready to be delivered to clients.
     - queue_message_bytes_unacknowledged:
         type: gauge
@@ -276,6 +285,7 @@
               - '@labelize': dict
                 'key': name
                 'value': message_bytes_unacknowledged
+                'default': 0
         documentation: Like message_bytes but counting only those messages delivered to clients but not yet acknowledged.
     - queue_message_bytes_ram:
         type: gauge
@@ -285,6 +295,7 @@
               - '@labelize': dict
                 'key': name
                 'value': message_bytes_ram
+                'default': 0
         documentation: Like message_bytes but counting only those messages which are in RAM.
     - queue_message_bytes_persistent:
         type: gauge
@@ -294,6 +305,7 @@
               - '@labelize': dict
                 'key': name
                 'value': message_bytes_persistent
+                'default': 0
         documentation: Like message_bytes but counting only those messages which are persistent.
     - queue_consumers:
         type: gauge
@@ -303,6 +315,7 @@
               - '@labelize': dict
                 'key': name
                 'value': consumers
+                'default': 0
         documentation: Number of consumers.
     - queue_consumer_utilisation:
         type: gauge
@@ -324,6 +337,7 @@
               - '@labelize': dict
                 'key': name
                 'value': memory
+                'default': 0
         documentation: Bytes of memory consumed by the Erlang process associated with the queue, including stack, heap and internal structures.
     - queue_head_message_timestamp:
         type: gauge
