@@ -24,7 +24,7 @@ import copy
 import logging
 import re
 
-from covenant.classes.label import CovenantLabelValue
+from covenant.classes.label import CovenantLabelValuesCollection, CovenantLabelValue
 
 LOG = logging.getLogger('covenant.controls')
 
@@ -51,7 +51,7 @@ class CovenantCtrlLabelize(object):
     @classmethod
     def dict(cls, *largs, **lkargs):
         def g(*args, **kwargs):
-            r     = []
+            r     = CovenantLabelValuesCollection()
             kargs = copy.copy(kwargs)
 
             if not isinstance(kwargs['value'], dict):
@@ -69,8 +69,13 @@ class CovenantCtrlLabelize(object):
             xlen = len(kwargs['value'])
 
             for k, v in kwargs['value'].iteritems():
+                metricvalue = v
+                if 'value' in lkargs:
+                    metricvalue = v.get(lkargs['value'])
+                    if metricvalue is None:
+                        metricvalue = lkargs.get('default')
                 kargs['value'] = CovenantLabelValue(labelvalue  = k,
-                                                    metricvalue = v,
+                                                    metricvalue = metricvalue,
                                                     remove      = cls._to_remove(k, lkargs))
 
                 if xlen == 1:

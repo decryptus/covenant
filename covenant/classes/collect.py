@@ -23,7 +23,7 @@ __license__ = """
 import copy
 import logging
 
-from covenant.classes.exceptions import CovenantTargetFailed
+from covenant.classes.exceptions import CovenantTaskError, CovenantTargetFailed
 from covenant.classes.filters import CovenantNoResult
 
 LOG = logging.getLogger('covenant.collect')
@@ -48,6 +48,9 @@ class CovenantCollect(object):
         self.labels      = labels
         self.value_tasks = value_tasks
 
+        self._orig       = {'on_fail':     on_fail,
+                            'on_noresult': on_noresult}
+
         self.on_fail     = self._on(on_fail)
         self.on_noresult = self._on(on_noresult)
 
@@ -70,6 +73,48 @@ class CovenantCollect(object):
     def removed(self):
         return getattr(self.metric, '_removed', False)
 
+    def set_labels_metric(self, labels, metricvalue):
+        method = getattr(self.metric.labels(**labels), self.method)
+        try:
+            method(metricvalue)
+        except Exception, e:
+            LOG.exception("metric: %r, labels: %r, metricvalue: %r, error: %r",
+                          self.name,
+                          labels,
+                          metricvalue,
+                          e)
+            raise
+
+    def _get_value_from_tasks(self, data):
+        if isinstance(data, CovenantTargetFailed):
+            if self.on_fail['remove']:
+                self.remove(True)
+                return
+            return copy.copy(self.on_fail['value'])
+
+        for task in self.value_tasks:
+            if isinstance(data, CovenantNoResult):
+                if self.on_noresult['remove']:
+                    self.remove(True)
+                    return
+                data = self.on_noresult['value']
+                break
+            data = task(value = data)
+
+        return data
+
+    def _sanitize_value(self, data):
+        if isinstance(data, CovenantTargetFailed):
+            if self.on_fail['remove']:
+                self.remove(True)
+                return
+            data = self.on_fail['value']
+
+        if self.default is not None and data is None:
+            data = self.default
+
+        return data
+
     def __call__(self, data):
         self.remove(False)
         if not isinstance(data, CovenantTargetFailed) \
@@ -80,32 +125,26 @@ class CovenantCollect(object):
 
         if self.labels:
             for label in self.labels:
+                if self._orig['on_fail']:
+                    label.set_on_fail(self._orig['on_fail'])
+                if self._orig['on_noresult']:
+                    label.set_on_noresult(self._orig['on_noresult'])
+
                 label.task_label(data)
-                label.task_value(data, self.value_tasks)
+                try:
+                    label.task_value(data, self.value_tasks, self.value, self.default)
+                except CovenantTaskError, e:
+                    LOG.warning("%s. (metric: %r, labelname: %r)", e, self.name, label.labelname)
         elif self.value_tasks:
-            if isinstance(data, CovenantTargetFailed):
-                if self.on_fail['remove']:
-                    self.remove(True)
-                    return
-                data = copy.copy(self.on_fail['value'])
-            else:
-                for task in self.value_tasks:
-                    if isinstance(data, CovenantNoResult):
-                        if self.on_noresult['remove']:
-                            self.remove(True)
-                            return
-                        data = self.on_noresult['value']
-                        break
-                    data = task(value = data)
+            data = self._get_value_from_tasks(data)
 
-        if isinstance(data, CovenantTargetFailed):
-            if self.on_fail['remove']:
-                self.remove(True)
-                return
-            data = self.on_fail['value']
+        if self.removed():
+            return
 
-        if self.default is not None and data is None:
-            data = self.default
+        data = self._sanitize_value(data)
+
+        if self.removed():
+            return
 
         if not self.labels:
             try:
@@ -116,31 +155,47 @@ class CovenantCollect(object):
             del data
             return
 
-        has_label = False
+        has_label   = False
+        nb_labels   = len(self.labels)
+        nb_values   = 0
+        labels      = {}
 
         for label in self.labels:
-            if label.removed() or not label.labelvalues:
+            if label.removed() \
+               or not label.labelvalues:
                 continue
 
             has_label = True
-
+            xlen = len(label.labelvalues)
+            if xlen > nb_values:
+                nb_values = xlen
+            r = []
             for labelvalue in label.labelvalues:
-                method = getattr(self.metric.labels(
-                                    **{labelvalue.labelname: labelvalue.labelvalue}),
-                                    self.method)
+                if nb_labels == 1:
+                    self.set_labels_metric({labelvalue.labelname: labelvalue.labelvalue},
+                                           labelvalue.get())
+                else:
+                    r.append((labelvalue.labelvalue, labelvalue.get()))
 
-                try:
-                    method(labelvalue.get())
-                except Exception, e:
-                    LOG.exception("metric: %r, labelname: %r, labelvalue: %r, data: %r, error: %r",
-                                  self.name,
-                                  labelvalue.labelname,
-                                  labelvalue.labelvalue,
-                                  labelvalue.get(),
-                                  e)
-                    raise
+            if nb_labels > 1:
+                labels[label.labelname] = r
+
+        if nb_labels > 1:
+            for n in range(0, nb_values):
+                r = {}
+                v = None
+                for labelname in self.metric._labelnames:
+                    if len(labels[labelname]) <= n:
+                        ref = labels[labelname][-1]
+                    else:
+                        ref = labels[labelname][n]
+
+                    r[labelname] = ref[0]
+                    if ref[1] is not None:
+                        v = ref[1]
+                self.set_labels_metric(r, v)
 
         if not has_label:
             self.remove(True)
 
-        del data
+        del labels, data

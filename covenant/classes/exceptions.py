@@ -35,3 +35,6 @@ class CovenantTargetFailed(Exception):
             return Exception.__init__(self, message.message, message.args)
         else:
             return Exception.__init__(self, message, args)
+
+class CovenantTaskError(Exception):
+    pass

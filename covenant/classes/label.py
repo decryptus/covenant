@@ -23,8 +23,9 @@ __license__ = """
 import copy
 import logging
 
-from covenant.classes.exceptions import CovenantTargetFailed
+from covenant.classes.exceptions import CovenantTaskError, CovenantTargetFailed
 from covenant.classes.filters import CovenantNoResult
+from sonicprobe import helpers
 
 LOG = logging.getLogger('covenant.labels')
 
@@ -70,6 +71,10 @@ class CovenantLabelValue(object):
                 '__labeldefault': self.labeldefault}
 
 
+class CovenantLabelValuesCollection(list):
+    pass
+
+
 class CovenantLabels(object):
     def __init__(self,
                  labelname,
@@ -87,6 +92,8 @@ class CovenantLabels(object):
         self.label_tasks  = label_tasks
         self.value_tasks  = value_tasks
         self._removed     = False
+        self._orig        = {'on_fail': on_fail,
+                             'on_noresult': on_noresult}
 
         self.on_fail      = self._on(on_fail)
         self.on_noresult  = self._on(on_noresult)
@@ -112,6 +119,20 @@ class CovenantLabels(object):
             default['remove'] = False
 
         return default.copy()
+
+    def set_on_fail(self, cfg):
+        if not self._orig['on_fail']:
+            self.on_fail = self._on(cfg)
+
+    def set_on_noresult(self, cfg):
+        if not self._orig['on_noresult']:
+            self.on_noresult = self._on(cfg)
+
+    def labels(self):
+        r = {}
+        for labelvalue in self.labelvalues:
+            r[labelvalue.labelname] = labelvalue.labelvalue
+        return r
 
     def remove(self, val = True):
         self._removed = bool(val)
@@ -166,7 +187,10 @@ class CovenantLabels(object):
 
                     value = task(value = value)
 
-                nvalues.append(value)
+                if not isinstance(value, CovenantLabelValuesCollection):
+                    nvalues.append(value)
+                else:
+                    nvalues.extend(value)
 
             if nolabelvalue:
                 nvalues = [self.on_noresult['labelvalue']]
@@ -185,11 +209,8 @@ class CovenantLabels(object):
 
         return self
 
-    def task_value(self, data, value_tasks = None):
+    def task_value(self, data, value_tasks = None, collect_value = None, collect_default = None):
         tasks = value_tasks or self.value_tasks
-        if not tasks:
-            return self
-
         (failed, noresult) = (False, False)
 
         if isinstance(data, CovenantTargetFailed):
@@ -203,9 +224,11 @@ class CovenantLabels(object):
             noresult = True
             data     = copy.copy(self.on_noresult['value'])
 
+        value = None
+
         for labelvalue in self.labelvalues:
             value = copy.copy(data)
-            if not failed and not noresult:
+            if not failed and not noresult and tasks:
                 for task in tasks:
                     if isinstance(value, CovenantNoResult):
                         if self.on_noresult['remove']:
@@ -217,7 +240,14 @@ class CovenantLabels(object):
                 if self.on_noresult['remove']:
                     return self.remove(True)
                 value = self.on_noresult['value']
-            labelvalue.set(value)
+            if helpers.is_scalar(value):
+                labelvalue.set(value)
+            elif collect_value is not None:
+                labelvalue.set(collect_value)
+            elif collect_default is not None:
+                labelvalue.set(collect_default)
+            elif tasks:
+                raise CovenantTaskError("unable to fetch metricvalue for labelvalue: %r" % labelvalue.labelvalue)
 
         del value
 

@@ -49,35 +49,62 @@ class CovenantRegistry(CollectorRegistry):
 
 
 class CovenantTarget(object):
-    def __init__(self, name, config, collects, registry, credentials = None):
-        self.name        = name or ''
-        self.config      = dict(config)
-        self.collects    = []
-        self.registry    = registry
-        self.labels      = []
-        self.label_tasks = []
-        self.value_tasks = []
-        self.credentials = credentials
+    def __init__(self,
+                 name,
+                 config,
+                 collects,
+                 registry,
+                 labels      = None,
+                 label_tasks = None,
+                 value_tasks = None,
+                 on_fail     = None,
+                 on_noresult = None,
+                 credentials = None):
+        self.name          = name or ''
+        self.__config      = copy.copy(config)
+        self.collects      = []
+        self.registry      = registry
+        self.labels        = []
+        self.label_tasks   = []
+        self.value_tasks   = []
+        self.__credentials = copy.copy(credentials)
 
-        if 'labels' in self.config:
-            self.labels = self.load_labels(self.config['labels'])
+        if labels:
+            self.labels = self.load_labels(labels)
 
-        if 'label_tasks' in self.config:
-            self.label_tasks = self.load_tasks(self.config['label_tasks'], 'label')
+        if label_tasks:
+            self.label_tasks = self.load_tasks(label_tasks, 'label')
 
-        if 'value_tasks' in self.config:
-            self.value_tasks = self.load_tasks(self.config['value_tasks'])
+        if value_tasks:
+            self.value_tasks = self.load_tasks(value_tasks)
 
-        self.on_fail     = self.config.get('on_fail')
-        self.on_noresult = self.config.get('on_noresult')
+        self.on_fail     = on_fail
+        self.on_noresult = on_noresult
 
         if 'credentials' in self.config:
-            if self.config['credentials'] is None:
-                self.credentials = None
+            if self.__config['credentials'] is None:
+                self.__credentials = None
             else:
-                self.credentials = load_credentials(self.config['credentials'])
+                self.__credentials = load_credentials(self.config['credentials'])
+            del self.__config['credentials']
 
         self.load_collects(collects)
+
+    @property
+    def config(self):
+        return copy.copy(self._CovenantTarget__config)
+
+    @config.setter
+    def config(self, config):
+        return self
+
+    @property
+    def credentials(self):
+        return copy.copy(self._CovenantTarget__credentials)
+
+    @credentials.setter
+    def credentials(self, credentials):
+        return self
 
     @classmethod
     def _sanitize_task_args(cls, args):

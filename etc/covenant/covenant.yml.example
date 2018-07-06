@@ -33,6 +33,12 @@ endpoints:
       timeout: 10
       url: http://localhost:15672/api
     import_metrics: metrics.d/rabbitmq.yml
+  redis1:
+    plugin: redis
+    vars:
+      timeout: 10
+      url: redis://localhost:6379
+    import_metrics: metrics.d/redis.yml
 modules:
   metrics:
     routes:

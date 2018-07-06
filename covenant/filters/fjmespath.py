@@ -23,7 +23,7 @@ __license__ = """
 import logging
 import jmespath
 
-from covenant.classes.filters import CovenantFilterBase, FILTERS
+from covenant.classes.filters import CovenantFilterBase, CovenantNoResult, FILTERS
 
 LOG = logging.getLogger('covenant.filters.jmespath')
 
@@ -49,7 +49,11 @@ class CovenantJMESPathFilter(CovenantFilterBase):
             fargs['expression'] = self.build_args(fargs['expression'])
             expr = jmespath.compile(fargs.pop('expression'))
 
-        return expr.search(**fargs)
+        ret = expr.search(**fargs)
+        if ret is None:
+            return CovenantNoResult()
+
+        return ret
 
 
 if __name__ != "__main__":

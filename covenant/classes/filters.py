@@ -24,6 +24,7 @@ import abc
 import copy
 import logging
 
+from covenant.classes.exceptions import CovenantConfigurationError
 from sonicprobe.helpers import linesubst
 
 LOG        = logging.getLogger('covenant.plugins')

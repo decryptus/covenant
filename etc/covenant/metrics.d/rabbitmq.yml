@@ -4,11 +4,11 @@
     timeout: ${vars['timeout']}
     uri: ${vars['url']}/overview
     format: ${vars['format']}
-    labels:
-      - name: node
-        label_tasks:
-          - '@filter': jmespath
-            expression: 'node'
+  labels:
+    - name: node
+      label_tasks:
+        - '@filter': jmespath
+          expression: 'node'
   collects:
     - up:
         labels: ~
@@ -105,11 +105,11 @@
     timeout: ${vars['timeout']}
     uri: ${vars['url']}/nodes
     format: ${vars['format']}
-    labels:
-      - name: node
-        label_tasks:
-          - '@filter': jmespath
-            expression: 'name'
+  labels:
+    - name: node
+      label_tasks:
+        - '@filter': jmespath
+          expression: 'name'
   collects:
     - running:
         type: gauge
