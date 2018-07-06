@@ -1,3 +1,9 @@
+covenant (0.0.6.34) unstable; urgency=medium
+
+  * Reviewed README.md.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 06 Jul 2018 19:32:15 +0200
+
 covenant (0.0.6.33) unstable; urgency=medium
 
   * Added redis metrics.
