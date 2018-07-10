@@ -27,32 +27,52 @@ from covenant.classes.plugins import CovenantPlugBase, CovenantTargetFailed, PLU
 
 LOG = logging.getLogger('covenant.plugins.http')
 
+_ALLOWED_METHODS = ('delete',
+                    'get',
+                    'head',
+                    'patch',
+                    'post',
+                    'put')
+
 
 class CovenantHttpPlugin(CovenantPlugBase):
     PLUGIN_NAME = 'http'
 
     def do_metrics(self, obj):
         for target in self.targets:
-            (auth, data, req) = (None, None, None)
-            cfg        = target.config
-            timeout    = cfg.get('timeout', 10)
-            ssl_verify = cfg.get('ssl_verify', True)
+            (data, req) = (None, None)
+
+            cfg         = target.config
+            method      = 'get'
+            xformat     = None
+
+            if 'format' in cfg:
+                xformat = cfg.pop('format').lower()
+
+            if 'uri' in cfg and not cfg.get('url'):
+                cfg['url'] = cfg.pop('uri')
+
+            if 'method' in cfg:
+                method = cfg.pop('method').lower()
+
+            if 'ssl_verify' in cfg:
+                cfg['verify'] = bool(cfg.pop('ssl_verify'))
 
             if target.credentials:
-                auth = (target.credentials['username'],
-                        target.credentials['password'])
+                cfg['auth'] = (target.credentials['username'],
+                               target.credentials['password'])
+
+            if method not in _ALLOWED_METHODS:
+                raise CovenantConfigurationError("invalid http method: %r" % method)
 
             try:
-                req = requests.get(cfg['uri'],
-                                   auth    = auth,
-                                   timeout = timeout,
-                                   verify  = ssl_verify)
+                req = getattr(requests, method)(**cfg)
 
                 if req.status_code != requests.codes.ok:
                     raise LookupError("invalid status code: %r. (error: %r)"
                                       % (req.status_code, req.text))
 
-                if cfg.get('format') == 'json':
+                if xformat == 'json':
                     data = req.json()
                 else:
                     data = req.text

@@ -25,6 +25,7 @@ import logging
 
 from covenant.classes.exceptions import CovenantTaskError, CovenantTargetFailed
 from covenant.classes.filters import CovenantNoResult
+from sonicprobe import helpers
 
 LOG = logging.getLogger('covenant.collect')
 
@@ -85,6 +86,51 @@ class CovenantCollect(object):
                           e)
             raise
 
+    def _build_labels_metrics(self):
+        nb_labels   = len(self.labels)
+        nb_values   = 0
+        labels      = {}
+
+        for label in self.labels:
+            if label.removed() \
+               or not label.labelvalues:
+                continue
+
+            xlen = len(label.labelvalues)
+            if xlen > nb_values:
+                nb_values = xlen
+            r = []
+            for labelvalue in label.labelvalues:
+                if nb_labels == 1:
+                    self.set_labels_metric({labelvalue.labelname: labelvalue.labelvalue},
+                                           labelvalue.get())
+                else:
+                    r.append(labelvalue)
+
+            if nb_labels > 1:
+                labels[label.labelname] = r
+
+        if nb_labels > 1:
+            for n in range(0, nb_values):
+                r = {}
+                v = None
+                for labelname in self.metric._labelnames:
+                    if len(labels[labelname]) <= n:
+                        ref = labels[labelname][-1]
+                    else:
+                        ref = labels[labelname][n]
+
+                    r[labelname] = ref.labelvalue
+                    metricvalue  = ref.get()
+                    if metricvalue is not None:
+                        v = metricvalue
+                self.set_labels_metric(r, v)
+
+        if nb_values == 0:
+            self.remove(True)
+
+        del labels
+
     def _get_value_from_tasks(self, data):
         if isinstance(data, CovenantTargetFailed):
             if self.on_fail['remove']:
@@ -138,64 +184,23 @@ class CovenantCollect(object):
         elif self.value_tasks:
             data = self._get_value_from_tasks(data)
 
-        if self.removed():
-            return
+        try:
+            if self.removed():
+                return
 
-        data = self._sanitize_value(data)
+            data = self._sanitize_value(data)
 
-        if self.removed():
-            return
+            if self.removed():
+                return
 
-        if not self.labels:
-            try:
+            if self.labels:
+                self._build_labels_metrics()
+            elif helpers.is_scalar(data):
                 getattr(self.metric, self.method)(data)
-            except Exception, e:
-                LOG.exception("metric: %r, data: %r, error: %r", self.name, data, e)
-                raise
+            else:
+                LOG.warning("unable to fetch a valid metricvalue. (metric: %r, data: %r)", self.name, data)
+        except Exception, e:
+            LOG.exception("metric: %r, data: %r, error: %r", self.name, data, e)
+            raise
+        finally:
             del data
-            return
-
-        has_label   = False
-        nb_labels   = len(self.labels)
-        nb_values   = 0
-        labels      = {}
-
-        for label in self.labels:
-            if label.removed() \
-               or not label.labelvalues:
-                continue
-
-            has_label = True
-            xlen = len(label.labelvalues)
-            if xlen > nb_values:
-                nb_values = xlen
-            r = []
-            for labelvalue in label.labelvalues:
-                if nb_labels == 1:
-                    self.set_labels_metric({labelvalue.labelname: labelvalue.labelvalue},
-                                           labelvalue.get())
-                else:
-                    r.append((labelvalue.labelvalue, labelvalue.get()))
-
-            if nb_labels > 1:
-                labels[label.labelname] = r
-
-        if nb_labels > 1:
-            for n in range(0, nb_values):
-                r = {}
-                v = None
-                for labelname in self.metric._labelnames:
-                    if len(labels[labelname]) <= n:
-                        ref = labels[labelname][-1]
-                    else:
-                        ref = labels[labelname][n]
-
-                    r[labelname] = ref[0]
-                    if ref[1] is not None:
-                        v = ref[1]
-                self.set_labels_metric(r, v)
-
-        if not has_label:
-            self.remove(True)
-
-        del labels, data

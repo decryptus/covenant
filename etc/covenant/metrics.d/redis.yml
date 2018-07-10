@@ -357,17 +357,6 @@
     command: info
     command_args:
       - keyspace
-  labels:
-    - name: addr
-      value: "${vars['url']}"
-      static: true
-    - name: alias
-      value: "${vars.get('alias', '')}"
-      static: true
-    - name: db
-      label_tasks:
-         - '@labelize': dict
-           'value': 'keys'
   collects:
     - db_keys:
         labels:
@@ -380,7 +369,7 @@
           - name: db
             label_tasks:
                - '@labelize': dict
-                 'value': 'keys'
+                 value: 'keys'
         type: gauge
         documentation: Total number of keys by DB.
     - db_keys_expiring:
@@ -394,7 +383,7 @@
           - name: db
             label_tasks:
                - '@labelize': dict
-                 'value': 'expires'
+                 value: 'expires'
         type: gauge
         documentation: Total number of expiring keys by DB.
     - db_avg_ttl_seconds:
@@ -408,6 +397,6 @@
           - name: db
             label_tasks:
                - '@labelize': dict
-                 'value': 'avg_ttl'
+                 value: 'avg_ttl'
         type: gauge
         documentation: Avg TTL in seconds.

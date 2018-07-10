@@ -54,12 +54,13 @@ class CovenantTarget(object):
                  config,
                  collects,
                  registry,
-                 labels      = None,
-                 label_tasks = None,
-                 value_tasks = None,
-                 on_fail     = None,
-                 on_noresult = None,
-                 credentials = None):
+                 labels        = None,
+                 label_tasks   = None,
+                 value_tasks   = None,
+                 on_fail       = None,
+                 on_noresult   = None,
+                 metric_prefix = None,
+                 credentials   = None):
         self.name          = name or ''
         self.__config      = copy.copy(config)
         self.collects      = []
@@ -67,6 +68,7 @@ class CovenantTarget(object):
         self.labels        = []
         self.label_tasks   = []
         self.value_tasks   = []
+        self.metric_prefix = metric_prefix
         self.__credentials = copy.copy(credentials)
 
         if labels:
@@ -105,6 +107,17 @@ class CovenantTarget(object):
     @credentials.setter
     def credentials(self, credentials):
         return self
+
+    @classmethod
+    def _config_on(cls, option, config, default):
+        if option not in config:
+            return default
+
+        r = None
+        if config[option]:
+            r = config[option]
+
+        return r
 
     @classmethod
     def _sanitize_task_args(cls, args):
@@ -183,15 +196,8 @@ class CovenantTarget(object):
                 if label['value_tasks']:
                     vtasks = self.load_tasks(label['value_tasks'])
 
-            if 'on_fail' in label:
-                on_fail = None
-                if label['on_fail']:
-                    on_fail = label['on_fail']
-
-            if 'on_noresult' in label:
-                on_noresult = None
-                if label['on_noresult']:
-                    on_noresult = label['on_noresult']
+            on_fail     = self._config_on('on_fail', label, on_fail)
+            on_noresult = self._config_on('on_noresult', label, on_noresult)
 
             labelnames.add(name)
             clabels.append(CovenantLabels(
@@ -215,6 +221,13 @@ class CovenantTarget(object):
 
                 metric = METRICTYPES[xtype]
                 method = get_metric_type_default_func(xtype)
+                name   = value.get('name') or key
+
+                if 'metric_prefix' in value:
+                    if value['metric_prefix']:
+                        name = "%s_%s" % (value['metric_prefix'], name)
+                elif self.metric_prefix:
+                    name = "%s_%s" % (self.metric_prefix, name)
 
                 if 'method' in value:
                     method = value['method'].strip('_')
@@ -226,7 +239,7 @@ class CovenantTarget(object):
                     raise ValueError("unknown method %r for %r in %r"
                                      % (method, value['type'], key))
 
-                kwds        = {'name':          value.get('name') or key,
+                kwds        = {'name':          name,
                                'documentation': value.pop('documentation'),
                                'registry':      self.registry}
 
@@ -253,15 +266,8 @@ class CovenantTarget(object):
                     if value['value_tasks']:
                         vtasks = self.load_tasks(value['value_tasks'])
 
-                if 'on_fail' in value:
-                    on_fail = None
-                    if value['on_fail']:
-                        on_fail = value['on_fail']
-
-                if 'on_noresult' in value:
-                    on_noresult = None
-                    if value['on_noresult']:
-                        on_noresult = value['on_noresult']
+                on_fail     = self._config_on('on_fail', value, on_fail)
+                on_noresult = self._config_on('on_noresult', value, on_noresult)
 
                 self.collects.append(CovenantCollect(
                                         name        = value.get('name') or key,

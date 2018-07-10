@@ -1,3 +1,15 @@
+covenant (0.0.6.36) unstable; urgency=medium
+
+  * Added metric_prefix option.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Tue, 10 Jul 2018 07:57:59 +0200
+
+covenant (0.0.6.35) unstable; urgency=medium
+
+  * Reviewed http plugin.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Tue, 10 Jul 2018 07:32:21 +0200
+
 covenant (0.0.6.34) unstable; urgency=medium
 
   * Reviewed README.md.
