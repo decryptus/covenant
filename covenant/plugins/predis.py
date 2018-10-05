@@ -50,7 +50,7 @@ class CovenantRedisPlugin(CovenantPlugBase):
                 command_args = list(cfg.pop('command_args') or [])
 
             if command not in _ALLOWED_COMMANDS:
-                raise CovenantConfigurationError("invalid redis command: %r" % cmd)
+                raise CovenantConfigurationError("invalid redis command: %r" % command)
 
             if target.credentials:
                 cfg['username'] = target.credentials['username']

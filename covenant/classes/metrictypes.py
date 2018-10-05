@@ -158,10 +158,10 @@ class CovenantMetricTypeConstHistogram(CovenantMetricTypeConstBase):
         for b in buckets:
             self._buckets.append(_ValueClass(self._type, name, name + '_bucket', bucket_labelnames, labelvalues + (_floatToGoString(b),)))
 
-    def const(self, amount):
-        self._sum.set(amount)
+    def const(self, value):
+        self._sum.set(value)
         for i, bound in enumerate(self._upper_bounds):
-            if amount <= bound:
+            if value <= bound:
                 self._buckets[i].set(1)
                 break
 
@@ -189,9 +189,9 @@ class CovenantMetricTypeConstSummary(CovenantMetricTypeConstBase):
         self._count = _ValueClass(self._type, name, name + '_count', labelnames, labelvalues)
         self._sum = _ValueClass(self._type, name, name + '_sum', labelnames, labelvalues)
 
-    def const(self, amount):
+    def const(self, value):
         self._count.set(1)
-        self._sum.set(amount)
+        self._sum.set(value)
 
     def _samples(self):
         return (

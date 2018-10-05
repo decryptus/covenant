@@ -26,7 +26,6 @@ import Queue
 import threading
 
 from covenant.classes.exceptions import CovenantTargetFailed
-from covenant.classes.label import CovenantLabels
 from covenant.classes.target import CovenantRegistry, CovenantTarget
 from dwho.classes.plugins import DWhoPluginBase
 from dwho.config import load_credentials

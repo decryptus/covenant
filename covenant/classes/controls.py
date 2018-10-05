@@ -35,7 +35,7 @@ class CovenantCtrlLabelize(object):
         r = False
 
         if 'include' in kargs:
-            r = key not in lkargs['include']
+            r = key not in kargs['include']
 
         if 'exclude' in kargs and key in kargs['exclude']:
             r = key in kargs['exclude']

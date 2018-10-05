@@ -74,7 +74,7 @@ class CovenantBuiltinsFilter(CovenantFilterBase):
 
         for func in funcs:
             if func not in _ALLOWED_FUNCTIONS:
-                raise ValueError("built-in function not allowed: %r", func)
+                raise ValueError("built-in function not allowed: %r" % func)
             self._funcs.append(__builtins__[func])
 
         self._fargs         = list(self.kwargs.get('args', []) or [])

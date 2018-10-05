@@ -19,19 +19,16 @@ __license__ = """
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA..
 """
 
-import json
 import gc
 import logging
-import requests
 import time
 import uuid
 
 from dwho.classes.modules import DWhoModuleBase, MODULES
 from covenant.classes.plugins import CovenantEPTObject, EPTS_SYNC
-from sonicprobe import helpers
-from sonicprobe.libs import network, urisup, xys
+from httpdis.httpdis import HttpReqError, HttpResponse
+from sonicprobe.libs import xys
 from sonicprobe.libs.moresynchro import RWLock
-from sonicprobe.libs.http_json_server import HttpReqError, HttpResponse
 
 LOG = logging.getLogger('covenant.modules.metrics')
 
@@ -75,12 +72,12 @@ class MetricsModule(DWhoModuleBase):
         ept_sync  = EPTS_SYNC[endpoint]
         uid       = "%s:%s" % (ept_sync.name, uuid.uuid4())
         ept_sync.qput(CovenantEPTObject(ept_sync.name,
-                                         uid,
-                                         endpoint,
-                                         method,
-                                         params,
-                                         args,
-                                         self._set_result))
+                                        uid,
+                                        endpoint,
+                                        method,
+                                        params,
+                                        args,
+                                        self._set_result))
         return uid
 
 

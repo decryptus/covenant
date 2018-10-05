@@ -172,7 +172,13 @@ class CovenantTarget(object):
 
         return r
 
-    def load_labels(self, labels, label_tasks = [], value_tasks = [], on_fail = None, on_noresult = None):
+    def load_labels(self, labels, label_tasks = None, value_tasks = None, on_fail = None, on_noresult = None):
+        if not label_tasks:
+            label_tasks = []
+
+        if not value_tasks:
+            value_tasks = []
+
         labelnames = set()
         clabels    = []
 

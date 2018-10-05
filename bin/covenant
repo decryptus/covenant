@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 covenant
@@ -20,7 +20,7 @@ __license__ = """
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-__version__ = '0.0.6.36'
+__version__ = '0.0.6.37'
 
 # TODO: load Python logging configuration (using standard logging.config)
 
@@ -35,13 +35,16 @@ from covenant.filters import * # XXX
 from covenant.modules import * # XXX
 from covenant.plugins import * # XXX
 from dwho.modules import * # XXX
-from dwho.config import init_logger
-from sonicprobe import helpers
-from sonicprobe.libs import daemonize, http_json_server
+from dwho.config import init_logger, make_piddir, make_logdir
+from httpdis import httpdis
+from sonicprobe.libs import daemonize
 
 
-SYSLOG_NAME = "covenant"
-LOG         = logging.getLogger(SYSLOG_NAME)
+SYSLOG_NAME      = "covenant"
+LOG              = logging.getLogger(SYSLOG_NAME)
+
+DEFAULT_PIDFILE  = "/run/covenant/covenant.pid"
+DEFAULT_LOGFILE  = "/var/log/covenant/daemon.log"
 
 try:
     COVENANT_USER  = pwd.getpwnam(os.environ.get('COVENANT_USER') or 'covenant').pw_name
@@ -52,6 +55,9 @@ try:
     COVENANT_GROUP = grp.getgrnam(os.environ.get('COVENANT_USER') or 'covenant').gr_name
 except KeyError:
     COVENANT_GROUP = grp.getgrgid(os.getegid())[0]
+
+COVENANT_PIDFILE = os.environ.get('COVENANT_PIDFILE') or DEFAULT_PIDFILE
+COVENANT_LOGFILE = os.environ.get('COVENANT_LOGFILE') or DEFAULT_LOGFILE
 
 
 def argv_parse_check():
@@ -82,7 +88,7 @@ def argv_parse_check():
                       help      = "Use configuration file <conffile> instead of %default")
     parser.add_option("-p",
                       dest      = 'pidfile',
-                      default   = "/run/covenant.pid",
+                      default   = COVENANT_PIDFILE,
                       help      = "Use PID file <pidfile> instead of %default")
     parser.add_option("-u",
                       dest      = 'username',
@@ -97,7 +103,7 @@ def argv_parse_check():
     parser.add_option("--logfile",
                       dest      = 'logfile',
                       type      = 'string',
-                      default   = "/var/log/covenant/daemon.log",
+                      default   = COVENANT_LOGFILE,
                       help      = "Use log file <logfile> instead of %default")
     parser.add_option("--listen-addr",
                       dest      = 'listen_addr',
@@ -121,26 +127,24 @@ def main(options):
     """
     Main function; start the server
     """
+    uid = pwd.getpwnam(options.username)[2]
+    gid = grp.getgrnam(options.groupname)[2]
+
+    make_piddir(options.pidfile, uid, gid)
+    make_logdir(options.logfile, uid, gid)
+
     root_logger = init_logger(options.logfile, SYSLOG_NAME)
     options     = load_conf(options.conffile, options)
-
-    uid         = pwd.getpwnam(options.username)[2]
-    gid         = grp.getgrnam(options.groupname)[2]
 
     setattr(options, 'server_version', "%s/%s" % (SYSLOG_NAME, __version__))
     setattr(options, 'sys_version', '')
 
-    http_json_server.init(options, False)
-    DWHO_THREADS.append(http_json_server.stop)
+    httpdis.init(options, False)
+    DWHO_THREADS.append(httpdis.stop)
 
     if not options.foreground:
         LOG.info("Transforming into a daemon from hell")
         daemonize.daemonize()
-
-    dirpid = os.path.dirname(options.pidfile)
-    if dirpid:
-        helpers.make_dirs(dirpid)
-        os.chown(dirpid, uid, gid)
 
     LOG.info("locking PID")
     daemonize.lock_pidfile_or_die(options.pidfile)
@@ -154,7 +158,7 @@ def main(options):
         os.umask(022)
 
         start_endpoints()
-        http_json_server.run(options)
+        httpdis.run(options)
     except (KeyboardInterrupt, SystemExit):
         raise
     except Exception:

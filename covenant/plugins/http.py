@@ -23,6 +23,7 @@ __license__ = """
 import logging
 import requests
 
+from covenant.classes.exceptions import CovenantConfigurationError
 from covenant.classes.plugins import CovenantPlugBase, CovenantTargetFailed, PLUGINS
 
 LOG = logging.getLogger('covenant.plugins.http')

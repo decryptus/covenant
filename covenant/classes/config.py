@@ -23,22 +23,24 @@ __license__ = """
 import logging
 import os
 import signal
-import yaml
 
 from covenant.classes.exceptions import CovenantConfigurationError
 from covenant.classes.plugins import ENDPOINTS, PLUGINS
 from dwho.config import parse_conf, stop, DWHO_THREADS
 from dwho.classes.libloader import DwhoLibLoader
 from dwho.classes.modules import MODULES
+from httpdis.httpdis import get_default_options
 from mako.template import Template
 from sonicprobe.helpers import load_yaml
-from sonicprobe.libs.http_json_server import get_default_options
 
 _TPL_IMPORTS = ('from os import environ as ENV',)
 LOG          = logging.getLogger('covenant.config')
 
 
-def import_file(filepath, config_dir = None, xvars = {}):
+def import_file(filepath, config_dir = None, xvars = None):
+    if not xvars:
+        xvars = {}
+
     if config_dir and not filepath.startswith(os.path.sep):
         filepath = os.path.join(config_dir, filepath)
 

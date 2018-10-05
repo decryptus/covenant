@@ -81,6 +81,15 @@
     timeout: ${vars['timeout']}
     uri: ${vars['url']}/exchanges
     format: ${vars['format']}
+  labels:
+    - name: vhost
+      label_tasks:
+        - '@filter': jmespath
+          expression: 'vhost'
+    - name: exchange
+      label_tasks:
+        - '@filter': jmespath
+          expression: 'name'
   collects:
     - exchange_messages_published_total:
         type: const_counter
