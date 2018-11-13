@@ -1,3 +1,9 @@
+covenant (0.0.6.38) unstable; urgency=medium
+
+  * Fixed no result with multiple labels.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Tue, 13 Nov 2018 20:26:42 +0100
+
 covenant (0.0.6.37) unstable; urgency=medium
 
   * Added environment variables COVENANT_PIDFILE COVENANT_LOGFILE.

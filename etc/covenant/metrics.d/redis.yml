@@ -368,8 +368,8 @@
             static: true
           - name: db
             label_tasks:
-               - '@labelize': dict
-                 value: 'keys'
+             - '@labelize': dict
+               value: 'keys'
         type: gauge
         documentation: Total number of keys by DB.
     - db_keys_expiring:
@@ -382,8 +382,8 @@
             static: true
           - name: db
             label_tasks:
-               - '@labelize': dict
-                 value: 'expires'
+             - '@labelize': dict
+               value: 'expires'
         type: gauge
         documentation: Total number of expiring keys by DB.
     - db_avg_ttl_seconds:
@@ -396,7 +396,7 @@
             static: true
           - name: db
             label_tasks:
-               - '@labelize': dict
-                 value: 'avg_ttl'
+             - '@labelize': dict
+               value: 'avg_ttl'
         type: gauge
         documentation: Avg TTL in seconds.

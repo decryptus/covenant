@@ -101,7 +101,11 @@ class CovenantCollect(object):
                 nb_values = xlen
             r = []
             for labelvalue in label.labelvalues:
-                if nb_labels == 1:
+                if isinstance(labelvalue.labelvalue, CovenantNoResult):
+                    self.remove(True)
+                    del labels
+                    return
+                elif nb_labels == 1:
                     self.set_labels_metric({labelvalue.labelname: labelvalue.labelvalue},
                                            labelvalue.get())
                 else:

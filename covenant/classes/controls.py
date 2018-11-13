@@ -24,7 +24,7 @@ import copy
 import logging
 import re
 
-from covenant.classes.label import CovenantLabelValuesCollection, CovenantLabelValue
+from covenant.classes.label import CovenantLabelValuesCollection, CovenantLabelValue, CovenantNoResult
 
 LOG = logging.getLogger('covenant.controls')
 
@@ -82,6 +82,9 @@ class CovenantCtrlLabelize(object):
                     return kargs['value']
                 else:
                     r.append(kargs['value'])
+
+            if not r and not lkargs.get('empty'):
+                return CovenantNoResult()
 
             return r
         return g
