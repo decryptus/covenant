@@ -170,6 +170,18 @@
           - '@filter': jmespath
             expression: '[0].mem_alarm'
         documentation: Whether the memory alarm has gone off.
+    - proc_used:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: '[0].proc_used'
+        documentation: Number of Erlang processes in use.
+    - proc_total:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: '[0].proc_total'
+        documentation: Maximum number of Erlang processes.
     - disk_free:
         type: gauge
         value_tasks:

@@ -1,6 +1,30 @@
+covenant (0.0.6.42) unstable; urgency=medium
+
+  * Reviewed requirements.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 28 Dec 2018 12:30:12 +0100
+
+covenant (0.0.6.41) unstable; urgency=medium
+
+  * Reviewed requirements.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Thu, 27 Dec 2018 18:20:30 +0100
+
+covenant (0.0.6.40) unstable; urgency=medium
+
+  * Added rabbitmq metrics proc_used and proc_total.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Sun, 18 Nov 2018 15:16:53 +0100
+
+covenant (0.0.6.39) unstable; urgency=medium
+
+  * Fixed logrotate.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Sun, 18 Nov 2018 10:59:38 +0100
+
 covenant (0.0.6.38) unstable; urgency=medium
 
-  * Fixed no result with multiple labels.
+  * Fixed no result with multilabels. 
 
  -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Tue, 13 Nov 2018 20:26:42 +0100
 
