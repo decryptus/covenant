@@ -1,5 +1,5 @@
-dwho>=0.2.81
-httpdis>=0.5.8
+dwho>=0.2.89
+httpdis>=0.5.13
 jmespath>=0.9.3
 pycurl
 pyjq
