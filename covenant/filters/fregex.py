@@ -80,7 +80,7 @@ class CovenantRegexFilter(CovenantFilterBase):
 
             self._func = getattr(re.compile(pattern = self._fargs.pop('pattern'),
                                             flags = flags),
-                                            func)
+                                 func)
         else:
             self._func = getattr(re, func)
 

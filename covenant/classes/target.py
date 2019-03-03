@@ -24,13 +24,14 @@ import copy
 import logging
 import uuid
 
+from dwho.config import load_credentials
+from prometheus_client import CollectorRegistry
+
 from covenant.classes.collect import CovenantCollect
 from covenant.classes.controls import CovenantCtrlLabelize, CovenantCtrlLoop
 from covenant.classes.filters import FILTERS
 from covenant.classes.label import CovenantLabels
 from covenant.classes.metrictypes import get_metric_type_default_func, METRICTYPES
-from dwho.config import load_credentials
-from prometheus_client import CollectorRegistry
 
 LOG                   = logging.getLogger('covenant.target')
 
@@ -207,14 +208,14 @@ class CovenantTarget(object):
 
             labelnames.add(name)
             clabels.append(CovenantLabels(
-                               name,
-                               label.get('value'),
-                               label.get('default'),
-                               bool(static),
-                               ltasks,
-                               vtasks,
-                               on_fail,
-                               on_noresult))
+                name,
+                label.get('value'),
+                label.get('default'),
+                bool(static),
+                ltasks,
+                vtasks,
+                on_fail,
+                on_noresult))
 
         return (labelnames, clabels)
 
@@ -276,15 +277,15 @@ class CovenantTarget(object):
                 on_noresult = self._config_on('on_noresult', value, on_noresult)
 
                 self.collects.append(CovenantCollect(
-                                        name        = value.get('name') or key,
-                                        metric      = metric(**kwds),
-                                        method      = method,
-                                        value       = value.get('value'),
-                                        default     = value.get('default'),
-                                        labels      = clabels,
-                                        value_tasks = vtasks,
-                                        on_fail     = on_fail,
-                                        on_noresult = on_noresult))
+                    name        = value.get('name') or key,
+                    metric      = metric(**kwds),
+                    method      = method,
+                    value       = value.get('value'),
+                    default     = value.get('default'),
+                    labels      = clabels,
+                    value_tasks = vtasks,
+                    on_fail     = on_fail,
+                    on_noresult = on_noresult))
 
     def __call__(self, data):
         for collect in self.collects:

@@ -24,14 +24,15 @@ import logging
 import os
 import signal
 
-from covenant.classes.exceptions import CovenantConfigurationError
-from covenant.classes.plugins import ENDPOINTS, PLUGINS
 from dwho.config import parse_conf, stop, DWHO_THREADS
 from dwho.classes.libloader import DwhoLibLoader
 from dwho.classes.modules import MODULES
 from httpdis.httpdis import get_default_options
 from mako.template import Template
 from sonicprobe.helpers import load_yaml
+
+from covenant.classes.exceptions import CovenantConfigurationError
+from covenant.classes.plugins import ENDPOINTS, PLUGINS
 
 _TPL_IMPORTS = ('from os import environ as ENV',)
 LOG          = logging.getLogger('covenant.config')
@@ -45,8 +46,7 @@ def import_file(filepath, config_dir = None, xvars = None):
         filepath = os.path.join(config_dir, filepath)
 
     with open(filepath, 'r') as f:
-        return load_yaml(Template(f.read(),
-                         imports = _TPL_IMPORTS).render(**xvars))
+        return load_yaml(Template(f.read(), imports = _TPL_IMPORTS).render(**xvars))
 
 def load_conf(xfile, options = None):
     signal.signal(signal.SIGTERM, stop)

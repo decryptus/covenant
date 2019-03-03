@@ -23,9 +23,10 @@ __license__ = """
 import copy
 import logging
 
+from sonicprobe import helpers
+
 from covenant.classes.exceptions import CovenantTaskError, CovenantTargetFailed
 from covenant.classes.filters import CovenantNoResult
-from sonicprobe import helpers
 
 LOG = logging.getLogger('covenant.collect')
 

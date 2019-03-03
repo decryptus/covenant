@@ -50,7 +50,7 @@ class CovenantCtrlLabelize(object):
 
     @classmethod
     def dict(cls, *largs, **lkargs):
-        def g(*args, **kwargs):
+        def func(*args, **kwargs):
             r     = CovenantLabelValuesCollection()
             kargs = copy.copy(kwargs)
 
@@ -87,13 +87,13 @@ class CovenantCtrlLabelize(object):
                 return CovenantNoResult()
 
             return r
-        return g
+        return func
 
 
 class CovenantCtrlLoop(object):
     @classmethod
     def iter(cls, f = None):
-        def g(*args, **kwargs):
+        def func(*args, **kwargs):
             r     = []
             kargs = copy.copy(kwargs)
 
@@ -110,11 +110,11 @@ class CovenantCtrlLoop(object):
                     r.append(f(*args, **kargs))
 
             return r
-        return g
+        return func
 
     @classmethod
     def dict(cls, f = None):
-        def g(*args, **kwargs):
+        def func(*args, **kwargs):
             r     = []
             kargs = copy.copy(kwargs)
 
@@ -132,11 +132,11 @@ class CovenantCtrlLoop(object):
                     r.append(f(*args, **kargs))
 
             return r
-        return g
+        return func
 
     @classmethod
     def dict_keys(cls, f = None):
-        def g(*args, **kwargs):
+        def func(*args, **kwargs):
             r     = []
             kargs = copy.copy(kwargs)
 
@@ -153,11 +153,11 @@ class CovenantCtrlLoop(object):
                     r.append(f(*args, **kargs))
 
             return r
-        return g
+        return func
 
     @classmethod
     def dict_values(cls, f = None):
-        def g(*args, **kwargs):
+        def func(*args, **kwargs):
             r     = []
             kargs = copy.copy(kwargs)
 
@@ -174,4 +174,4 @@ class CovenantCtrlLoop(object):
                     r.append(f(*args, **kargs))
 
             return r
-        return g
+        return func

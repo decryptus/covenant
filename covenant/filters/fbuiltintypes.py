@@ -87,8 +87,7 @@ class CovenantBuiltinTypesFilter(CovenantFilterBase):
             elif func == 'get':
                 if xlen == 1:
                     return self.value[fargs[0]]
-                else:
-                    return self.value[fargs[0]:fargs[1]]
+                return self.value[fargs[0]:fargs[1]]
 
         if self._func in _FUNCS_VALUE_ARG:
             return getattr(fargs[0], self._func)(self.value)

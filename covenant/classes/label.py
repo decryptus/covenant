@@ -23,9 +23,10 @@ __license__ = """
 import copy
 import logging
 
+from sonicprobe import helpers
+
 from covenant.classes.exceptions import CovenantTaskError, CovenantTargetFailed
 from covenant.classes.filters import CovenantNoResult
-from sonicprobe import helpers
 
 LOG = logging.getLogger('covenant.labels')
 
@@ -41,12 +42,12 @@ class CovenantLabelValue(object):
         if labelvalue is None:
             self.labelvalue = self.labeldefault
         elif isinstance(labelvalue, (list, tuple, set)):
-            if len(labelvalue) > 0:
+            if labelvalue:
                 self.labelvalue = list(labelvalue)[0]
             else:
                 self.labelvalue = self.labeldefault
         elif isinstance(labelvalue, dict):
-            if len(labelvalue) > 0:
+            if labelvalue:
                 self.labelvalue = labelvalue.popitem()[1]
             else:
                 self.labelvalue = self.labeldefault

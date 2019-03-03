@@ -25,11 +25,12 @@ import logging
 import Queue
 import threading
 
-from covenant.classes.exceptions import CovenantTargetFailed
-from covenant.classes.target import CovenantRegistry, CovenantTarget
 from dwho.classes.plugins import DWhoPluginBase
 from dwho.config import load_credentials
 from prometheus_client import generate_latest
+
+from covenant.classes.exceptions import CovenantTargetFailed
+from covenant.classes.target import CovenantRegistry, CovenantTarget
 
 LOG = logging.getLogger('covenant.plugins')
 

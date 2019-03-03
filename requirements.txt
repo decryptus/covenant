@@ -1,10 +1,10 @@
-dwho>=0.2.89
-httpdis>=0.5.13
+dwho>=0.2.91
+httpdis>=0.5.15
 jmespath>=0.9.3
 pycurl
 pyjq
 pyyaml>=3.10
-prometheus-client>=0.2.0,<=0.4.2
+prometheus-client>=0.6.0
 six>=1.4.0
-sonicprobe>=0.2.69
+sonicprobe>=0.2.71
 requests>=2.0

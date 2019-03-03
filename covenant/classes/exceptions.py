@@ -32,9 +32,9 @@ class CovenantConfigurationError(Exception):
 class CovenantTargetFailed(Exception):
     def __init__(self, message = None, args = None):
         if isinstance(message, Exception):
-            return Exception.__init__(self, message.message, message.args)
+            Exception.__init__(self, message.message, message.args)
         else:
-            return Exception.__init__(self, message, args)
+            Exception.__init__(self, message, args)
 
 class CovenantTaskError(Exception):
     pass

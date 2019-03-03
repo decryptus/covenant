@@ -25,10 +25,11 @@ import time
 import uuid
 
 from dwho.classes.modules import DWhoModuleBase, MODULES
-from covenant.classes.plugins import CovenantEPTObject, EPTS_SYNC
 from httpdis.httpdis import HttpReqError, HttpResponse
 from sonicprobe.libs import xys
 from sonicprobe.libs.moresynchro import RWLock
+
+from covenant.classes.plugins import CovenantEPTObject, EPTS_SYNC
 
 LOG = logging.getLogger('covenant.modules.metrics')
 
