@@ -23,7 +23,7 @@ endpoints:
     vars:
       format: text
       timeout: 2
-      url: 'http://localhost:8081/nginx_status'
+      url: 'http://localhost:8081'
     import_metrics: metrics.d/nginx.yml
   rabbitmq1:
     credentials: credentials.yml.example?__section=rabbitmq

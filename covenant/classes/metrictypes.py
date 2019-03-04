@@ -23,6 +23,7 @@ __license__ = """
 import abc
 import logging
 
+from sonicprobe import helpers
 from prometheus_client.metrics import (Counter,
                                        Enum,
                                        Gauge,
@@ -31,17 +32,23 @@ from prometheus_client.metrics import (Counter,
                                        Summary)
 
 _DEFAULT_METRIC_TYPES         = {'counter':   {'obj':  Counter,
-                                               'func': 'inc'},
+                                               'func': 'inc',
+                                               'validator': helpers.is_scalar},
                                  'enum':      {'obj':  Enum,
-                                               'func': 'state'},
+                                               'func': 'state',
+                                               'validator': helpers.is_scalar},
                                  'gauge':     {'obj':  Gauge,
-                                               'func': 'set'},
+                                               'func': 'set',
+                                               'validator': helpers.is_scalar},
                                  'histogram': {'obj':  Histogram,
-                                               'func': 'observe'},
+                                               'func': 'observe',
+                                               'validator': helpers.is_scalar},
                                  'info':      {'obj':  Info,
-                                               'func': 'info'},
+                                               'func': 'info',
+                                               'validator': lambda x: isinstance(x, dict)},
                                  'summary':   {'obj':  Summary,
-                                               'func': 'observe'}}
+                                               'func': 'observe',
+                                               'validator': helpers.is_scalar}}
 
 _DEFAULT_METRIC_TYPES_OBJECTS = tuple([x['obj'] for x in _DEFAULT_METRIC_TYPES.itervalues()])
 
@@ -72,10 +79,18 @@ def is_default_metric_type(name):
 def get_default_metric_type_func(name):
     return _DEFAULT_METRIC_TYPES[name]['func']
 
+def get_default_metric_type_validator(name):
+    return _DEFAULT_METRIC_TYPES[name]['validator']
+
 def get_metric_type_default_func(name):
     if is_default_metric_type(name):
         return get_default_metric_type_func(name)
     return METRICTYPES[name].METHOD
+
+def get_metric_type_default_validator(name):
+    if is_default_metric_type(name):
+        return get_default_metric_type_validator(name)
+    return get_metric_type_default_validator(METRICTYPES[name]._type)
 
 
 class CovenantMetricBase(object):

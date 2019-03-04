@@ -36,6 +36,7 @@ class CovenantCollect(object):
                  name,
                  metric,
                  method      = None,
+                 validator   = None,
                  value       = None,
                  default     = None,
                  labels      = None,
@@ -45,6 +46,7 @@ class CovenantCollect(object):
         self.name        = name
         self.metric      = metric
         self.method      = method
+        self.validator   = validator
         self.value       = value
         self.default     = default
         self.labels      = labels
@@ -100,20 +102,29 @@ class CovenantCollect(object):
             xlen = len(label.labelvalues)
             if xlen > nb_values:
                 nb_values = xlen
+
             r = []
+
             for labelvalue in label.labelvalues:
                 if isinstance(labelvalue.labelvalue, CovenantNoResult):
                     self.remove(True)
                     del labels
                     return
-                elif nb_labels == 1:
+
+                if nb_labels == 1:
                     self.set_labels_metric({labelvalue.labelname: labelvalue.labelvalue},
                                            labelvalue.get())
                 else:
                     r.append(labelvalue)
 
             if nb_labels > 1:
-                labels[label.labelname] = r
+                if label.labelname not in labels:
+                    labels[label.labelname] = r
+                else:
+                    labels[label.labelname].extend(r)
+                    xlen = len(labels[label.labelname])
+                    if xlen > nb_values:
+                        nb_values = xlen
 
         if nb_labels > 1:
             for n in range(0, nb_values):
@@ -200,7 +211,7 @@ class CovenantCollect(object):
 
             if self.labels:
                 self._build_labels_metrics()
-            elif helpers.is_scalar(data):
+            elif self.validator(data):
                 getattr(self.metric, self.method)(data)
             else:
                 LOG.warning("unable to fetch a valid metricvalue. (metric: %r, data: %r)", self.name, data)

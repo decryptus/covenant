@@ -100,6 +100,8 @@
                 func: search
                 pattern: '^ConnsTotal:\s*([\.0-9]+)$'
                 flags: MULTILINE
+              - '@filter': builtins
+                'func': float
           - name: state
             static: true
             value: 'writing'
@@ -108,6 +110,8 @@
                 func: search
                 pattern: '^ConnsAsyncWriting:\s*([\.0-9]+)$'
                 flags: MULTILINE
+              - '@filter': builtins
+                'func': float
           - name: state
             static: true
             value: 'keepalive'
@@ -116,6 +120,8 @@
                 func: search
                 pattern: '^ConnsAsyncKeepAlive:\s*([\.0-9]+)$'
                 flags: MULTILINE
+              - '@filter': builtins
+                'func': float
           - name: state
             static: true
             value: 'closing'
@@ -124,7 +130,9 @@
                 func: search
                 pattern: '^ConnsAsyncClosing:\s*([\.0-9]+)$'
                 flags: MULTILINE
-        documentation: connection statuses
+              - '@filter': builtins
+                'func': float
+        documentation: Connections statuses.
     - workers:
         type: gauge
         labels:
@@ -136,6 +144,8 @@
                 func: search
                 pattern: '^IdleWorkers:\s*([0-9]+)$'
                 flags: MULTILINE
+              - '@filter': builtins
+                'func': float
           - name: state
             static: true
             value: 'busy'
@@ -144,7 +154,9 @@
                 func: search
                 pattern: '^BusyWorkers:\s*([0-9]+)$'
                 flags: MULTILINE
-        documentation: worker statuses
+              - '@filter': builtins
+                'func': float
+        documentation: Worker statuses.
     - scoreboard:
         type: gauge
         labels:
@@ -269,4 +281,4 @@
               - '@filter': builtintypes
                 func: count
                 args: ['.']
-        documentation: scoreboard statuses.
+        documentation: Scoreboard statuses.

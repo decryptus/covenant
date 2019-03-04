@@ -1,3 +1,15 @@
+covenant (0.0.7) unstable; urgency=medium
+
+  * Release version 0.0.7.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 04 Mar 2019 20:55:21 +0100
+
+covenant (0.0.6.47) unstable; urgency=medium
+
+  * Fixed nginx and apache metrics.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 04 Mar 2019 20:02:28 +0100
+
 covenant (0.0.6.46) unstable; urgency=medium
 
   * Upgraded metrics classes for new version of prometheus-client.

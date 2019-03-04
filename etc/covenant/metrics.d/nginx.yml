@@ -1,7 +1,7 @@
 - name: status
   config:
     timeout: ${vars['timeout']}
-    uri: ${vars['url']}
+    uri: ${vars['url']}/nginx_status
     format: text
   collects:
     - up:
@@ -11,7 +11,7 @@
           value: 0
         type: gauge
         value: 1
-        documentation: Could the nginx server be reached.
+        documentation: Could the NGINX server be reached.
     - exporter_scrape_failures_total:
         on_fail:
           value: 1
@@ -31,6 +31,8 @@
                 func: search
                 pattern: '^Active connections:\s*([0-9]+)\s*$'
                 flags: MULTILINE
+              - '@filter': builtins
+                'func': float
           - name: state
             static: true
             value: 'reading'
@@ -39,6 +41,8 @@
                 func: search
                 pattern: '^Reading:\s*([0-9]+)\s*Writing:[\s0-9]*Waiting:[\s0-9]*$'
                 flags: MULTILINE
+              - '@filter': builtins
+                'func': float
           - name: state
             static: true
             value: 'writing'
@@ -47,6 +51,8 @@
                 func: search
                 pattern: '^Reading:[\s0-9]*Writing:\s*([0-9]+)\s*Waiting:[\s0-9]*$'
                 flags: MULTILINE
+              - '@filter': builtins
+                'func': float
           - name: state
             static: true
             value: 'waiting'
@@ -55,7 +61,9 @@
                 func: search
                 pattern: '^Reading:[\s0-9]*Writing:[\s0-9]*Waiting:\s*([0-9]+)\s*$'
                 flags: MULTILINE
-        documentation: current connections statuses
+              - '@filter': builtins
+                'func': float
+        documentation: Connections statuses.
     - connections_accepted:
         type: gauge
         value_tasks:
@@ -86,3 +94,18 @@
           - '@filter': builtins
             func: float
         documentation: The total number of client requests.
+- name: version
+  config:
+    timeout: ${vars['timeout']}
+    uri: ${vars['url']}/nginx_version
+    format: text
+  collects:
+    - version:
+        type: info
+        value_tasks:
+          - '@filter': regex
+            func: search
+            pattern: '^version:\s*(?P<version>[^\s]+)\s*$'
+            return: groupdict
+            flags: MULTILINE
+        documentation: The NGINX version.

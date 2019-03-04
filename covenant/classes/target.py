@@ -31,7 +31,9 @@ from covenant.classes.collect import CovenantCollect
 from covenant.classes.controls import CovenantCtrlLabelize, CovenantCtrlLoop
 from covenant.classes.filters import FILTERS
 from covenant.classes.label import CovenantLabels
-from covenant.classes.metrictypes import get_metric_type_default_func, METRICTYPES
+from covenant.classes.metrictypes import (get_metric_type_default_func,
+                                          get_metric_type_default_validator,
+                                          METRICTYPES)
 
 LOG                   = logging.getLogger('covenant.target')
 
@@ -226,9 +228,10 @@ class CovenantTarget(object):
                 if xtype not in METRICTYPES:
                     raise ValueError("unknown metric type: %r in %r" % (xtype, key))
 
-                metric = METRICTYPES[xtype]
-                method = get_metric_type_default_func(xtype)
-                name   = value.get('name') or key
+                metric    = METRICTYPES[xtype]
+                method    = get_metric_type_default_func(xtype)
+                validator = get_metric_type_default_validator(xtype)
+                name      = value.get('name') or key
 
                 if 'metric_prefix' in value:
                     if value['metric_prefix']:
@@ -280,6 +283,7 @@ class CovenantTarget(object):
                     name        = value.get('name') or key,
                     metric      = metric(**kwds),
                     method      = method,
+                    validator   = validator,
                     value       = value.get('value'),
                     default     = value.get('default'),
                     labels      = clabels,
