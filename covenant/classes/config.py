@@ -1,28 +1,12 @@
 # -*- coding: utf-8 -*-
-"""covenant configuration"""
-
-__author__  = "Adrien DELLE CAVE <adc@doowan.net>"
-__license__ = """
-    Copyright (C) 2018  doowan
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA..
-"""
+# Copyright (C) 2018-2019 fjord-technologies
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""covenant.classes.config"""
 
 import logging
 import os
 import signal
+import six
 
 from dwho.config import parse_conf, stop, DWHO_THREADS
 from dwho.classes.libloader import DwhoLibLoader
@@ -57,7 +41,7 @@ def load_conf(xfile, options = None):
     with open(xfile, 'r') as f:
         conf = parse_conf(load_yaml(f))
 
-    for name, module in MODULES.iteritems():
+    for name, module in six.iteritems(MODULES):
         LOG.info("module init: %r", name)
         module.init(conf)
 
@@ -69,7 +53,7 @@ def load_conf(xfile, options = None):
     if not conf.get('endpoints'):
         raise CovenantConfigurationError("Missing 'endpoints' section in configuration")
 
-    for name, ept_cfg in conf['endpoints'].iteritems():
+    for name, ept_cfg in six.iteritems(conf['endpoints']):
         cfg     = {'general':  dict(conf['general']),
                    'covenant': {'endpoint_name': name,
                                 'config_dir':    config_dir},
@@ -117,7 +101,7 @@ def load_conf(xfile, options = None):
     if not options or not isinstance(options, object):
         return conf
 
-    for def_option in get_default_options().iterkeys():
+    for def_option in six.iterkeys(get_default_options()):
         if getattr(options, def_option, None) is None \
            and def_option in conf['general']:
             setattr(options, def_option, conf['general'][def_option])
@@ -128,7 +112,7 @@ def load_conf(xfile, options = None):
 
 
 def start_endpoints():
-    for name, endpoint in ENDPOINTS.iteritems():
+    for name, endpoint in six.iteritems(ENDPOINTS):
         if endpoint.enabled and endpoint.autostart:
             LOG.info("endpoint at_start: %r", name)
             endpoint.at_start()

@@ -1,35 +1,19 @@
 # -*- coding: utf-8 -*-
-"""covenant plugins"""
-
-__author__  = "Adrien DELLE CAVE <adc@doowan.net>"
-__license__ = """
-    Copyright (C) 2018  doowan
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA..
-"""
+# Copyright (C) 2018-2019 fjord-technologies
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""covenant.classes.plugins"""
 
 import abc
 import logging
-import Queue
 import threading
+
+from six.moves import queue as _queue
 
 from dwho.classes.plugins import DWhoPluginBase
 from dwho.config import load_credentials
 from prometheus_client import generate_latest
 
-from covenant.classes.exceptions import CovenantTargetFailed
+from covenant.classes.exceptions import CovenantTargetFailed # pylint: disable=unused-import
 from covenant.classes.target import CovenantRegistry, CovenantTarget
 
 LOG = logging.getLogger('covenant.plugins')
@@ -62,7 +46,7 @@ class CovenantEPTsSync(dict):
 EPTS_SYNC = CovenantEPTsSync()
 
 
-class CovenantEPTObject(object):
+class CovenantEPTObject(object): # pylint: disable=useless-object-inheritance
     def __init__(self, name, uid, endpoint, method, params, args, callback):
         self.name     = name
         self.uid      = uid
@@ -111,13 +95,13 @@ class CovenantEPTObject(object):
         return self.callback(self)
 
 
-class CovenantEPTSync(object):
+class CovenantEPTSync(object): # pylint: disable=useless-object-inheritance
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, name):
-        self.name       = name
-        self.queue      = Queue.Queue()
-        self.results    = {}
+        self.name    = name
+        self.queue   = _queue.Queue()
+        self.results = {}
 
     def qput(self, item):
         return self.queue.put(item)
@@ -128,6 +112,10 @@ class CovenantEPTSync(object):
 
 class CovenantPlugBase(threading.Thread, DWhoPluginBase):
     __metaclass__ = abc.ABCMeta
+
+    @abc.abstractproperty
+    def PLUGIN_NAME(self):
+        return
 
     def __init__(self, name):
         threading.Thread.__init__(self)
@@ -170,9 +158,9 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
                     continue
 
                 r    = getattr(self, func)(obj)
-            except Exception, e:
+            except Exception as e:
                 obj.add_error(str(e))
-                LOG.exception("%r", e)
+                LOG.exception(e)
             else:
                 obj.set_result(r)
             finally:

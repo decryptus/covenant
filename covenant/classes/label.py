@@ -1,24 +1,7 @@
 # -*- coding: utf-8 -*-
-"""covenant label"""
-
-__author__  = "Adrien DELLE CAVE <adc@doowan.net>"
-__license__ = """
-    Copyright (C) 2018  doowan
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA..
-"""
+# Copyright (C) 2018-2019 fjord-technologies
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""covenant.classes.label"""
 
 import copy
 import logging
@@ -28,10 +11,10 @@ from sonicprobe import helpers
 from covenant.classes.exceptions import CovenantTaskError, CovenantTargetFailed
 from covenant.classes.filters import CovenantNoResult
 
-LOG = logging.getLogger('covenant.labels')
+LOG = logging.getLogger('covenant.label')
 
 
-class CovenantLabelValue(object):
+class CovenantLabelValue(object): # pylint: disable=useless-object-inheritance
     def __init__(self, labelname = None, labelvalue = None, labeldefault = None, metricvalue = None, remove = False):
         self.labelname    = labelname
         self.labelvalue   = labelvalue
@@ -76,7 +59,7 @@ class CovenantLabelValuesCollection(list):
     pass
 
 
-class CovenantLabels(object):
+class CovenantLabels(object): # pylint: disable=useless-object-inheritance
     def __init__(self,
                  labelname,
                  labelvalues  = None,
@@ -107,8 +90,8 @@ class CovenantLabels(object):
                 self.labelvalues.append(CovenantLabelValue(labelname,
                                                            labelvalue,
                                                            labeldefault))
-
-    def _on(self, cfg):
+    @staticmethod
+    def _on(cfg):
         default = {'labelvalue': None,
                    'value':      None,
                    'remove':     True}

@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (C) 2018-2019 fjord-technologies
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 import re as _re
 import os as _os
 
@@ -10,11 +14,9 @@ def _is_package_child(path, name):
         for sub in _os.listdir(full):
             if _re.match(r"__init__\.py[a-z]?$", sub):
                 return True
-        else:
-            return False
-    else:
-        return _re.search(r"\.py[a-z]*$", name) \
-               and '__init__' not in name
+        return False
+    return _re.search(r"\.py[a-z]*$", name) \
+        and '__init__' not in name
 
 # Python doesn't really want us to do that because of
 # compatibility with stupid operating systems, but thanks

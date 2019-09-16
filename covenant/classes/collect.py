@@ -1,29 +1,10 @@
 # -*- coding: utf-8 -*-
-"""covenant collect"""
-
-__author__  = "Adrien DELLE CAVE <adc@doowan.net>"
-__license__ = """
-    Copyright (C) 2018  doowan
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA..
-"""
+# Copyright (C) 2018-2019 fjord-technologies
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""covenant.classes.collect"""
 
 import copy
 import logging
-
-from sonicprobe import helpers
 
 from covenant.classes.exceptions import CovenantTaskError, CovenantTargetFailed
 from covenant.classes.filters import CovenantNoResult
@@ -31,7 +12,7 @@ from covenant.classes.filters import CovenantNoResult
 LOG = logging.getLogger('covenant.collect')
 
 
-class CovenantCollect(object):
+class CovenantCollect(object): # pylint: disable=useless-object-inheritance
     def __init__(self,
                  name,
                  metric,
@@ -58,7 +39,8 @@ class CovenantCollect(object):
         self.on_fail     = self._on(on_fail)
         self.on_noresult = self._on(on_noresult)
 
-    def _on(self, cfg):
+    @staticmethod
+    def _on(cfg):
         default = {'value':  None,
                    'remove': True}
 
@@ -81,7 +63,7 @@ class CovenantCollect(object):
         method = getattr(self.metric.labels(**labels), self.method)
         try:
             method(metricvalue)
-        except Exception, e:
+        except Exception as e:
             LOG.exception("metric: %r, labels: %r, metricvalue: %r, error: %r",
                           self.name,
                           labels,
@@ -130,7 +112,7 @@ class CovenantCollect(object):
             for n in range(0, nb_values):
                 r = {}
                 v = None
-                for labelname in self.metric._labelnames:
+                for labelname in self.metric._labelnames: # pylint: disable=protected-access
                     if len(labels[labelname]) <= n:
                         ref = labels[labelname][-1]
                     else:
@@ -151,14 +133,14 @@ class CovenantCollect(object):
         if isinstance(data, CovenantTargetFailed):
             if self.on_fail['remove']:
                 self.remove(True)
-                return
+                return None
             return copy.copy(self.on_fail['value'])
 
         for task in self.value_tasks:
             if isinstance(data, CovenantNoResult):
                 if self.on_noresult['remove']:
                     self.remove(True)
-                    return
+                    return None
                 data = self.on_noresult['value']
                 break
             data = task(value = data)
@@ -169,7 +151,7 @@ class CovenantCollect(object):
         if isinstance(data, CovenantTargetFailed):
             if self.on_fail['remove']:
                 self.remove(True)
-                return
+                return None
             data = self.on_fail['value']
 
         if self.default is not None and data is None:
@@ -195,7 +177,7 @@ class CovenantCollect(object):
                 label.task_label(data)
                 try:
                     label.task_value(data, self.value_tasks, self.value, self.default)
-                except CovenantTaskError, e:
+                except CovenantTaskError as e:
                     LOG.warning("%s. (metric: %r, labelname: %r)", e, self.name, label.labelname)
         elif self.value_tasks:
             data = self._get_value_from_tasks(data)
@@ -215,7 +197,7 @@ class CovenantCollect(object):
                 getattr(self.metric, self.method)(data)
             else:
                 LOG.warning("unable to fetch a valid metricvalue. (metric: %r, data: %r)", self.name, data)
-        except Exception, e:
+        except Exception as e:
             LOG.exception("metric: %r, data: %r, error: %r", self.name, data, e)
             raise
         finally:

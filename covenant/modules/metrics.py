@@ -1,23 +1,7 @@
 # -*- coding: utf-8 -*-
-"""metrics module"""
-
-__license__ = """
-    Copyright (C) 2018  doowan
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA..
-"""
+# Copyright (C) 2018-2019 fjord-technologies
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""covenant.modules.metrics"""
 
 import gc
 import logging
@@ -34,6 +18,7 @@ from covenant.classes.plugins import CovenantEPTObject, EPTS_SYNC
 LOG = logging.getLogger('covenant.modules.metrics')
 
 
+# pylint: disable=attribute-defined-outside-init
 class MetricsModule(DWhoModuleBase):
     MODULE_NAME     = 'metrics'
 
@@ -105,10 +90,10 @@ class MetricsModule(DWhoModuleBase):
                 raise HttpReqError(500, "failed to get results. (errors: %r)" % res['error'])
 
             return HttpResponse(data = res['result'])
-        except HttpReqError, e:
+        except HttpReqError:
             raise
-        except Exception, e:
-            LOG.exception("%r", e)
+        except Exception as e:
+            LOG.exception(e)
         finally:
             gc.collect()
             self.LOCK.release()

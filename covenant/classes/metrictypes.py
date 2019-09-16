@@ -1,27 +1,11 @@
 # -*- coding: utf-8 -*-
-"""covenant metrictypes"""
-
-__author__  = "Adrien DELLE CAVE <adc@doowan.net>"
-__license__ = """
-    Copyright (C) 2018  doowan
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA..
-"""
+# Copyright (C) 2018-2019 fjord-technologies
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""covenant.classes.metrictypes"""
 
 import abc
 import logging
+import six
 
 from sonicprobe import helpers
 from prometheus_client.metrics import (Counter,
@@ -50,7 +34,7 @@ _DEFAULT_METRIC_TYPES         = {'counter':   {'obj':  Counter,
                                                'func': 'observe',
                                                'validator': helpers.is_scalar}}
 
-_DEFAULT_METRIC_TYPES_OBJECTS = tuple([x['obj'] for x in _DEFAULT_METRIC_TYPES.itervalues()])
+_DEFAULT_METRIC_TYPES_OBJECTS = tuple([x['obj'] for x in six.itervalues(_DEFAULT_METRIC_TYPES)])
 
 LOG                           = logging.getLogger('covenant.metrictypes')
 
@@ -58,13 +42,14 @@ LOG                           = logging.getLogger('covenant.metrictypes')
 class CovenantMetricTypes(dict):
     def register(self, metric_type):
         if metric_type in _DEFAULT_METRIC_TYPES_OBJECTS:
-            if self.__contains__(metric_type._type):
+            if self.__contains__(metric_type._type): # pylint: disable=protected-access
                 raise KeyError("Metric type already exists: %r" % metric_type)
-            return self.__setitem__(metric_type._type, metric_type)
+            return self.__setitem__(metric_type._type, metric_type) # pylint: disable=protected-access
 
         if not issubclass(metric_type, CovenantMetricBase):
             raise TypeError("Invalid Metric Type class: %r" % metric_type)
-        elif self.__contains__(metric_type.NAME):
+
+        if self.__contains__(metric_type.NAME):
             raise KeyError("Metric type already exists: %r" % metric_type)
 
         return self.__setitem__(metric_type.NAME, metric_type)
@@ -90,10 +75,10 @@ def get_metric_type_default_func(name):
 def get_metric_type_default_validator(name):
     if is_default_metric_type(name):
         return get_default_metric_type_validator(name)
-    return get_metric_type_default_validator(METRICTYPES[name]._type)
+    return get_metric_type_default_validator(METRICTYPES[name]._type) # pylint: disable=protected-access
 
 
-class CovenantMetricBase(object):
+class CovenantMetricBase(object): # pylint: disable=useless-object-inheritance,too-few-public-methods
     pass
 
 
@@ -101,11 +86,11 @@ class CovenantMetricTypeConstBase(CovenantMetricBase):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractproperty
-    def NAME(self):
+    def NAME(self): # pylint: disable=invalid-name
         return
 
     @abc.abstractproperty
-    def METHOD(self):
+    def METHOD(self): # pylint: disable=invalid-name
         return
 
 

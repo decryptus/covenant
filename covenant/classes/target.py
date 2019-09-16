@@ -1,28 +1,12 @@
 # -*- coding: utf-8 -*-
-"""covenant target"""
-
-__author__  = "Adrien DELLE CAVE <adc@doowan.net>"
-__license__ = """
-    Copyright (C) 2018  doowan
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA..
-"""
+# Copyright (C) 2018-2019 fjord-technologies
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""covenant.classes.target"""
 
 import copy
 import logging
 import uuid
+import six
 
 from dwho.config import load_credentials
 from prometheus_client import CollectorRegistry
@@ -45,13 +29,13 @@ class CovenantRegistry(CollectorRegistry):
         with self._lock:
             collectors = copy.copy(self._collector_to_names)
         for collector in collectors:
-            if hasattr(collector, '_removed') and collector._removed:
+            if hasattr(collector, '_removed') and collector._removed: # pylint: disable=protected-access
                 continue
             for metric in collector.collect():
                 yield metric
 
 
-class CovenantTarget(object):
+class CovenantTarget(object): # pylint: disable=useless-object-inheritance
     def __init__(self,
                  name,
                  config,
@@ -97,18 +81,18 @@ class CovenantTarget(object):
 
     @property
     def config(self):
-        return copy.copy(self._CovenantTarget__config)
+        return copy.copy(self._CovenantTarget__config) # pylint: disable=no-member
 
     @config.setter
-    def config(self, config):
+    def config(self, config): # pylint: disable=unused-argument
         return self
 
     @property
     def credentials(self):
-        return copy.copy(self._CovenantTarget__credentials)
+        return copy.copy(self._CovenantTarget__credentials) # pylint: disable=no-member
 
     @credentials.setter
-    def credentials(self, credentials):
+    def credentials(self, credentials): # pylint: disable=unused-argument
         return self
 
     @classmethod
@@ -126,8 +110,8 @@ class CovenantTarget(object):
     def _sanitize_task_args(cls, args):
         r = copy.copy(args)
 
-        for argname in args.iterkeys():
-            if isinstance(argname, basestring) \
+        for argname in six.iterkeys(args):
+            if isinstance(argname, six.string_types) \
                and argname.startswith('@'):
                 del r[argname]
 
@@ -223,7 +207,7 @@ class CovenantTarget(object):
 
     def load_collects(self, collects):
         for c in collects:
-            for key, value in c.iteritems():
+            for key, value in six.iteritems(c):
                 xtype = value['type'].lower()
                 if xtype not in METRICTYPES:
                     raise ValueError("unknown metric type: %r in %r" % (xtype, key))

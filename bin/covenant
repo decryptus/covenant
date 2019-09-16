@@ -1,43 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-covenant
-"""
+# Copyright (C) 2018-2019 fjord-technologies
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""covenant"""
 
-__license__ = """
-    Copyright (C) 2018  doowan
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""
-__version__ = '0.0.7'
+__version__ = '0.0.12'
 
 # TODO: load Python logging configuration (using standard logging.config)
 
-from optparse import OptionParser
+import argparse
 import logging
 import grp
 import os
 import pwd
+import six
+
+from dwho.modules import * # XXX
+from dwho.config import init_logger, make_piddir, make_logdir
+from httpdis import httpdis
+from sonicprobe.libs import daemonize
 
 from covenant.classes.config import DWHO_THREADS, load_conf, start_endpoints
 from covenant.filters import * # XXX
 from covenant.modules import * # XXX
 from covenant.plugins import * # XXX
-from dwho.modules import * # XXX
-from dwho.config import init_logger, make_piddir, make_logdir
-from httpdis import httpdis
-from sonicprobe.libs import daemonize
 
 
 SYSLOG_NAME      = "covenant"
@@ -45,14 +31,16 @@ LOG              = logging.getLogger(SYSLOG_NAME)
 
 DEFAULT_PIDFILE  = "/run/covenant/covenant.pid"
 DEFAULT_LOGFILE  = "/var/log/covenant/daemon.log"
+DEFAULT_USER     = "covenant"
+DEFAULT_GROUP    = "covenant"
 
 try:
-    COVENANT_USER  = pwd.getpwnam(os.environ.get('COVENANT_USER') or 'covenant').pw_name
+    COVENANT_USER  = pwd.getpwnam(os.environ.get('COVENANT_USER') or DEFAULT_USER).pw_name
 except KeyError:
     COVENANT_USER  = pwd.getpwuid(os.geteuid())[0]
 
 try:
-    COVENANT_GROUP = grp.getgrnam(os.environ.get('COVENANT_USER') or 'covenant').gr_name
+    COVENANT_GROUP = grp.getgrnam(os.environ.get('COVENANT_GROUP') or DEFAULT_GROUP).gr_name
 except KeyError:
     COVENANT_GROUP = grp.getgrgid(os.getegid())[0]
 
@@ -64,63 +52,62 @@ def argv_parse_check():
     """
     Parse (and check a little) command line parameters
     """
-    parser              = OptionParser(usage="usage: %prog [options]")
+    parser        = argparse.ArgumentParser()
 
-    parser.add_option("-l",
-                      dest      = 'loglevel',
-                      default   = 'info',   # warning: see affectation under
-                      choices   = ('critical', 'error', 'warning', 'info', 'debug'),
-                      help      = ("Emit traces with LOGLEVEL details, must be one of:\t"
-                                   "critical, error, warning, info, debug"))
-    parser.add_option("-d",
-                      action    = 'store_true',
-                      dest      = 'dontlauchmain',
-                      default   = False,
-                      help      = "Don't call the main function, for installation test purposes")
-    parser.add_option("-f",
-                      action    = 'store_true',
-                      dest      = 'foreground',
-                      default   = False,
-                      help      = "Foreground, don't daemonize")
-    parser.add_option("-c",
-                      dest      = 'conffile',
-                      default   = '/etc/covenant/covenant.yml',
-                      help      = "Use configuration file <conffile> instead of %default")
-    parser.add_option("-p",
-                      dest      = 'pidfile',
-                      default   = COVENANT_PIDFILE,
-                      help      = "Use PID file <pidfile> instead of %default")
-    parser.add_option("-u",
-                      dest      = 'username',
-                      type      = 'string',
-                      default   = COVENANT_USER,
-                      help      = "Use username for the process instead of %default")
-    parser.add_option("-g",
-                      dest      = 'groupname',
-                      type      = 'string',
-                      default   = COVENANT_GROUP,
-                      help      = "Use groupname for the process instead of %default")
-    parser.add_option("--logfile",
-                      dest      = 'logfile',
-                      type      = 'string',
-                      default   = COVENANT_LOGFILE,
-                      help      = "Use log file <logfile> instead of %default")
-    parser.add_option("--listen-addr",
-                      dest      = 'listen_addr',
-                      help      = "Listen on address <listen_addr>")
-    parser.add_option("--listen-port",
-                      dest      = 'listen_port',
-                      type      = 'int',
-                      help      = "Listen on port <listen_port>")
+    parser.add_argument("-l",
+                        dest      = 'loglevel',
+                        default   = 'info',   # warning: see affectation under
+                        choices   = ('critical', 'error', 'warning', 'info', 'debug'),
+                        help      = ("Emit traces with LOGLEVEL details, must be one of:\t"
+                                     "critical, error, warning, info, debug"))
+    parser.add_argument("-d",
+                        action    = 'store_true',
+                        dest      = 'dontlauchmain',
+                        default   = False,
+                        help      = "Don't call the main function, for installation test purposes")
+    parser.add_argument("-f",
+                        action    = 'store_true',
+                        dest      = 'foreground',
+                        default   = False,
+                        help      = "Foreground, don't daemonize")
+    parser.add_argument("-c",
+                        dest      = 'conffile',
+                        type      = six.ensure_text,
+                        default   = '/etc/covenant/covenant.yml',
+                        help      = "Use configuration file <conffile> instead of %(default)s")
+    parser.add_argument("-p",
+                        dest      = 'pidfile',
+                        type      = six.ensure_text,
+                        default   = COVENANT_PIDFILE,
+                        help      = "Use PID file <pidfile> instead of %(default)s")
+    parser.add_argument("-u",
+                        dest      = 'username',
+                        type      = six.ensure_text,
+                        default   = COVENANT_USER,
+                        help      = "Use username for the process instead of %(default)s")
+    parser.add_argument("-g",
+                        dest      = 'groupname',
+                        type      = six.ensure_text,
+                        default   = COVENANT_GROUP,
+                        help      = "Use groupname for the process instead of %(default)s")
+    parser.add_argument("--logfile",
+                        dest      = 'logfile',
+                        type      = six.ensure_text,
+                        default   = COVENANT_LOGFILE,
+                        help      = "Use log file <logfile> instead of %(default)s")
+    parser.add_argument("--listen-addr",
+                        dest      = 'listen_addr',
+                        type      = six.ensure_text,
+                        help      = "Listen on address <listen_addr>")
+    parser.add_argument("--listen-port",
+                        dest      = 'listen_port',
+                        type      = int,
+                        help      = "Listen on port <listen_port>")
 
-    options, args       = parser.parse_args()
+    args          = parser.parse_args()
+    args.loglevel = getattr(logging, args.loglevel.upper(), logging.INFO)
 
-    if args:
-        parser.error("no argument is allowed - use option --help to get an help screen")
-
-    options.loglevel    = getattr(logging, options.loglevel.upper(), logging.INFO)
-
-    return options
+    return args
 
 
 def main(options):
@@ -155,12 +142,12 @@ def main(options):
         os.chown(options.pidfile, uid, gid)
         os.setgid(gid)
         os.setuid(uid)
-        os.umask(022)
+        os.umask(0o22)
 
         start_endpoints()
         httpdis.run(options)
     except (KeyboardInterrupt, SystemExit):
-        raise
+        pass
     except Exception:
         LOG.exception("bad things happen")
     finally:

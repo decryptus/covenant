@@ -1,32 +1,16 @@
 # -*- coding: utf-8 -*-
-"""covenant filters"""
-
-__author__  = "Adrien DELLE CAVE <adc@doowan.net>"
-__license__ = """
-    Copyright (C) 2018  doowan
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA..
-"""
+# Copyright (C) 2018-2019 fjord-technologies
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""covenant.classes.filters"""
 
 import abc
 import copy
 import logging
+import six
 
 from sonicprobe.helpers import linesubst
 
-LOG        = logging.getLogger('covenant.plugins')
+LOG        = logging.getLogger('covenant.filters')
 
 
 class CovenantFilters(dict):
@@ -38,19 +22,19 @@ class CovenantFilters(dict):
 FILTERS    = CovenantFilters()
 
 
-class CovenantNoResult(object):
+class CovenantNoResult(object): # pylint: disable=useless-object-inheritance,too-few-public-methods
     pass
 
 # TODO
-class CovenantResultFailed(object):
+class CovenantResultFailed(object): # pylint: disable=useless-object-inheritance,too-few-public-methods
     pass
 
 
-class CovenantFilterBase(object):
+class CovenantFilterBase(object): # pylint: disable=useless-object-inheritance
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractproperty
-    def FILTER_NAME(self):
+    def FILTER_NAME(self): # pylint: disable=invalid-name
         return
 
     def __init__(self, **kwargs):
@@ -64,7 +48,7 @@ class CovenantFilterBase(object):
         return copy.copy(self._CovenantFilterBase__kwargs)
 
     @kwargs.setter
-    def kwargs(self, kwargs):
+    def kwargs(self, kwargs): # pylint: disable=unused-argument
         return self
 
     @property
@@ -72,7 +56,7 @@ class CovenantFilterBase(object):
         return copy.copy(self._CovenantFilterBase__value)
 
     @value.setter
-    def value(self, value):
+    def value(self, value): # pylint: disable=unused-argument
         return self
 
     @property
@@ -80,7 +64,7 @@ class CovenantFilterBase(object):
         return copy.copy(self._CovenantFilterBase__labelvalue)
 
     @labelvalue.setter
-    def labelvalue(self, labelvalue):
+    def labelvalue(self, labelvalue): # pylint: disable=unused-argument
         return self
 
     @abc.abstractmethod
@@ -112,18 +96,21 @@ class CovenantFilterBase(object):
         if not xvars:
             return args
 
-        if isinstance(args, basestring):
+        if isinstance(args, six.string_types):
             return linesubst(args, xvars)
-        elif isinstance(args, (int, long, float)):
+
+        if isinstance(args, (six.integer_types, float)):
             return linesubst(str(args), xvars)
-        elif isinstance(args, (list, tuple)):
+
+        if isinstance(args, (list, tuple)):
             r = []
             for arg in args:
                 r.append(self.build_args(arg, xvars, 0))
             return r
-        elif isinstance(args, dict):
+
+        if isinstance(args, dict):
             r = {}
-            for k, v in args.iteritems():
+            for k, v in six.iteritems(args):
                 r[k] = self.build_args(v, xvars, 0)
             return r
 

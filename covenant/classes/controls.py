@@ -1,35 +1,19 @@
 # -*- coding: utf-8 -*-
-"""covenant controls"""
-
-__author__  = "Adrien DELLE CAVE <adc@doowan.net>"
-__license__ = """
-    Copyright (C) 2018  doowan
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA..
-"""
+# Copyright (C) 2018-2019 fjord-technologies
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""covenant.classes.controls"""
 
 import copy
 import logging
 import re
+import six
 
 from covenant.classes.label import CovenantLabelValuesCollection, CovenantLabelValue, CovenantNoResult
 
 LOG = logging.getLogger('covenant.controls')
 
 
-class CovenantCtrlLabelize(object):
+class CovenantCtrlLabelize(object): # pylint: disable=useless-object-inheritance
     @staticmethod
     def _to_remove(key, kargs):
         r = False
@@ -49,8 +33,8 @@ class CovenantCtrlLabelize(object):
         return r
 
     @classmethod
-    def dict(cls, *largs, **lkargs):
-        def func(*args, **kwargs):
+    def dict(cls, *largs, **lkargs): # pylint: disable=unused-argument
+        def func(*args, **kwargs): # pylint: disable=unused-argument
             r     = CovenantLabelValuesCollection()
             kargs = copy.copy(kwargs)
 
@@ -68,7 +52,7 @@ class CovenantCtrlLabelize(object):
 
             xlen = len(kwargs['value'])
 
-            for k, v in kwargs['value'].iteritems():
+            for k, v in six.iteritems(kwargs['value']):
                 metricvalue = v
                 if 'value' in lkargs:
                     metricvalue = v.get(lkargs['value'])
@@ -80,8 +64,8 @@ class CovenantCtrlLabelize(object):
 
                 if xlen == 1:
                     return kargs['value']
-                else:
-                    r.append(kargs['value'])
+
+                r.append(kargs['value'])
 
             if not r and not lkargs.get('empty'):
                 return CovenantNoResult()
@@ -90,7 +74,7 @@ class CovenantCtrlLabelize(object):
         return func
 
 
-class CovenantCtrlLoop(object):
+class CovenantCtrlLoop(object): # pylint: disable=useless-object-inheritance
     @classmethod
     def iter(cls, f = None):
         def func(*args, **kwargs):
@@ -123,7 +107,7 @@ class CovenantCtrlLoop(object):
                     return kwargs['value']
                 return f(*args, **kargs)
 
-            for k, v in kwargs['value'].iteritems():
+            for k, v in six.iteritems(kwargs['value']):
                 kargs['key']   = k
                 kargs['value'] = copy.copy(v)
                 if not f:
@@ -140,12 +124,12 @@ class CovenantCtrlLoop(object):
             r     = []
             kargs = copy.copy(kwargs)
 
-            if not hasattr(kwargs['value'], 'iterkeys'):
+            if not hasattr(kwargs['value'], 'keys'):
                 if not f:
                     return kargs['value']
                 return f(*args, **kargs)
 
-            for k in kwargs['value'].iterkeys():
+            for k in six.iterkeys(kwargs['value']):
                 kargs['value'] = k
                 if not f:
                     r.append(kargs['value'])
@@ -166,7 +150,7 @@ class CovenantCtrlLoop(object):
                     return kargs['value']
                 return f(*args, **kargs)
 
-            for v in kwargs['value'].itervalues():
+            for v in six.itervalues(kwargs['value']):
                 kargs['value'] = copy.copy(v)
                 if not f:
                     r.append(kargs['value'])

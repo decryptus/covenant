@@ -1,32 +1,25 @@
 # -*- coding: utf-8 -*-
-"""builtins filter"""
-
-__author__  = "Adrien DELLE CAVE"
-__license__ = """
-    Copyright (C) 2018  doowan
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA..
-"""
+# Copyright (C) 2018-2019 fjord-technologies
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""covenant.filters.fbuiltins"""
 
 import logging
+import six
 
 from covenant.classes.filters import CovenantFilterBase, FILTERS
 
+if six.PY3:
+    # pylint: disable=redefined-builtin,unused-import,ungrouped-imports
+    from builtins import int as long
+    from six import text_type as unicode
+    from six.moves import range as xrange
+
+
 LOG = logging.getLogger('covenant.filters.builtins')
 
-_ALLOWED_FUNCTIONS = ('bool',
+_ALLOWED_FUNCTIONS = ('bin',
+                      'bool',
+                      'bytes',
                       'chr',
                       'cmp',
                       'complex',
@@ -75,7 +68,11 @@ class CovenantBuiltinsFilter(CovenantFilterBase):
         for func in funcs:
             if func not in _ALLOWED_FUNCTIONS:
                 raise ValueError("built-in function not allowed: %r" % func)
-            self._funcs.append(__builtins__[func])
+
+            if func in __builtins__:
+                self._funcs.append(__builtins__[func])
+            else:
+                self._funcs.append(globals()[func])
 
         self._fargs         = list(self.kwargs.get('args', []) or [])
         self._value_arg_pos = int(self.kwargs.get('value_arg_pos') or 0)

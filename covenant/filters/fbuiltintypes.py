@@ -1,32 +1,23 @@
 # -*- coding: utf-8 -*-
-"""builtintypes filter"""
-
-__author__  = "Adrien DELLE CAVE"
-__license__ = """
-    Copyright (C) 2018  doowan
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA..
-"""
+# Copyright (C) 2018-2019 fjord-technologies
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""covenant.filters.fbuiltintypes"""
 
 import logging
+import six
 
 from covenant.classes.filters import CovenantFilterBase, CovenantNoResult, FILTERS
+
+if six.PY3:
+    # pylint: disable=redefined-builtin,unused-import,ungrouped-imports
+    from builtins import int as long
+    from six import (string_types as basestring,
+                     text_type as unicode)
 
 LOG               = logging.getLogger('covenant.filters.builtintypes')
 
 _BUILTIN_TYPES    = ('basestring',
+                     'bytes',
                      'complex',
                      'dict',
                      'float',
@@ -48,7 +39,12 @@ _FUNCS_LIST       = ('first', 'last', 'get')
 def _builtin_types_funcs():
     funcs = set()
     for xtype in _BUILTIN_TYPES:
-        for func in dir(__builtins__[xtype]):
+        if xtype in __builtins__:
+            xfuncs = __builtins__[xtype]
+        else:
+            xfuncs = globals()[xtype]
+
+        for func in dir(xfuncs):
             if not func.startswith('_'):
                 funcs.add(func)
 
@@ -80,11 +76,14 @@ class CovenantBuiltinTypesFilter(CovenantFilterBase):
 
             if not self.value:
                 return CovenantNoResult()
-            elif func == 'first':
+
+            if func == 'first':
                 return self.value[0]
-            elif func == 'last':
+
+            if func == 'last':
                 return self.value[-1]
-            elif func == 'get':
+
+            if func == 'get':
                 if xlen == 1:
                     return self.value[fargs[0]]
                 return self.value[fargs[0]:fargs[1]]
