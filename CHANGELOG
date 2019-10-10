@@ -1,3 +1,9 @@
+covenant (0.0.13) unstable; urgency=medium
+
+  * Fixed pyjq requirements.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Thu, 10 Oct 2019 11:09:38 +0200
+
 covenant (0.0.12) unstable; urgency=medium
 
   * Reviewed requirements.
