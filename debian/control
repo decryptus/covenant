@@ -12,5 +12,5 @@ Package: covenant
 Architecture: all
 Homepage: https://www.commandersact.com
 Depends: ${misc:Depends}, python-pycurl, python (>= 2.7~)
-Pre-Depends: adduser, autoconf, automake, build-essential, libtool, lsb-release, python-dev (>= 2.7~), python-pip, python-setuptools
+Pre-Depends: adduser, autoconf, automake, build-essential, libtool, lsb-release, python-dev (>= 2.7~), python-pip, python-pycurl, python-setuptools
 Description: Fjord Technologies covenant package

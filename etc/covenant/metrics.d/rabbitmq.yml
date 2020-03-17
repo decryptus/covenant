@@ -81,33 +81,54 @@
     timeout: ${vars['timeout']}
     uri: ${vars['url']}/exchanges
     format: ${vars['format']}
-  labels:
-    - name: vhost
-      label_tasks:
-        - '@filter': jmespath
-          expression: 'vhost'
-    - name: exchange
-      label_tasks:
-        - '@filter': jmespath
-          expression: 'name'
   collects:
     - exchange_messages_published_total:
         type: const_counter
-        value_tasks:
-          - '@filter': jmespath
-            expression: 'sum([sum([].message_stats.publish_in), sum([].message_stats.publish_out)])'
+        labels:
+          - name: vhost
+            label_tasks:
+              - '@filter': jmespath
+                expression: vhost
+          - name: exchange
+            label_tasks:
+              - '@filter': jmespath
+                expression: '[name,message_stats.publish].{name: [0], publish: [1]}'
+              - '@labelize': dict
+                'key': name
+                'value': publish
+                'default': 0
         documentation: Count of messages published.
     - exchange_messages_published_in_total:
         type: const_counter
-        value_tasks:
-          - '@filter': jmespath
-            expression: 'sum([].message_stats.publish_in)'
+        labels:
+          - name: vhost
+            label_tasks:
+              - '@filter': jmespath
+                expression: vhost
+          - name: exchange
+            label_tasks:
+              - '@filter': jmespath
+                expression: '[name,message_stats.publish_in].{name: [0], publish_in: [1]}'
+              - '@labelize': dict
+                'key': name
+                'value': publish_in
+                'default': 0
         documentation: Count of messages published in to an exchange, i.e. not taking account of routing.
     - exchange_messages_published_out_total:
         type: const_counter
-        value_tasks:
-          - '@filter': jmespath
-            expression: 'sum([].message_stats.publish_out)'
+        labels:
+          - name: vhost
+            label_tasks:
+              - '@filter': jmespath
+                expression: vhost
+          - name: exchange
+            label_tasks:
+              - '@filter': jmespath
+                expression: '[name,message_stats.publish_out].{name: [0], publish_out: [1]}'
+              - '@labelize': dict
+                'key': name
+                'value': publish_out
+                'default': 0
         documentation: Count of messages published out to an exchange, i.e. not taking account of routing.
 - name: nodes
   config:
@@ -276,6 +297,18 @@
                 'value': messages_persistent
                 'default': 0
         documentation: Total number of persistent messages in the queue (will always be 0 for transient queues).
+    - queue_messages_published_total:
+        type: const_counter
+        labels:
+          - name: queue
+            label_tasks:
+              - '@filter': jmespath
+                expression: '[name,message_stats.publish].{name: [0], publish: [1]}'
+              - '@labelize': dict
+                'key': name
+                'value': publish
+                'default': 0
+        documentation: Count of messages published.
     - queue_message_bytes:
         type: gauge
         labels:
