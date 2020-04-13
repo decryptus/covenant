@@ -1,0 +1,127 @@
+- name: state
+  config:
+    common_name: ${vars.get('common_name') | n,my}
+    enabled: ${vars.get('state_enabled', True) | n,my}
+    options: ${vars.get('options') | n,my}
+    timeout: ${vars.get('timeout') | n,my}
+    uri: ${vars.get('uri') | n,my}
+    verify_peer: ${vars.get('verify_peer', True) | n,my}
+  collects:
+    - cert_not_after:
+        type: gauge
+        labels:
+          - name: serial_no
+            label_tasks:
+             - '@filter': jmespath
+               expression: 'cert_serial_no'
+          - name: issuer_cn
+            label_tasks:
+             - '@filter': jmespath
+               expression: 'cert_issuer_cn'
+          - name: cn
+            label_tasks:
+             - '@filter': jmespath
+               expression: 'cert_cn'
+          - name: dnsnames
+            label_tasks:
+             - '@filter': jmespath
+               expression: "cert_dns_names | join(',', @)"
+          - name: ips
+            label_tasks:
+             - '@filter': jmespath
+               expression: "cert_ip_addresses | join(',', @)"
+          - name: emails
+            label_tasks:
+             - '@filter': jmespath
+               expression: "cert_emails | join(',', @)"
+          - name: ou
+            label_tasks:
+             - '@filter': jmespath
+               expression: "cert_ou | join(',', @)"
+        value_tasks:
+         - '@filter': jmespath
+           expression: 'cert_not_after'
+        documentation: Date after which the certificate expires.
+    - cert_not_before:
+        type: gauge
+        labels:
+          - name: serial_no
+            label_tasks:
+             - '@filter': jmespath
+               expression: 'cert_serial_no'
+          - name: issuer_cn
+            label_tasks:
+             - '@filter': jmespath
+               expression: 'cert_issuer_cn'
+          - name: cn
+            label_tasks:
+             - '@filter': jmespath
+               expression: 'cert_cn'
+          - name: dnsnames
+            label_tasks:
+             - '@filter': jmespath
+               expression: "cert_dns_names | join(',', @)"
+          - name: ips
+            label_tasks:
+             - '@filter': jmespath
+               expression: "cert_ip_addresses | join(',', @)"
+          - name: emails
+            label_tasks:
+             - '@filter': jmespath
+               expression: "cert_emails | join(',', @)"
+          - name: ou
+            label_tasks:
+             - '@filter': jmespath
+               expression: "cert_ou | join(',', @)"
+        value_tasks:
+         - '@filter': jmespath
+           expression: 'cert_not_before'
+        documentation: Date before which the certificate is not valid.
+    - client:
+        type: info
+        value_tasks:
+          - '@filter': jmespath
+            expression: '{layer_version: version_info, cipher: cipher_info}'
+        documentation: Client information used by the exporter to connect to the target.
+    - connect_success:
+        type: gauge
+        on_fail:
+          value: 0
+        on_noresult:
+          value: 0
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'connect_success'
+        documentation: Displays whether or not the connection was a success.
+    - cert_has_expired:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'cert_has_expired'
+        documentation: Displays whether or not the certificate has expired.
+    - cert_secure:
+        type: gauge
+        on_fail:
+          value: 0
+        on_noresult:
+          value: 0
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'cert_secure'
+        documentation: Displays whether or not the certificate is secure.
+    - hostname_valid:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'hostname_valid'
+        documentation: Displays whether or not the provided hostname is valid.
+    - probe_success:
+        type: gauge
+        on_fail:
+          value: 0
+        on_noresult:
+          value: 0
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'probe_success'
+        documentation: Displays whether or not the probe was a success.
