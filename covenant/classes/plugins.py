@@ -4,6 +4,7 @@
 """covenant.classes.plugins"""
 
 import abc
+import copy
 import logging
 import threading
 
@@ -52,8 +53,8 @@ class CovenantEPTObject(object): # pylint: disable=useless-object-inheritance
         self.uid      = uid
         self.endpoint = endpoint
         self.method   = method
-        self.params   = params
-        self.args     = args
+        self.params   = params or {}
+        self.args     = args or {}
         self.callback = callback
         self.result   = None
         self.errors   = []
@@ -98,8 +99,9 @@ class CovenantEPTObject(object): # pylint: disable=useless-object-inheritance
 class CovenantEPTSync(object): # pylint: disable=useless-object-inheritance
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, name):
+    def __init__(self, name, xtype):
         self.name    = name
+        self.type    = xtype
         self.queue   = _queue.Queue()
         self.results = {}
 
@@ -125,26 +127,52 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
         self.targets     = []
         self.registry    = CovenantRegistry()
         self.credentials = None
+        self.type        = 'metric'
+
+    def _load_targets(self, xtype):
+        r = False
+
+        if not self.config.get(xtype):
+            return r
+
+        for target in self.config[xtype]:
+            if not isinstance(target.get('config'), dict):
+                target['config'] = {}
+
+            if not bool(target['config'].pop('enabled', True)):
+                continue
+
+            target['registry']    = self.registry
+            target['credentials'] = self.credentials
+
+            r = True
+            self.targets.append(CovenantTarget(**target))
+
+        return r
 
     def safe_init(self):
         if self.config.get('credentials'):
             self.credentials = load_credentials(self.config['credentials'],
                                                 config_dir = self.config['covenant']['config_dir'])
 
-        for target in self.config['metrics']:
-            target['registry']    = self.registry
-            target['credentials'] = self.credentials
-
-            self.targets.append(CovenantTarget(**target))
-
-        EPTS_SYNC.register(CovenantEPTSync(self.name))
+        if self._load_targets('metrics'):
+            self.type = 'metric'
+            EPTS_SYNC.register(CovenantEPTSync(self.name, 'metric'))
+        elif self._load_targets('probes'):
+            self.type = 'probe'
+            EPTS_SYNC.register(CovenantEPTSync(self.name, 'probe'))
+        else:
+            LOG.warning("no targets enabled for endpoint %r", self.name)
 
     def at_start(self):
         if self.name in EPTS_SYNC:
             self.start()
 
-    def generate_latest(self):
-        return generate_latest(self.registry)
+    def generate_latest(self, registry = None):
+        if not registry:
+            registry = self.registry
+
+        return generate_latest(registry)
 
     def run(self):
         while True:
@@ -165,6 +193,22 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
                 obj.set_result(r)
             finally:
                 obj()
+
+    @abc.abstractmethod
+    def _do_call(self, obj, targets = None, registry = None):
+        pass
+
+    def do_metrics(self, obj):
+        return self._do_call(obj)
+
+    def do_probes(self, obj):
+        registry = CovenantRegistry()
+
+        targets = copy.deepcopy(self.targets)
+        for target in targets:
+            target.reload_collects(registry)
+
+        return self._do_call(obj, targets, registry)
 
     def __call__(self):
         self.start()

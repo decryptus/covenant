@@ -1,8 +1,9 @@
 # based on: https://github.com/neezgee/apache_exporter
 - name: status
   config:
-    timeout: ${vars['timeout']}
-    uri: ${vars['url']}
+    enabled: ${vars.get('status_enabled', True) | n,my}
+    timeout: ${vars.get('timeout') | n,my}
+    uri: ${vars['url'] | n,my}
     format: text
   collects:
     - up:

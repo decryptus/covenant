@@ -17,8 +17,11 @@ _ALLOWED_COMMANDS = ('info', 'config_get')
 class CovenantRedisPlugin(CovenantPlugBase):
     PLUGIN_NAME = 'redis'
 
-    def do_metrics(self, obj): # pylint: disable=unused-argument
-        for target in self.targets:
+    def _do_call(self, obj, targets = None, registry = None): # pylint: disable=unused-argument
+        if not targets:
+            targets = self.targets
+
+        for target in targets:
             (data, conn) = (None, None)
             command                       = 'info'
             command_args                  = []
@@ -54,7 +57,7 @@ class CovenantRedisPlugin(CovenantPlugBase):
 
             target(data)
 
-        return self.generate_latest()
+        return self.generate_latest(registry)
 
 
 if __name__ != "__main__":

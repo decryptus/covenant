@@ -14,14 +14,12 @@ endpoints:
   apache1:
     plugin: http
     vars:
-      format: text
       timeout: 2
       url: 'http://localhost:8080/server-status/?auto'
     import_metrics: metrics.d/apache.yml
   nginx1:
     plugin: http
     vars:
-      format: text
       timeout: 2
       url: 'http://localhost:8081'
     import_metrics: metrics.d/nginx.yml
@@ -29,7 +27,6 @@ endpoints:
     credentials: credentials.yml.example?__section=rabbitmq
     plugin: http
     vars:
-      format: json
       timeout: 10
       url: http://localhost:15672/api
     import_metrics: metrics.d/rabbitmq.yml
@@ -39,11 +36,23 @@ endpoints:
       timeout: 10
       url: redis://localhost:6379
     import_metrics: metrics.d/redis.yml
+  secure-layer1:
+    plugin: ssl
+    vars:
+      timeout: 10
+    import_probes: metrics.d/secure-layer.yml
 modules:
   metrics:
     routes:
       metrics:
         handler:   'metrics'
         regexp:    '^metrics/(?P<endpoint>[^\/]+)$'
+        op:        'GET'
+        safe_init: true
+  probes:
+    routes:
+      probes:
+        handler:   'probes'
+        regexp:    '^probes?/(?P<endpoint>[^\/]+)$'
         op:        'GET'
         safe_init: true

@@ -1,16 +1,17 @@
 # based on: https://github.com/oliver006/redis_exporter
 - name: info
   config:
-    socket_timeout: ${vars['timeout']}
-    socket_connect_timeout: ${vars['timeout']}
-    url: ${vars['url']}
+    enabled: ${vars.get('info_enabled', True) | n,my}
+    socket_timeout: ${vars.get('timeout') | n,my}
+    socket_connect_timeout: ${vars.get('timeout') | n,my}
+    url: ${vars['url'] | n,my}
     command: info
   labels:
     - name: addr
-      value: "${vars['url']}"
+      value: "${vars['url'] | n,my}"
       static: true
     - name: alias
-      value: "${vars.get('alias', '')}"
+      value: "${vars.get('alias', '') | n,my}"
       static: true
   collects:
     - up:
@@ -324,16 +325,17 @@
         documentation: cluster_messages_received_totalmetric
 - name: config
   config:
-    socket_timeout: ${vars['timeout']}
-    socket_connect_timeout: ${vars['timeout']}
-    url: ${vars['url']}
+    enabled: ${vars.get('config_enabled', True) | n,my}
+    socket_timeout: ${vars.get('timeout') | n,my}
+    socket_connect_timeout: ${vars.get('timeout') | n,my}
+    url: ${vars['url'] | n,my}
     command: config_get
   labels:
     - name: addr
-      value: "${vars['url']}"
+      value: "${vars['url'] | n,my}"
       static: true
     - name: alias
-      value: "${vars.get('alias', '')}"
+      value: "${vars.get('alias', '') | n,my}"
       static: true
   collects:
     - config_maxmemory:
@@ -351,9 +353,10 @@
         documentation: config_maxclientsmetric
 - name: keyspace
   config:
-    socket_timeout: ${vars['timeout']}
-    socket_connect_timeout: ${vars['timeout']}
-    url: ${vars['url']}
+    enabled: ${vars.get('keyspace_enabled', True) | n,my}
+    socket_timeout: ${vars.get('timeout') | n,my}
+    socket_connect_timeout: ${vars.get('timeout') | n,my}
+    url: ${vars['url'] | n,my}
     command: info
     command_args:
       - keyspace
@@ -361,10 +364,10 @@
     - db_keys:
         labels:
           - name: addr
-            value: "${vars['url']}"
+            value: "${vars['url'] | n,my}"
             static: true
           - name: alias
-            value: "${vars.get('alias', '')}"
+            value: "${vars.get('alias', '') | n,my}"
             static: true
           - name: db
             label_tasks:
@@ -375,10 +378,10 @@
     - db_keys_expiring:
         labels:
           - name: addr
-            value: "${vars['url']}"
+            value: "${vars['url'] | n,my}"
             static: true
           - name: alias
-            value: "${vars.get('alias', '')}"
+            value: "${vars.get('alias', '') | n,my}"
             static: true
           - name: db
             label_tasks:
@@ -389,10 +392,10 @@
     - db_avg_ttl_seconds:
         labels:
           - name: addr
-            value: "${vars['url']}"
+            value: "${vars['url'] | n,my}"
             static: true
           - name: alias
-            value: "${vars.get('alias', '')}"
+            value: "${vars.get('alias', '') | n,my}"
             static: true
           - name: db
             label_tasks:

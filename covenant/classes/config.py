@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """covenant.classes.config"""
 
+import copy
 import logging
 import os
 import signal
@@ -18,7 +19,8 @@ from sonicprobe.helpers import load_yaml
 from covenant.classes.exceptions import CovenantConfigurationError
 from covenant.classes.plugins import ENDPOINTS, PLUGINS
 
-_TPL_IMPORTS = ('from os import environ as ENV',)
+_TPL_IMPORTS = ('from os import environ as ENV',
+                'from sonicprobe.helpers import to_yaml as my')
 LOG          = logging.getLogger('covenant.config')
 
 
@@ -30,7 +32,8 @@ def import_file(filepath, config_dir = None, xvars = None):
         filepath = os.path.join(config_dir, filepath)
 
     with open(filepath, 'r') as f:
-        return load_yaml(Template(f.read(), imports = _TPL_IMPORTS).render(**xvars))
+        return load_yaml(Template(f.read(),
+                                  imports = _TPL_IMPORTS).render(**xvars))
 
 def load_conf(xfile, options = None):
     signal.signal(signal.SIGTERM, stop)
@@ -54,11 +57,12 @@ def load_conf(xfile, options = None):
         raise CovenantConfigurationError("Missing 'endpoints' section in configuration")
 
     for name, ept_cfg in six.iteritems(conf['endpoints']):
-        cfg     = {'general':  dict(conf['general']),
+        cfg     = {'general':  copy.copy(conf['general']),
                    'covenant': {'endpoint_name': name,
                                 'config_dir':    config_dir},
                    'vars' :    {}}
         metrics = []
+        probes = []
 
         if 'plugin' not in ept_cfg:
             raise CovenantConfigurationError("Missing 'plugin' option in endpoint: %r" % name)
@@ -73,22 +77,32 @@ def load_conf(xfile, options = None):
             cfg['vars'].update(import_file(ept_cfg['import_vars'], config_dir, cfg))
 
         if 'vars' in ept_cfg:
-            cfg['vars'].update(dict(ept_cfg['vars']))
+            cfg['vars'].update(copy.deepcopy(ept_cfg['vars']))
 
         if ept_cfg.get('import_metrics'):
             metrics.extend(import_file(ept_cfg['import_metrics'], config_dir, cfg))
 
         if 'metrics' in ept_cfg:
-            metrics.extend(list(ept_cfg['metrics']))
+            metrics.extend(copy.deepcopy(ept_cfg['metrics']))
 
-        if not metrics:
-            raise CovenantConfigurationError("Missing 'metrics' option in endpoint: %r" % name)
+        if ept_cfg.get('import_probes'):
+            probes.extend(import_file(ept_cfg['import_probes'], config_dir, cfg))
+
+        if 'probes' in ept_cfg:
+            probes.extend(copy.deepcopy(ept_cfg['probes']))
+
+        if not metrics and not probes:
+            raise CovenantConfigurationError("Missing 'metrics' or 'probes' option in endpoint: %r" % name)
+
+        if metrics and probes:
+            raise CovenantConfigurationError("'metrics' and 'probes' aren't allowed in a same endpoint: %r" % name)
 
         cfg['credentials'] = None
         if ept_cfg.get('credentials'):
             cfg['credentials'] = ept_cfg['credentials']
 
         cfg['metrics'] = metrics
+        cfg['probes'] = probes
 
         endpoint = PLUGINS[ept_cfg['plugin']](name)
         ENDPOINTS.register(endpoint)

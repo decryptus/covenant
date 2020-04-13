@@ -29,7 +29,7 @@ class CovenantRegistry(CollectorRegistry):
         with self._lock:
             collectors = copy.copy(self._collector_to_names)
         for collector in collectors:
-            if hasattr(collector, '_removed') and collector._removed: # pylint: disable=protected-access
+            if getattr(collector, '_removed', None):
                 continue
             for metric in collector.collect():
                 yield metric
@@ -48,15 +48,16 @@ class CovenantTarget(object): # pylint: disable=useless-object-inheritance
                  on_noresult   = None,
                  metric_prefix = None,
                  credentials   = None):
-        self.name          = name or ''
-        self.__config      = copy.copy(config)
-        self.collects      = []
-        self.registry      = registry
-        self.labels        = []
-        self.label_tasks   = []
-        self.value_tasks   = []
-        self.metric_prefix = metric_prefix
-        self.__credentials = copy.copy(credentials)
+        self.name            = name or ''
+        self.__config        = copy.copy(config)
+        self.collects        = []
+        self.registry        = registry
+        self.labels          = []
+        self.label_tasks     = []
+        self.value_tasks     = []
+        self.metric_prefix   = metric_prefix
+        self.__credentials   = copy.copy(credentials)
+        self.__orig_collects = copy.deepcopy(collects)
 
         if labels:
             self.labels = self.load_labels(labels)
@@ -76,6 +77,9 @@ class CovenantTarget(object): # pylint: disable=useless-object-inheritance
             else:
                 self.__credentials = load_credentials(self.config['credentials'])
             del self.__config['credentials']
+
+        if not collects:
+            collects = []
 
         self.load_collects(collects)
 
@@ -274,6 +278,27 @@ class CovenantTarget(object): # pylint: disable=useless-object-inheritance
                     value_tasks = vtasks,
                     on_fail     = on_fail,
                     on_noresult = on_noresult))
+
+    def reload_collects(self, registry = None):
+        if registry:
+            self.registry = registry
+
+        if not self.registry:
+            self.registry = CovenantRegistry()
+
+        self.collects = []
+        self.load_collects(copy.deepcopy(self.__orig_collects))
+
+    def __deepcopy__(self, memo = None):
+        r = self.__class__(None, {}, None, None)
+
+        for x in vars(self):
+            if x not in ('registry', 'collects'):
+                setattr(r, x, copy.deepcopy(getattr(self, x)))
+
+        r.registry = None
+
+        return r
 
     def __call__(self, data):
         for collect in self.collects:

@@ -1,9 +1,10 @@
 # based on: https://github.com/kbudde/rabbitmq_exporter
 - name: overview
   config:
-    timeout: ${vars['timeout']}
-    uri: ${vars['url']}/overview
-    format: ${vars['format']}
+    enabled: ${vars.get('overview_enabled', True) | n,my}
+    timeout: ${vars.get('timeout') | n,my}
+    uri: ${vars['url'] | n,my}/overview
+    format: json
   labels:
     - name: node
       label_tasks:
@@ -76,11 +77,36 @@
           - '@filter': jmespath
             expression: 'queue_totals.messages_unacknowledged'
         documentation: Total number of messages delivered to clients but not yet acknowledged.
+    - published_total:
+        type: const_counter
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'message_stats.publish'
+        documentation: Total number of messages published.
+    - published_rate:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'message_stats.publish_details.rate'
+        documentation: Message publish rate.
+    - delivered_total:
+        type: const_counter
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'message_stats.deliver'
+        documentation: Total number of messages delivered.
+    - delivered_rate:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'message_stats.deliver_details.rate'
+        documentation: Message delivery rate.
 - name: exchanges
   config:
-    timeout: ${vars['timeout']}
-    uri: ${vars['url']}/exchanges
-    format: ${vars['format']}
+    enabled: ${vars.get('exchanges_enabled', True) | n,my}
+    timeout: ${vars.get('timeout') | n,my}
+    uri: ${vars['url'] | n,my}/exchanges
+    format: json
   collects:
     - exchange_messages_published_total:
         type: const_counter
@@ -132,9 +158,10 @@
         documentation: Count of messages published out to an exchange, i.e. not taking account of routing.
 - name: nodes
   config:
-    timeout: ${vars['timeout']}
-    uri: ${vars['url']}/nodes
-    format: ${vars['format']}
+    enabled: ${vars.get('nodes_enabled', True) | n,my}
+    timeout: ${vars.get('timeout') | n,my}
+    uri: ${vars['url'] | n,my}/nodes
+    format: json
   labels:
     - name: node
       label_tasks:
@@ -223,9 +250,10 @@
         documentation: Whether the disk alarm has gone off.
 - name: queues
   config:
-    timeout: ${vars['timeout']}
-    uri: ${vars['url']}/queues
-    format: ${vars['format']}
+    enabled: ${vars.get('queues_enabled', True) | n,my}
+    timeout: ${vars.get('timeout') | n,my}
+    uri: ${vars['url'] | n,my}/queues
+    format: json
   collects:
     - queue_messages_ready:
         type: gauge
@@ -309,6 +337,42 @@
                 'value': publish
                 'default': 0
         documentation: Count of messages published.
+    - queue_messages_confirmed_total:
+        type: const_counter
+        labels:
+          - name: queue
+            label_tasks:
+              - '@filter': jmespath
+                expression: '[name,message_stats.confirm].{name: [0], confirm: [1]}'
+              - '@labelize': dict
+                'key': name
+                'value': confirm
+                'default': 0
+        documentation: Count of messages confirmed.
+    - queue_messages_delivered_total:
+        type: const_counter
+        labels:
+          - name: queue
+            label_tasks:
+              - '@filter': jmespath
+                expression: '[name,message_stats.deliver].{name: [0], deliver: [1]}'
+              - '@labelize': dict
+                'key': name
+                'value': deliver
+                'default': 0
+        documentation: Count of messages delivered in acknowledgement mode to consumers.
+    - queue_messages_delivered_noack_total:
+        type: const_counter
+        labels:
+          - name: queue
+            label_tasks:
+              - '@filter': jmespath
+                expression: '[name,message_stats.deliver_no_ack].{name: [0], deliver_no_ack: [1]}'
+              - '@labelize': dict
+                'key': name
+                'value': deliver_no_ack
+                'default': 0
+        documentation: Count of messages delivered in no-acknowledgement mode to consumers.
     - queue_message_bytes:
         type: gauge
         labels:

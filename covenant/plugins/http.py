@@ -22,8 +22,11 @@ _ALLOWED_METHODS = ('delete',
 class CovenantHttpPlugin(CovenantPlugBase):
     PLUGIN_NAME = 'http'
 
-    def do_metrics(self, obj): # pylint: disable=unused-argument
-        for target in self.targets:
+    def _do_call(self, obj, targets = None, registry = None): # pylint: disable=unused-argument
+        if not targets:
+            targets = self.targets
+
+        for target in targets:
             (data, req) = (None, None)
 
             cfg         = target.config
@@ -71,7 +74,7 @@ class CovenantHttpPlugin(CovenantPlugBase):
 
             target(data)
 
-        return self.generate_latest()
+        return self.generate_latest(registry)
 
 
 if __name__ != "__main__":

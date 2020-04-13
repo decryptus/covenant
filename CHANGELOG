@@ -1,3 +1,57 @@
+covenant (0.0.26) unstable; urgency=medium
+
+  * Fixed missing import copy.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 13 Apr 2020 12:49:32 +0200
+
+covenant (0.0.25) unstable; urgency=medium
+
+  * Fixed registry for probe endpoints.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 13 Apr 2020 12:16:22 +0200
+
+covenant (0.0.24) unstable; urgency=medium
+
+  * Fixed yaml variables in templates.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Sat, 11 Apr 2020 16:17:14 +0200
+
+covenant (0.0.23) unstable; urgency=medium
+
+  * Added secure layer metrics.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 10 Apr 2020 14:45:21 +0200
+
+covenant (0.0.22) unstable; urgency=medium
+
+  * Added probes module.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 10 Apr 2020 08:08:31 +0200
+
+covenant (0.0.21) unstable; urgency=medium
+
+  * Added plugin ssl.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Wed, 08 Apr 2020 19:44:45 +0200
+
+covenant (0.0.20) unstable; urgency=medium
+
+  * Added possibility to disable collects.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Wed, 01 Apr 2020 02:36:46 +0200
+
+covenant (0.0.19) unstable; urgency=medium
+
+  * Added some rabbitmq metrics.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Wed, 18 Mar 2020 17:11:24 +0100
+
+covenant (0.0.18) unstable; urgency=medium
+
+  * Added some rabbitmq metrics.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Wed, 18 Mar 2020 14:49:41 +0100
+
 covenant (0.0.17) unstable; urgency=medium
 
   * Fixed rabbitmq metrics.

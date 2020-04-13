@@ -1,7 +1,8 @@
 - name: status
   config:
-    timeout: ${vars['timeout']}
-    uri: ${vars['url']}/nginx_status
+    enabled: ${vars.get('status_enabled', True) | n,my}
+    timeout: ${vars.get('timeout') | n,my}
+    uri: ${vars['url'] | n,my}/nginx_status
     format: text
   collects:
     - up:
@@ -96,8 +97,9 @@
         documentation: The total number of client requests.
 - name: version
   config:
-    timeout: ${vars['timeout']}
-    uri: ${vars['url']}/nginx_version
+    enabled: ${vars.get('version_enabled', True) | n,my}
+    timeout: ${vars.get('timeout') | n,my}
+    uri: ${vars['url'] | n,my}/nginx_version
     format: text
   collects:
     - version:

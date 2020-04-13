@@ -54,6 +54,8 @@ class MetricsModule(DWhoModuleBase):
     def _push_epts_sync(self, endpoint, method, params, args = None):
         if endpoint not in EPTS_SYNC:
             raise HttpReqError(404, "unable to find endpoint: %r" % endpoint)
+        elif EPTS_SYNC[endpoint].type != 'metric':
+            raise HttpReqError(400, "invalid endpoint type, correct type: %r" % EPTS_SYNC[endpoint].type)
 
         ept_sync  = EPTS_SYNC[endpoint]
         uid       = "%s:%s" % (ept_sync.name, uuid.uuid4())

@@ -23,3 +23,5 @@ curl http://localhost:9118/metrics/nginx1
 curl http://localhost:9118/metrics/rabbitmq1
 
 curl http://localhost:9118/metrics/redis1
+
+curl http://localhost:9118/probe/secure-layer1?target=https://example.com
