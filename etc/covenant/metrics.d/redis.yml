@@ -2,8 +2,8 @@
 - name: info
   config:
     enabled: ${vars.get('info_enabled', True) | n,my}
-    socket_timeout: ${vars.get('timeout') | n,my}
-    socket_connect_timeout: ${vars.get('timeout') | n,my}
+    socket_timeout: ${vars.get('timeout', 10) | n,my}
+    socket_connect_timeout: ${vars.get('timeout', 10) | n,my}
     url: ${vars['url'] | n,my}
     command: info
   labels:
@@ -326,8 +326,8 @@
 - name: config
   config:
     enabled: ${vars.get('config_enabled', True) | n,my}
-    socket_timeout: ${vars.get('timeout') | n,my}
-    socket_connect_timeout: ${vars.get('timeout') | n,my}
+    socket_timeout: ${vars.get('timeout', 10) | n,my}
+    socket_connect_timeout: ${vars.get('timeout', 10) | n,my}
     url: ${vars['url'] | n,my}
     command: config_get
   labels:
@@ -354,8 +354,8 @@
 - name: keyspace
   config:
     enabled: ${vars.get('keyspace_enabled', True) | n,my}
-    socket_timeout: ${vars.get('timeout') | n,my}
-    socket_connect_timeout: ${vars.get('timeout') | n,my}
+    socket_timeout: ${vars.get('timeout', 10) | n,my}
+    socket_connect_timeout: ${vars.get('timeout', 10) | n,my}
     url: ${vars['url'] | n,my}
     command: info
     command_args:

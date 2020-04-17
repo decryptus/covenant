@@ -26,8 +26,12 @@ class CovenantRedisPlugin(CovenantPlugBase):
             command                       = 'info'
             command_args                  = []
             cfg                           = target.config
-            cfg['socket_timeout']         = cfg.get('socket_timeout', 10)
-            cfg['socket_connect_timeout'] = cfg.get('socket_connect_timeout', 10)
+
+            for x in ('socket_timeout', 'socket_connect_timeout'):
+                if cfg.get(x) is not None:
+                    cfg[x] = float(cfg[x])
+                else:
+                    cfg[x] = None
 
             if 'command' in cfg:
                 command = cfg.pop('command').lower()

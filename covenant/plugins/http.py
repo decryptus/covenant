@@ -45,6 +45,11 @@ class CovenantHttpPlugin(CovenantPlugBase):
             if 'ssl_verify' in cfg:
                 cfg['verify'] = bool(cfg.pop('ssl_verify'))
 
+            if cfg.get('timeout') is not None:
+                cfg['timeout'] = float(cfg['timeout'])
+            else:
+                cfg['timeout'] = None
+
             if target.credentials:
                 cfg['auth'] = (target.credentials['username'],
                                target.credentials['password'])

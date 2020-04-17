@@ -34,6 +34,9 @@ _ALLOWED_OPTIONS = ('ALL',
                     'SINGLE_ECDH_USE',
                     'ENABLE_MIDDLEBOX_COMPAT')
 
+_IP_PROTOCOLS    = {'ipv4': socket.AF_INET,
+                    'ipv6': socket.AF_INET6}
+
 
 class CovenantSslPlugin(CovenantPlugBase):
     PLUGIN_NAME = 'ssl'
@@ -99,9 +102,9 @@ class CovenantSslPlugin(CovenantPlugBase):
             context.options |= getattr(ssl, "OP_%s" % x)
 
     @staticmethod
-    def _connect(context, host, port, server_hostname, timeout):
+    def _connect(context, host, port, server_hostname, ip_protocol, timeout):
         conn = context.wrap_socket(
-            socket.socket(socket.AF_INET),
+            socket.socket(ip_protocol),
             server_hostname = server_hostname)
 
         conn.settimeout(timeout)
@@ -142,8 +145,14 @@ class CovenantSslPlugin(CovenantPlugBase):
 
             cfg                = target.config
             common_name        = cfg.get('common_name')
-            cfg['timeout']     = cfg.get('timeout', 10)
             cfg['verify_peer'] = cfg.get('verify_peer', True)
+            cfg['ip_protocol'] = _IP_PROTOCOLS.get(cfg.get('ip_protocol'), socket.AF_INET)
+
+            if cfg.get('timeout') is not None:
+                cfg['timeout'] = float(cfg['timeout'])
+            else:
+                cfg['timeout'] = None
+
             params             = obj.get_params()
 
             if not params.get('target'):
@@ -182,6 +191,8 @@ class CovenantSslPlugin(CovenantPlugBase):
                     'cert_secure': False,
                     "%s_success" % self.type: False}
 
+            conn = None
+
             try:
                 server_hostname = common_name or host
 
@@ -191,7 +202,12 @@ class CovenantSslPlugin(CovenantPlugBase):
 
                 self._load_context_options(context, cfg.get('options'))
 
-                conn = self._connect(context, host, port, server_hostname, cfg['timeout'])
+                conn = self._connect(context,
+                                     host,
+                                     port,
+                                     server_hostname,
+                                     cfg['ip_protocol'],
+                                     cfg['timeout'])
 
                 data['cipher_info'] = conn.cipher()[0]
                 data['version_info'] = conn.version()
@@ -206,11 +222,18 @@ class CovenantSslPlugin(CovenantPlugBase):
 
                     if cfg['verify_peer']:
                         if conn:
+                            conn.shutdown(socket.SHUT_RDWR)
                             conn.close()
+                            conn = None
 
                         context.verify_mode = ssl.CERT_REQUIRED
                         context.load_default_certs(ssl.Purpose.SERVER_AUTH)
-                        conn = self._connect(context, host, port, server_hostname, cfg['timeout'])
+                        conn = self._connect(context,
+                                             host,
+                                             port,
+                                             server_hostname,
+                                             cfg['ip_protocol'],
+                                             cfg['timeout'])
             except ssl.SSLError as e:
                 LOG.warning("ssl error on target: %r. exception: %r",
                             target.name,
@@ -230,6 +253,7 @@ class CovenantSslPlugin(CovenantPlugBase):
                         data["%s_success" % self.type] = True
             finally:
                 if conn:
+                    conn.shutdown(socket.SHUT_RDWR)
                     conn.close()
 
             target(data)

@@ -2,7 +2,7 @@
 - name: overview
   config:
     enabled: ${vars.get('overview_enabled', True) | n,my}
-    timeout: ${vars.get('timeout') | n,my}
+    timeout: ${vars.get('timeout', 10) | n,my}
     uri: ${vars['url'] | n,my}/overview
     format: json
   labels:
@@ -104,7 +104,7 @@
 - name: exchanges
   config:
     enabled: ${vars.get('exchanges_enabled', True) | n,my}
-    timeout: ${vars.get('timeout') | n,my}
+    timeout: ${vars.get('timeout', 10) | n,my}
     uri: ${vars['url'] | n,my}/exchanges
     format: json
   collects:
@@ -159,7 +159,7 @@
 - name: nodes
   config:
     enabled: ${vars.get('nodes_enabled', True) | n,my}
-    timeout: ${vars.get('timeout') | n,my}
+    timeout: ${vars.get('timeout', 10) | n,my}
     uri: ${vars['url'] | n,my}/nodes
     format: json
   labels:
@@ -251,7 +251,7 @@
 - name: queues
   config:
     enabled: ${vars.get('queues_enabled', True) | n,my}
-    timeout: ${vars.get('timeout') | n,my}
+    timeout: ${vars.get('timeout', 10) | n,my}
     uri: ${vars['url'] | n,my}/queues
     format: json
   collects:

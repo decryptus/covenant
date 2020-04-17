@@ -1,3 +1,15 @@
+covenant (0.0.28) unstable; urgency=medium
+
+  * Fixed default timeout.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Thu, 16 Apr 2020 23:10:59 +0200
+
+covenant (0.0.27) unstable; urgency=medium
+
+  * Added ip_protocol option (ipv4 or ipv6) in secure-layer.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Thu, 16 Apr 2020 10:32:36 +0200
+
 covenant (0.0.26) unstable; urgency=medium
 
   * Fixed missing import copy.

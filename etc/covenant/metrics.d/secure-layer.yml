@@ -3,9 +3,10 @@
     common_name: ${vars.get('common_name') | n,my}
     enabled: ${vars.get('state_enabled', True) | n,my}
     options: ${vars.get('options') | n,my}
-    timeout: ${vars.get('timeout') | n,my}
+    timeout: ${vars.get('timeout', 10) | n,my}
     uri: ${vars.get('uri') | n,my}
     verify_peer: ${vars.get('verify_peer', True) | n,my}
+    ip_protocol: ${vars.get('ip_protocol') | n,my}
   collects:
     - cert_not_after:
         type: gauge

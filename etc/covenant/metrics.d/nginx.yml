@@ -1,7 +1,7 @@
 - name: status
   config:
     enabled: ${vars.get('status_enabled', True) | n,my}
-    timeout: ${vars.get('timeout') | n,my}
+    timeout: ${vars.get('timeout', 10) | n,my}
     uri: ${vars['url'] | n,my}/nginx_status
     format: text
   collects:
@@ -98,7 +98,7 @@
 - name: version
   config:
     enabled: ${vars.get('version_enabled', True) | n,my}
-    timeout: ${vars.get('timeout') | n,my}
+    timeout: ${vars.get('timeout', 10) | n,my}
     uri: ${vars['url'] | n,my}/nginx_version
     format: text
   collects:
