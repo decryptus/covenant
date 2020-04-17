@@ -1,9 +1,10 @@
-cryptography
+cryptography>=1.7.1
 dwho>=0.3.28
 httpdis>=0.6.11
 jmespath>=0.9.3
 pycurl
 pyjq==2.3.1
+pyOpenSSL>=16.2.0
 pyyaml>=3.10
 prometheus-client>=0.6.0
 six>=1.13.0
