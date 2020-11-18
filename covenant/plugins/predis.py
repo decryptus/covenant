@@ -11,7 +11,7 @@ from covenant.classes.plugins import CovenantPlugBase, CovenantTargetFailed, PLU
 
 LOG = logging.getLogger('covenant.plugins.redis')
 
-_ALLOWED_COMMANDS = ('info', 'config_get')
+_ALLOWED_COMMANDS = ('info', 'config_get', 'llen')
 
 
 class CovenantRedisPlugin(CovenantPlugBase):
@@ -23,9 +23,9 @@ class CovenantRedisPlugin(CovenantPlugBase):
 
         for target in targets:
             (data, conn) = (None, None)
-            command                       = 'info'
-            command_args                  = []
-            cfg                           = target.config
+            command      = 'info'
+            command_args = []
+            cfg          = target.config
 
             for x in ('socket_timeout', 'socket_connect_timeout'):
                 if cfg.get(x) is not None:

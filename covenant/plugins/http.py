@@ -50,6 +50,9 @@ class CovenantHttpPlugin(CovenantPlugBase):
             else:
                 cfg['timeout'] = None
 
+            if not isinstance(cfg.get('headers'), dict):
+                cfg['headers'] = None
+
             if target.credentials:
                 cfg['auth'] = (target.credentials['username'],
                                target.credentials['password'])
