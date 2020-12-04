@@ -51,10 +51,23 @@ case "$1" in
             ;;
         esac
 
-        update-rc.d covenant defaults
-        if [ -f /etc/covenant/covenant.yml ];
+        CONFIGURED=0
+
+        if [ -f "/etc/covenant/covenant.yml" ];
         then
-            invoke-rc.d covenant start || true
+            CONFIGURED=1
+        fi
+
+        if [ "$(realpath "$(which init)"|grep '\/systemd$')" != "" ];
+        then
+            systemctl enable covenant.service
+
+            [ "${CONFIGURED}" -eq 1 ] && systemctl restart covenant.service
+        else
+            update-rc.d covenant defaults
+            update-rc.d covenant enable
+
+            [ "${CONFIGURED}" -eq 1 ] && invoke-rc.d covenant restart
         fi
     ;;
 

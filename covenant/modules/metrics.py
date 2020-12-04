@@ -13,7 +13,8 @@ from httpdis.httpdis import HttpReqError, HttpResponse
 from sonicprobe.libs import xys
 from sonicprobe.libs.moresynchro import RWLock
 
-from covenant.classes.plugins import CovenantEPTObject, EPTS_SYNC
+from covenant.classes.plugins import CovenantEPTObject, EPTS_SYNC, generate_latest
+from covenant.classes.covenant_collector import CovenantCollector
 
 LOG = logging.getLogger('covenant.modules.metrics')
 
@@ -27,6 +28,7 @@ class MetricsModule(DWhoModuleBase):
     def safe_init(self, options):
         self.results      = {}
         self.lock_timeout = self.config['general']['lock_timeout']
+        CovenantCollector()
 
     def _set_result(self, obj):
         self.results[obj.get_uid()] = obj
@@ -98,6 +100,19 @@ class MetricsModule(DWhoModuleBase):
             LOG.exception(e)
         finally:
             gc.collect()
+            self.LOCK.release()
+
+    def server(self, request): # pylint: disable-msg=unused-argument
+        if not self.LOCK.acquire_read(self.lock_timeout):
+            raise HttpReqError(503, "unable to take LOCK for reading after %s seconds" % self.lock_timeout)
+
+        try:
+            return HttpResponse(data = generate_latest())
+        except HttpReqError:
+            raise
+        except Exception as e:
+            LOG.exception(e)
+        finally:
             self.LOCK.release()
 
 

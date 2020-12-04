@@ -59,6 +59,9 @@ class CovenantRegexFilter(CovenantFilterBase):
         if 'return_args' in self._fargs:
             del self._fargs['return_args']
 
+        if func.startswith('_'):
+            raise ValueError("regex function not allowed: %r" % func)
+
         if 'pattern' in self._fargs:
             flags = 0
             if 'flags' in self._fargs:

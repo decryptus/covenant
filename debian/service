@@ -1,0 +1,17 @@
+[Unit]
+Description=covenant by Fjord Technologies
+Documentation=https://github.com/decryptus/covenant
+After=network.target nss-lookup.target
+
+[Service]
+Type=forking
+PIDFile=/run/covenant/covenant.pid
+EnvironmentFile=-/usr/share/covenant/envfile
+ExecStart=/usr/bin/covenant $ARGS
+Restart=always
+User=covenant
+Group=covenant
+TimeoutStopSec=5s
+
+[Install]
+WantedBy=multi-user.target

@@ -2,6 +2,7 @@ cryptography>=1.7.1
 dwho>=0.3.49
 httpdis>=0.6.14
 jmespath>=0.9.3
+packaging>=19.0
 pycurl
 pyjq==2.3.1
 pyOpenSSL>=16.2.0

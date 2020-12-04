@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2018-2019 fjord-technologies
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""covenant.filters.fmath"""
+"""covenant.filters.ftime"""
 
 import logging
-import math
+import time
 
 from covenant.classes.filters import CovenantFilterBase, FILTERS
 
-LOG = logging.getLogger('covenant.filters.math')
+LOG = logging.getLogger('covenant.filters.time')
 
 
-class CovenantMathFilter(CovenantFilterBase):
-    FILTER_NAME = 'math'
+class CovenantTimeFilter(CovenantFilterBase):
+    FILTER_NAME = 'time'
 
     def init(self):
         funcs       = self.kwargs.pop('func')
@@ -24,7 +24,7 @@ class CovenantMathFilter(CovenantFilterBase):
         for func in funcs:
             if func.startswith('_'):
                 raise ValueError("time function not allowed: %r" % func)
-            self._funcs.append(getattr(math, func))
+            self._funcs.append(getattr(time, func))
 
         self._fargs         = list(self.kwargs.get('args', []) or [])
         self._value_arg_pos = int(self.kwargs.get('value_arg_pos') or 0)
@@ -41,5 +41,5 @@ class CovenantMathFilter(CovenantFilterBase):
 
 if __name__ != "__main__":
     def _start():
-        FILTERS.register(CovenantMathFilter)
+        FILTERS.register(CovenantTimeFilter)
     _start()

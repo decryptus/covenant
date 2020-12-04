@@ -1,3 +1,27 @@
+covenant (0.0.38) unstable; urgency=medium
+
+  * Reviewed debian/postinst.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 04 Dec 2020 12:34:20 +0100
+
+covenant (0.0.37) unstable; urgency=medium
+
+  * Added debian/service for systemd.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 04 Dec 2020 12:11:17 +0100
+
+covenant (0.0.36) unstable; urgency=medium
+
+  * Reviewed metrics.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Wed, 02 Dec 2020 09:59:08 +0100
+
+covenant (0.0.35) unstable; urgency=medium
+
+  * Added filter ftime and metrics for covenant on path /server.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Tue, 01 Dec 2020 22:31:58 +0100
+
 covenant (0.0.34) unstable; urgency=medium
 
   * Reviewed requirements.

@@ -3,3 +3,11 @@
 # Service can be enabled by setting
 # COVENANT_ENABLE="yes"
 COVENANT_ENABLE="yes"
+# ARGS=""
+
+if [ -f /usr/share/covenant/envfile ];
+then
+    set -a
+    source /usr/share/covenant/envfile
+    set +a
+fi

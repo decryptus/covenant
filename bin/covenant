@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """covenant"""
 
-__version__ = '0.0.34'
+__version__ = '0.0.38'
 
 # TODO: load Python logging configuration (using standard logging.config)
 
@@ -16,7 +16,11 @@ import pwd
 import six
 
 from dwho.modules import * # XXX
-from dwho.config import init_logger, make_piddir, make_logdir
+from dwho.config import (init_logger,
+                         make_piddir,
+                         make_logdir,
+                         set_softname,
+                         set_softver)
 from httpdis import httpdis
 from sonicprobe.libs import daemonize
 
@@ -114,6 +118,9 @@ def main(options):
     """
     Main function; start the server
     """
+    set_softname(SYSLOG_NAME)
+    set_softver(__version__)
+
     uid = pwd.getpwnam(options.username)[2]
     gid = grp.getgrnam(options.groupname)[2]
 

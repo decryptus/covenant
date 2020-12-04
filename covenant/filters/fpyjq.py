@@ -10,6 +10,11 @@ from covenant.classes.filters import CovenantFilterBase, FILTERS
 
 LOG = logging.getLogger('covenant.filters.pyjq')
 
+_ALLOWED_FUNCTIONS = ('all',
+                      'compile',
+                      'first',
+                      'one')
+
 
 class CovenantPyJqFilter(CovenantFilterBase):
     FILTER_NAME = 'pyjq'
@@ -20,6 +25,9 @@ class CovenantPyJqFilter(CovenantFilterBase):
 
         if 'func' in self._fargs:
             del self._fargs['func']
+
+        if func not in _ALLOWED_FUNCTIONS:
+            raise ValueError("pyjq function not allowed: %r" % func)
 
         self._func = getattr(pyjq, func)
 

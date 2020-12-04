@@ -1,4 +1,5 @@
 bin/  usr/
+envfile usr/share/covenant
 etc/* etc/
 requirements.txt usr/share/covenant
 setup.py usr/share/covenant
