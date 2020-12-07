@@ -1,0 +1,1 @@
+rm_conffile /etc/covenant/metrics.d/secure-layer.yml

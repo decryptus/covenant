@@ -1,3 +1,15 @@
+covenant (0.0.40) unstable; urgency=medium
+
+  * Fixed debian/service.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 07 Dec 2020 23:54:22 +0100
+
+covenant (0.0.39) unstable; urgency=medium
+
+  * Modified configuration and moved probes into covenant/probes.d.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 07 Dec 2020 23:32:39 +0100
+
 covenant (0.0.38) unstable; urgency=medium
 
   * Reviewed debian/postinst.

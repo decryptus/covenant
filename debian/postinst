@@ -62,13 +62,15 @@ case "$1" in
         then
             systemctl enable covenant.service
 
-            [ "${CONFIGURED}" -eq 1 ] && systemctl restart covenant.service
+            [ ${CONFIGURED} -eq 1 ] && systemctl restart covenant.service
         else
             update-rc.d covenant defaults
             update-rc.d covenant enable
 
-            [ "${CONFIGURED}" -eq 1 ] && invoke-rc.d covenant restart
+            [ ${CONFIGURED} -eq 1 ] && invoke-rc.d covenant restart
         fi
+
+        exit 0
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

@@ -40,7 +40,7 @@ endpoints:
     plugin: ssl
     vars:
       timeout: 10
-    import_probes: metrics.d/secure-layer.yml
+    import_probes: probes.d/secure-layer.yml
 modules:
   metrics:
     routes:

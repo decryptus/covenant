@@ -5,6 +5,7 @@ After=network.target nss-lookup.target
 
 [Service]
 Type=forking
+RuntimeDirectory=covenant
 PIDFile=/run/covenant/covenant.pid
 EnvironmentFile=-/usr/share/covenant/envfile
 ExecStart=/usr/bin/covenant $ARGS
