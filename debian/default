@@ -8,6 +8,6 @@ COVENANT_ENABLE="yes"
 if [ -f /usr/share/covenant/envfile ];
 then
     set -a
-    source /usr/share/covenant/envfile
+    . /usr/share/covenant/envfile
     set +a
 fi

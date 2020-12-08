@@ -1,3 +1,15 @@
+covenant (0.0.42) unstable; urgency=medium
+
+  * Reviewed debian/default.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Tue, 08 Dec 2020 12:13:05 +0100
+
+covenant (0.0.41) unstable; urgency=medium
+
+  * Fixed debian/postinst.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Tue, 08 Dec 2020 11:49:47 +0100
+
 covenant (0.0.40) unstable; urgency=medium
 
   * Fixed debian/service.

@@ -32,7 +32,7 @@ case "$1" in
 
         echo "${DIRS}" | while read -r dir;
         do
-            chown -R "${USER}.${GROUP}" "${dir}"
+            chown -R "${USER}.${GROUP}" "${dir}" || true
         done
 
         case "`lsb_release -cs`" in
