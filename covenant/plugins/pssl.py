@@ -140,6 +140,8 @@ class CovenantSslPlugin(CovenantPlugBase):
         if not targets:
             targets = self.targets
 
+        param_target = obj.get_params().get('target')
+
         for target in targets:
             (data, conn)       = (None, None)
 
@@ -153,15 +155,13 @@ class CovenantSslPlugin(CovenantPlugBase):
             else:
                 cfg['timeout'] = None
 
-            params             = obj.get_params()
-
-            if not params.get('target'):
-                uri = cfg.get('uri')
+            if param_target and not cfg.get('uri'):
+                uri = param_target
             else:
-                uri = params['target']
+                uri = cfg.get('uri')
 
             if not uri:
-                raise CovenantConfigurationError("missing target or uri in configuration")
+                raise CovenantConfigurationError("missing uri or target in configuration")
 
             uri_split          = urisup.uri_help_split(uri)
             scheme             = None

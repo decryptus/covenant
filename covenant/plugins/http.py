@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2018-2019 fjord-technologies
+# Copyright (C) 2018-2021 fjord-technologies
 # SPDX-License-Identifier: GPL-3.0-or-later
 """covenant.plugins.http"""
 
 import logging
 import requests
+
+from sonicprobe.libs import urisup
 
 from covenant.classes.exceptions import CovenantConfigurationError
 from covenant.classes.plugins import CovenantPlugBase, CovenantTargetFailed, PLUGINS
@@ -26,6 +28,8 @@ class CovenantHttpPlugin(CovenantPlugBase):
         if not targets:
             targets = self.targets
 
+        param_target = obj.get_params().get('target')
+
         for target in targets:
             (data, req) = (None, None)
 
@@ -38,6 +42,17 @@ class CovenantHttpPlugin(CovenantPlugBase):
 
             if 'uri' in cfg and not cfg.get('url'):
                 cfg['url'] = cfg.pop('uri')
+
+            if param_target and not cfg.get('url'):
+                cfg['url'] = param_target
+
+            if not cfg.get('url'):
+                raise CovenantConfigurationError("missing uri or target in configuration")
+
+            if 'path' in cfg:
+                url = list(urisup.uri_help_split(cfg['url']))
+                url[2] = cfg.pop('path')
+                cfg['url'] = urisup.uri_help_unsplit(url)
 
             if 'method' in cfg:
                 method = cfg.pop('method').lower()

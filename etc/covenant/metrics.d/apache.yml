@@ -3,7 +3,7 @@
   config:
     enabled: ${vars.get('status_enabled', True) | n,my}
     timeout: ${vars.get('timeout', 10) | n,my}
-    uri: ${vars['url'] | n,my}
+    url: ${vars.get('url') | n,my}
     format: text
   collects:
     - up:

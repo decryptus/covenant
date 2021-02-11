@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2018-2019 fjord-technologies
+# Copyright (C) 2018-2021 fjord-technologies
 # SPDX-License-Identifier: GPL-3.0-or-later
 """covenant.plugins.predis"""
 
@@ -11,7 +11,10 @@ from covenant.classes.plugins import CovenantPlugBase, CovenantTargetFailed, PLU
 
 LOG = logging.getLogger('covenant.plugins.redis')
 
-_ALLOWED_COMMANDS = ('info', 'config_get', 'llen')
+_ALLOWED_COMMANDS = ('client_list',
+                     'config_get',
+                     'info',
+                     'llen')
 
 
 class CovenantRedisPlugin(CovenantPlugBase):
@@ -20,6 +23,8 @@ class CovenantRedisPlugin(CovenantPlugBase):
     def _do_call(self, obj, targets = None, registry = None): # pylint: disable=unused-argument
         if not targets:
             targets = self.targets
+
+        param_target = obj.get_params().get('target')
 
         for target in targets:
             (data, conn) = (None, None)
@@ -47,7 +52,10 @@ class CovenantRedisPlugin(CovenantPlugBase):
                 cfg['password'] = target.credentials['password']
 
             try:
-                if 'url' in cfg:
+                if param_target and not cfg.get('url'):
+                    cfg['url'] = param_target
+
+                if cfg.get('url'):
                     conn = redis.from_url(**cfg)
                 else:
                     conn = redis.Redis(**cfg)

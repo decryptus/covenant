@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2018-2019 fjord-technologies
+# Copyright (C) 2018-2021 fjord-technologies
 # SPDX-License-Identifier: GPL-3.0-or-later
 """covenant.classes.plugins"""
 
@@ -198,10 +198,11 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
     def _do_call(self, obj, targets = None, registry = None):
         pass
 
-    def do_metrics(self, obj):
-        return self._do_call(obj)
+    def _fetch(self, obj):
+        params = obj.get_params()
+        if not params or not params.get('target'):
+            return self._do_call(obj)
 
-    def do_probes(self, obj):
         registry = CovenantRegistry()
 
         targets = copy.deepcopy(self.targets)
@@ -209,6 +210,12 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
             target.reload_collects(registry)
 
         return self._do_call(obj, targets, registry)
+
+    def do_metrics(self, obj):
+        return self._fetch(obj)
+
+    def do_probes(self, obj):
+        return self._fetch(obj)
 
     def __call__(self):
         self.start()

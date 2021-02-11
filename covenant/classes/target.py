@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2018-2019 fjord-technologies
+# Copyright (C) 2018-2021 fjord-technologies
 # SPDX-License-Identifier: GPL-3.0-or-later
 """covenant.classes.target"""
 
@@ -175,6 +175,11 @@ class CovenantTarget(object): # pylint: disable=useless-object-inheritance
 
         for label in labels:
             name        = label['name']
+
+            if not label.get('enabled', True):
+                LOG.debug("label disabled: %r in %r", name, self.name)
+                continue
+
             static      = label.get('static')
             ltasks      = copy.copy(label_tasks)
             vtasks      = copy.copy(value_tasks)
@@ -212,6 +217,10 @@ class CovenantTarget(object): # pylint: disable=useless-object-inheritance
     def load_collects(self, collects):
         for c in collects:
             for key, value in six.iteritems(c):
+                if not value.get('enabled', True):
+                    LOG.debug("metric disabled: %r in %r", key, self.name)
+                    continue
+
                 xtype = value['type'].lower()
                 if xtype not in METRICTYPES:
                     raise ValueError("unknown metric type: %r in %r" % (xtype, key))
@@ -241,7 +250,7 @@ class CovenantTarget(object): # pylint: disable=useless-object-inheritance
                                'documentation': value.pop('documentation'),
                                'registry':      self.registry}
 
-                labels      = copy.copy(self.labels)
+                labels      = copy.deepcopy(self.labels)
                 clabels     = []
                 vtasks      = copy.copy(self.value_tasks)
                 on_fail     = copy.copy(self.on_fail)
@@ -274,10 +283,12 @@ class CovenantTarget(object): # pylint: disable=useless-object-inheritance
                     validator   = validator,
                     value       = value.get('value'),
                     default     = value.get('default'),
-                    labels      = clabels,
+                    labels      = copy.deepcopy(clabels),
                     value_tasks = vtasks,
                     on_fail     = on_fail,
                     on_noresult = on_noresult))
+
+                del labels, clabels
 
     def reload_collects(self, registry = None):
         if registry:

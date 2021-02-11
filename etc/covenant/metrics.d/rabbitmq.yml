@@ -3,7 +3,8 @@
   config:
     enabled: ${vars.get('overview_enabled', True) | n,my}
     timeout: ${vars.get('timeout', 10) | n,my}
-    uri: ${vars['url'] | n,my}/overview
+    url: ${vars.get('url') | n,my}
+    path: /overview
     format: json
   labels:
     - name: node
@@ -105,7 +106,8 @@
   config:
     enabled: ${vars.get('exchanges_enabled', True) | n,my}
     timeout: ${vars.get('timeout', 10) | n,my}
-    uri: ${vars['url'] | n,my}/exchanges
+    url: ${vars.get('url') | n,my}
+    path: /exchanges
     format: json
   collects:
     - exchange_messages_published_total:
@@ -160,7 +162,8 @@
   config:
     enabled: ${vars.get('nodes_enabled', True) | n,my}
     timeout: ${vars.get('timeout', 10) | n,my}
-    uri: ${vars['url'] | n,my}/nodes
+    url: ${vars.get('url') | n,my}
+    path: /nodes
     format: json
   labels:
     - name: node
@@ -252,7 +255,8 @@
   config:
     enabled: ${vars.get('queues_enabled', True) | n,my}
     timeout: ${vars.get('timeout', 10) | n,my}
-    uri: ${vars['url'] | n,my}/queues
+    url: ${vars.get('url') | n,my}
+    path: /queues
     format: json
   collects:
     - queue_messages_ready:

@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2018-2019 fjord-technologies
+# Copyright (C) 2018-2021 fjord-technologies
 # SPDX-License-Identifier: GPL-3.0-or-later
 """covenant.classes.collect"""
 
 import copy
 import logging
+
+from prometheus_client.metrics import (Gauge,
+                                       Info)
 
 from covenant.classes.exceptions import CovenantTaskError, CovenantTargetFailed
 from covenant.classes.filters import CovenantNoResult
@@ -168,6 +171,11 @@ class CovenantCollect(object): # pylint: disable=useless-object-inheritance
         data = copy.copy(data)
 
         if self.labels:
+            if isinstance(self.metric, (Gauge, Info)) \
+               and getattr(self.metric, '_metrics', None):
+                with self.metric._lock:
+                    self.metric._metrics.clear()
+
             for label in self.labels:
                 if self._orig['on_fail']:
                     label.set_on_fail(self._orig['on_fail'])
@@ -196,7 +204,7 @@ class CovenantCollect(object): # pylint: disable=useless-object-inheritance
             elif self.validator(data):
                 getattr(self.metric, self.method)(data)
             else:
-                LOG.warning("unable to fetch a valid metricvalue. (metric: %r, data: %r)", self.name, data)
+                LOG.debug("unable to fetch a valid metricvalue. (metric: %r, data: %r)", self.name, data)
         except Exception as e:
             LOG.exception("metric: %r, data: %r, error: %r", self.name, data, e)
             raise

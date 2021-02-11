@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2018-2019 fjord-technologies
+# Copyright (C) 2018-2021 fjord-technologies
 # SPDX-License-Identifier: GPL-3.0-or-later
 """covenant.modules.metrics"""
 
@@ -73,6 +73,7 @@ class MetricsModule(DWhoModuleBase):
 
     METRICS_QSCHEMA = xys.load("""
     endpoint: !!str
+    target*: !!str
     """)
 
     def metrics(self, request):

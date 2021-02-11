@@ -1,18 +1,11 @@
-# based on: https://github.com/oliver006/redis_exporter
+## based on: https://github.com/oliver006/redis_exporter
 - name: info
   config:
     enabled: ${vars.get('info_enabled', True) | n,my}
     socket_timeout: ${vars.get('timeout', 10) | n,my}
     socket_connect_timeout: ${vars.get('timeout', 10) | n,my}
-    url: ${vars['url'] | n,my}
+    url: ${vars.get('url') | n,my}
     command: info
-  labels:
-    - name: addr
-      value: "${vars['url'] | n,my}"
-      static: true
-    - name: alias
-      value: "${vars.get('alias', '') | n,my}"
-      static: true
   collects:
     - up:
         on_fail:
@@ -30,161 +23,442 @@
         type: counter
         value: 0
         documentation: Number of errors while scraping redis.
+    - instance:
+        type: info
+        value_tasks:
+          - '@filter': jmespath
+            expression: >-
+              {
+                role: not_null(role, ''''),
+                redis_version: not_null(redis_version, ''''),
+                redis_build_id: not_null(redis_build_id, ''''),
+                redis_mode: not_null(redis_mode, ''''),
+                os: not_null(os, ''''),
+                maxmemory_policy: not_null(maxmemory_policy, ''''),
+                tcp_port: to_string(not_null(tcp_port, '''')),
+                run_id: to_string(not_null(run_id, '''')),
+                process_id: to_string(not_null(process_id, ''''))
+              }
+        documentation: Information about the Redis instance.
     # Server
     - uptime_in_seconds:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'uptime_in_seconds'
-        documentation: uptime_in_secondsmetric
+        documentation: uptime_in_seconds metric
     - process_id:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'process_id'
-        documentation: process_idmetric
+        documentation: process_id metric
     # Clients
     - connected_clients:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'connected_clients'
-        documentation: connected_clientsmetric
+        documentation: connected_clients metric
     - client_longest_output_list:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'client_longest_output_list'
-        documentation: client_longest_output_listmetric
+        documentation: client_longest_output_list metric
     - client_biggest_input_buf:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'client_biggest_input_buf'
-        documentation: client_biggest_input_bufmetric
+        documentation: client_biggest_input_buf metric
+    - client_recent_max_output_buffer:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'client_recent_max_output_buffer'
+        documentation: client_recent_max_output_buffer metric
+    - client_recent_max_input_buffer:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'client_recent_max_input_buffer'
+        documentation: client_recent_max_input_buffer metric
     - blocked_clients:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'blocked_clients'
-        documentation: blocked_clientsmetric
+        documentation: blocked_clients metric
+    - tracking_clients:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'tracking_clients'
+        documentation: tracking_clients metric
     # Memory
+    - allocator_active_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'allocator_active'
+        documentation: allocator_active_bytes metric
+    - allocator_allocated_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'allocator_allocated'
+        documentation: allocator_allocated_bytes metric
+    - allocator_resident_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'allocator_resident'
+        documentation: allocator_resident_bytes metric
+    - allocator_frag_ratio:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'allocator_frag_ratio'
+        documentation: allocator_frag_ratio metric
+    - allocator_frag_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'allocator_frag_bytes'
+        documentation: allocator_frag_bytes metric
+    - allocator_rss_ratio:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'allocator_rss_ratio'
+        documentation: allocator_rss_ratio metric
+    - allocator_rss_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'allocator_rss_bytes'
+        documentation: allocator_rss_bytes metric
     - memory_used_bytes:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'used_memory'
-        documentation: memory_used_bytesmetric
+        documentation: memory_used_bytes metric
     - memory_used_rss_bytes:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'used_memory_rss'
-        documentation: memory_used_rss_bytesmetric
+        documentation: memory_used_rss_bytes metric
     - memory_used_peak_bytes:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'used_memory_peak'
-        documentation: memory_used_peak_bytesmetric
+        documentation: memory_used_peak_bytes metric
     - memory_used_lua_bytes:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'used_memory_lua'
-        documentation: memory_used_lua_bytesmetric
+        documentation: memory_used_lua_bytes metric
+    - used_memory_overhead_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'used_memory_overhead'
+        documentation: used_memory_overhead_bytes metric
+    - used_memory_startup_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'used_memory_startup'
+        documentation: used_memory_startup_bytes metric
+    - used_memory_dataset_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'used_memory_dataset'
+        documentation: used_memory_dataset_bytes metric
+    - used_memory_scripts_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'used_memory_scripts'
+        documentation: used_memory_scripts_bytes metric
     - memory_max_bytes:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'maxmemory'
-        documentation: memory_max_bytesmetric
+        documentation: memory_max_bytes metric
+    - memory_max_reservation_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'maxmemory_reservation'
+        documentation: memory_max_reservation_bytes metric
+    - memory_max_reservation_desired_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'maxmemory_desired_reservation'
+        documentation: memory_max_reservation_desired_bytes metric
     - memory_fragmentation_ratio:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'mem_fragmentation_ratio'
-        documentation: memory_fragmentation_ratiometric
+        documentation: memory_fragmentation_ratio metric
+    - mem_fragmentation_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'mem_fragmentation_bytes'
+        documentation: mem_fragmentation_bytes metric
+    - mem_clients_slaves:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'mem_clients_slaves'
+        documentation: mem_clients_slaves metric
+    - mem_clients_normal:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'mem_clients_normal'
+        documentation: mem_clients_normal metric
+    - mem_not_counted_for_eviction_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'mem_not_counted_for_evict'
+        documentation: mem_not_counted_for_eviction_bytes metric
+    - lazyfree_pending_objects:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'lazyfree_pending_objects'
+        documentation: lazyfree_pending_objects metric
+    - active_defrag_running:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'active_defrag_running'
+        documentation: active_defrag_running metric
+    - migrate_cached_sockets_total:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'migrate_cached_sockets_total'
+        documentation: migrate_cached_sockets metric
+    - defrag_hits:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'active_defrag_hits'
+        documentation: defrag_hits metric
+    - defrag_misses:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'active_defrag_misses'
+        documentation: defrag_misses metric
+    - defrag_key_hits:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'active_defrag_key_hits'
+        documentation: defrag_key_hits metric
+    - defrag_key_misses:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'active_defrag_key_misses'
+        documentation: defrag_key_misses metric
+    - expired_time_cap_reached_total:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'expired_time_cap_reached_count'
+        documentation: expired_time_cap_reached_total metric
     # Persistence
+    - loading_dump_file:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'loading'
+        documentation: loading_dump_file metric
     - rdb_changes_since_last_save:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'rdb_changes_since_last_save'
-        documentation: rdb_changes_since_last_savemetric
-    - rdb_last_bgsave_time_sec:
+        documentation: rdb_changes_since_last_save metric
+    - rdb_bgsave_in_progress:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'rdb_bgsave_in_progress'
+        documentation: rdb_bgsave_in_progress metric
+    - rdb_last_save_timestamp_seconds:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'rdb_last_save_time'
+        documentation: rdb_last_save_timestamp_seconds metric
+    - rdb_last_bgsave_status:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: "rdb_last_bgsave_status == 'ok'"
+        documentation: rdb_last_bgsave_status metric
+    - rdb_last_bgsave_duration_sec:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'rdb_last_bgsave_time_sec'
-        documentation: rdb_last_bgsave_time_secmetric
-    - rdb_current_bgsave_time_sec:
+        documentation: rdb_last_bgsave_duration_sec metric
+    - rdb_current_bgsave_duration_sec:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'rdb_current_bgsave_time_sec'
-        documentation: rdb_current_bgsave_time_secmetric
+        documentation: rdb_current_bgsave_duration_sec metric
+    - rdb_last_cow_size_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'rdb_last_cow_size'
+        documentation: rdb_last_cow_size_bytes metric
     - aof_enabled:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'aof_enabled'
-        documentation: aof_enabledmetric
+        documentation: aof_enabled metric
     - aof_rewrite_in_progress:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'aof_rewrite_in_progress'
-        documentation: aof_rewrite_in_progressmetric
+        documentation: aof_rewrite_in_progress metric
     - aof_rewrite_scheduled:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'aof_rewrite_scheduled'
-        documentation: aof_rewrite_scheduledmetric
+        documentation: aof_rewrite_scheduled metric
     - aof_last_rewrite_duration_sec:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'aof_last_rewrite_time_sec'
-        documentation: aof_last_rewrite_duration_secmetric
+        documentation: aof_last_rewrite_duration_sec metric
     - aof_current_rewrite_duration_sec:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'aof_current_rewrite_time_sec'
-        documentation: aof_current_rewrite_duration_secmetric
+        documentation: aof_current_rewrite_duration_sec metric
+    - aof_last_cow_size_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'aof_last_cow_size'
+        documentation: aof_last_cow_size_bytes metric
+    - aof_current_size_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'aof_current_size'
+        documentation: aof_current_size_bytes metric
+    - aof_base_size_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'aof_base_size'
+        documentation: aof_base_size_bytes metric
+    - aof_pending_rewrite:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'aof_pending_rewrite'
+        documentation: aof_pending_rewrite metric
+    - aof_rewrite_buffer_length:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'aof_rewrite_buffer_length'
+        documentation: aof_rewrite_buffer_length metric
+    - aof_pending_bio_fsync:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'aof_pending_bio_fsync'
+        documentation: aof_pending_bio_fsync metric
+    - aof_delayed_fsync:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'aof_delayed_fsync'
+        documentation: aof_delayed_fsync metric
+    - aof_last_bgrewrite_status:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: "aof_last_bgrewrite_status == 'ok'"
+        documentation: aof_last_bgrewrite_status metric
+    - aof_last_write_status:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: "aof_last_write_status == 'ok'"
+        documentation: aof_last_write_status metric
+    - module_fork_in_progress:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'module_fork_in_progress'
+        documentation: module_fork_in_progress metric
+    - module_fork_last_cow_size:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'module_fork_last_cow_size'
+        documentation: module_fork_last_cow_size metric
     # Stats
     - total_connections_received_total:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'total_connections_received'
-        documentation: connections_received_totalmetric
+        documentation: connections_received_total metric
     - commands_processed_total:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'total_commands_processed'
-        documentation: commands_processed_totalmetric
+        documentation: commands_processed_total metric
     - instantaneous_ops_per_sec:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'instantaneous_ops_per_sec'
-        documentation: instantaneous_ops_per_secmetric
+        documentation: instantaneous_ops_per_sec metric
     - net_input_bytes_total:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'total_net_input_bytes'
-        documentation: net_input_bytes_totalmetric
+        documentation: net_input_bytes_total metric
     - net_output_bytes_total:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'total_net_output_bytes'
-        documentation: net_output_bytes_totalmetric
+        documentation: net_output_bytes_total metric
     - instantaneous_input_kbps:
         type: gauge
         value_tasks:
@@ -196,147 +470,207 @@
         value_tasks:
           - '@filter': jmespath
             expression: 'instantaneous_output_kbps'
-        documentation: instantaneous_output_kbpsmetric
+        documentation: instantaneous_output_kbps metric
     - rejected_connections_total:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'rejected_connections'
-        documentation: rejected_connections_totalmetric
+        documentation: rejected_connections_total metric
     - expired_keys_total:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'expired_keys'
-        documentation: expired_keys_totalmetric
+        documentation: expired_keys_total metric
     - evicted_keys_total:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'evicted_keys'
-        documentation: evicted_keys_totalmetric
+        documentation: evicted_keys_total metric
     - keyspace_hits_total:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'keyspace_hits'
-        documentation: keyspace_hits_totalmetric
+        documentation: keyspace_hits_total metric
     - keyspace_misses_total:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'keyspace_misses'
-        documentation: keyspace_misses_totalmetric
+        documentation: keyspace_misses_total metric
     - pubsub_channels:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'pubsub_channels'
-        documentation: pubsub_channelsmetric
+        documentation: pubsub_channels metric
     - pubsub_patterns:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'pubsub_patterns'
-        documentation: pubsub_patternsmetric
+        documentation: pubsub_patterns metric
     - latest_fork_usec:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'latest_fork_usec'
-        documentation: latest_fork_usecmetric
+        documentation: latest_fork_usec metric
     # Replication
-    - loading_dump_file:
-        type: gauge
-        value_tasks:
-          - '@filter': jmespath
-            expression: 'loading'
-        documentation: loading_dump_filemetric
     - connected_slaves:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'connected_slaves'
-        documentation: connected_slavesmetric
+        documentation: connected_slaves metric
     - replication_backlog_bytes:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'repl_backlog_size'
-        documentation: replication_backlog_bytesmetric
+        documentation: replication_backlog_bytes metric
+    - repl_backlog_is_active:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'repl_backlog_active'
+        documentation: repl_backlog_is_active metric
+    - repl_backlog_first_byte_offset:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'repl_backlog_first_byte_offset'
+        documentation: repl_backlog_first_byte_offset metric
+    - repl_backlog_history_bytes:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'repl_backlog_histlen'
+        documentation: repl_backlog_history_bytes metric
     - master_last_io_seconds:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'master_last_io_seconds_ago'
         default: 0
-        documentation: master_last_io_secondsmetric
+        documentation: master_last_io_seconds metric
     - master_repl_offset:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'master_repl_offset'
-        documentation: master_repl_offsetmetric
+        documentation: master_repl_offset metric
+    - second_repl_offset:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'second_repl_offset'
+        documentation: second_repl_offset metric
+    - slave_expires_tracked_keys:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'slave_expires_tracked_keys'
+        documentation: slave_expires_tracked_keys metric
+    - slave_priority:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'slave_priority'
+        documentation: slave_priority metric
+    - replica_resyncs_full:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'sync_full'
+        documentation: replica_resyncs_full metric
+    - replica_partial_resync_accepted:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'replica_partial_resync_accepted'
+        documentation: sync_partial_ok metric
+    - replica_partial_resync_denied:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'sync_partial_err'
+        documentation: replica_partial_resync_denied metric
     # CPU
     - used_cpu_sys:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'used_cpu_sys'
-        documentation: used_cpu_sysmetric
+        documentation: used_cpu_sys metric
     - used_cpu_user:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'used_cpu_user'
-        documentation: used_cpu_usermmetric
+        documentation: used_cpu_userm metric
     - used_cpu_sys_children:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'used_cpu_sys_children'
-        documentation: used_cpu_sys_childrenmetric
+        documentation: used_cpu_sys_children metric
     - used_cpu_user_children:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'used_cpu_user_children'
-        documentation: used_cpu_user_childrenmetric
+        documentation: used_cpu_user_children metric
     # Cluster
     - cluster_enabled:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'cluster_enabled'
-        documentation: cluster_enabledmetric
+        documentation: cluster_enabled metric
     - cluster_messages_sent_total:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'cluster_stats_messages_sent'
         default: 0
-        documentation: cluster_messages_sent_totalmetric
+        documentation: cluster_messages_sent_total metric
     - cluster_messages_received_total:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'cluster_stats_messages_received'
         default: 0
-        documentation: cluster_messages_received_totalmetric
+        documentation: cluster_messages_received_total metric
+    # addtl. KeyDB metrics
+    - server_threads_total:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'server_threads'
+        documentation: server_threads_total metric
+    - long_lock_waits_total:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'long_lock_waits'
+        documentation: long_lock_waits_total metric
+    - current_client_thread:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'current_client_thread'
+        documentation: current_client_thread metric
 - name: config
   config:
     enabled: ${vars.get('config_enabled', True) | n,my}
     socket_timeout: ${vars.get('timeout', 10) | n,my}
     socket_connect_timeout: ${vars.get('timeout', 10) | n,my}
-    url: ${vars['url'] | n,my}
+    url: ${vars.get('url') | n,my}
     command: config_get
-  labels:
-    - name: addr
-      value: "${vars['url'] | n,my}"
-      static: true
-    - name: alias
-      value: "${vars.get('alias', '') | n,my}"
-      static: true
   collects:
     - config_maxmemory:
         type: gauge
@@ -344,31 +678,25 @@
           - '@filter': jmespath
             expression: 'maxmemory'
         default: 0
-        documentation: config_maxmemorymetric
+        documentation: config_maxmemory metric
     - config_maxclients:
         type: gauge
         value_tasks:
           - '@filter': jmespath
             expression: 'maxclients'
-        documentation: config_maxclientsmetric
+        documentation: config_maxclients metric
 - name: keyspace
   config:
     enabled: ${vars.get('keyspace_enabled', True) | n,my}
     socket_timeout: ${vars.get('timeout', 10) | n,my}
     socket_connect_timeout: ${vars.get('timeout', 10) | n,my}
-    url: ${vars['url'] | n,my}
+    url: ${vars.get('url') | n,my}
     command: info
     command_args:
       - keyspace
   collects:
     - db_keys:
         labels:
-          - name: addr
-            value: "${vars['url'] | n,my}"
-            static: true
-          - name: alias
-            value: "${vars.get('alias', '') | n,my}"
-            static: true
           - name: db
             label_tasks:
              - '@labelize': dict
@@ -377,12 +705,6 @@
         documentation: Total number of keys by DB.
     - db_keys_expiring:
         labels:
-          - name: addr
-            value: "${vars['url'] | n,my}"
-            static: true
-          - name: alias
-            value: "${vars.get('alias', '') | n,my}"
-            static: true
           - name: db
             label_tasks:
              - '@labelize': dict
@@ -391,15 +713,100 @@
         documentation: Total number of expiring keys by DB.
     - db_avg_ttl_seconds:
         labels:
-          - name: addr
-            value: "${vars['url'] | n,my}"
-            static: true
-          - name: alias
-            value: "${vars.get('alias', '') | n,my}"
-            static: true
           - name: db
             label_tasks:
              - '@labelize': dict
                value: 'avg_ttl'
         type: gauge
         documentation: Avg TTL in seconds.
+- name: commandstats
+  config:
+    enabled: ${vars.get('commandstats_enabled', True) | n,my}
+    socket_timeout: ${vars.get('timeout', 10) | n,my}
+    socket_connect_timeout: ${vars.get('timeout', 10) | n,my}
+    url: ${vars.get('url') | n,my}
+    command: info
+    command_args:
+      - commandstats
+  collects:
+    - commands_total:
+        labels:
+          - name: cmd
+            label_tasks:
+              - '@labelize': dict
+                value: 'calls'
+        type: const_counter
+        documentation: Total number of calls per command.
+- name: clients
+  config:
+    enabled: ${vars.get('clients_enabled', False) | n,my}
+    socket_timeout: ${vars.get('timeout', 10) | n,my}
+    socket_connect_timeout: ${vars.get('timeout', 10) | n,my}
+    url: ${vars.get('url') | n,my}
+    command: client_list
+  labels:
+    - name: name
+      label_tasks:
+       - '@labelize': dict
+         key: 'name'
+         value: 'name'
+    - name: age
+      label_tasks:
+       - '@labelize': dict
+         key: 'age'
+         value: 'age'
+    - name: idle
+      label_tasks:
+       - '@labelize': dict
+         key: 'idle'
+         value: 'idle'
+    - name: flags
+      label_tasks:
+       - '@labelize': dict
+         key: 'flags'
+         value: 'flags'
+    - name: db
+      label_tasks:
+       - '@labelize': dict
+         key: 'db'
+         value: 'db'
+    - name: omem
+      label_tasks:
+       - '@labelize': dict
+         key: 'omem'
+         value: 'omem'
+    - name: cmd
+      label_tasks:
+       - '@labelize': dict
+         key: 'cmd'
+         value: 'cmd'
+    - name: host
+      label_tasks:
+       - '@filter': jmespath
+         expression: 'addr'
+       - '@filter': regex
+         func: search
+         pattern: '^(.+):[^:]+$'
+       - '@filter': jmespath
+         expression: '{"host": @}'
+       - '@labelize': dict
+         key: 'host'
+         value: 'host'
+    - name: port
+      enabled: ${vars.get('clients_port_enabled', False) | n,my}
+      label_tasks:
+       - '@filter': jmespath
+         expression: 'addr'
+       - '@filter': regex
+         func: search
+         pattern: '^.+:([^:]+)$'
+       - '@filter': jmespath
+         expression: '{"port": @}'
+       - '@labelize': dict
+         key: 'port'
+         value: 'port'
+  collects:
+    - connected_clients_details:
+        type: gauge
+        default: 1
+        documentation: Details about connected clients.

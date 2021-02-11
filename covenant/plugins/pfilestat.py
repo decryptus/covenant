@@ -82,7 +82,10 @@ class CovenantFilestatPlugin(CovenantPlugBase):
 
         return r
 
-    def _result(self, cfg):
+    def _result(self, cfg, param_target = None):
+        if param_target and not cfg.get('path'):
+            cfg['path'] = param_target
+
         data = {'exists': False,
                 'path': cfg.pop('path')}
 
@@ -130,9 +133,11 @@ class CovenantFilestatPlugin(CovenantPlugBase):
         if not targets:
             targets = self.targets
 
+        param_target = obj.get_params().get('target')
+
         for target in targets:
             try:
-                data = self._result(target.config)
+                data = self._result(target.config, param_target)
             except Exception as e:
                 data = CovenantTargetFailed(e)
                 LOG.exception("error on target: %r. exception: %r",
