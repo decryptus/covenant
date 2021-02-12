@@ -51,7 +51,10 @@ class CovenantHttpPlugin(CovenantPlugBase):
 
             if 'path' in cfg:
                 url = list(urisup.uri_help_split(cfg['url']))
-                url[2] = cfg.pop('path')
+                if url[2]:
+                    url[2] = "%s/%s" % (url[2].rstrip('/'), cfg.pop('path', '').lstrip('/'))
+                else:
+                    url[2] = cfg.pop('path')
                 cfg['url'] = urisup.uri_help_unsplit(url)
 
             if 'method' in cfg:
