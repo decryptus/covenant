@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2018-2021 fjord-technologies
+# Copyright (C) 2018-2022 fjord-technologies
 # SPDX-License-Identifier: GPL-3.0-or-later
 """covenant.classes.config"""
 
@@ -9,7 +9,7 @@ import os
 import signal
 import six
 
-from dwho.config import parse_conf, stop, DWHO_THREADS
+from dwho.config import init_modules, parse_conf, stop, DWHO_THREADS
 from dwho.classes.libloader import DwhoLibLoader
 from dwho.classes.modules import MODULES
 from httpdis.httpdis import get_default_options
@@ -44,9 +44,7 @@ def load_conf(xfile, options = None):
     with open(xfile, 'r') as f:
         conf = parse_conf(load_yaml(f))
 
-    for name, module in six.iteritems(MODULES):
-        LOG.info("module init: %r", name)
-        module.init(conf)
+    init_modules(conf)
 
     for x in ('module', 'plugin', 'filter'):
         path = conf['general'].get('%ss_path' % x)

@@ -1,3 +1,33 @@
+covenant (0.0.56) unstable; urgency=medium
+
+  * Reviewed requirements.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Fri, 21 Jan 2022 16:31:01 +0100
+
+covenant (0.0.55) unstable; urgency=medium
+
+  * Fixed net_partitions metric on rabbitmq.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Thu, 15 Apr 2021 12:22:06 +0200
+
+covenant (0.0.54) unstable; urgency=medium
+
+  * Fixed metrics.d/rabbitmq.yml.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Thu, 15 Apr 2021 12:08:12 +0200
+
+covenant (0.0.53) unstable; urgency=medium
+
+  * Renamed metric partitions to net_partitions.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Thu, 15 Apr 2021 11:20:55 +0200
+
+covenant (0.0.52) unstable; urgency=medium
+
+  * Added network partitions detection on rabbitmq.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Thu, 15 Apr 2021 10:28:44 +0200
+
 covenant (0.0.51) unstable; urgency=medium
 
   * Fixed plugin http.

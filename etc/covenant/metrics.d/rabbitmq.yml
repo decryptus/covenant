@@ -251,6 +251,12 @@
           - '@filter': jmespath
             expression: '[0].disk_free_alarm'
         documentation: Whether the disk alarm has gone off.
+    - net_partitions:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'length([0].partitions)'
+        documentation: Network partitions detected.
 - name: queues
   config:
     enabled: ${vars.get('queues_enabled', True) | n,my}
