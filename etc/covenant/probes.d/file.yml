@@ -1,0 +1,17 @@
+- name: state
+  config:
+    enabled: ${vars.get('state_enabled', True) | n,my}
+    follow: ${vars.get('state_follow', True) | n,my}
+    include_paths: ${vars.get('state_include_paths') | n,my}
+    exclude_paths: ${vars.get('state_exclude_paths') | n,my}
+  collects:
+    - file_exists:
+        on_fail:
+          value: 0
+        on_noresult:
+          value: 0
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: 'exists'
+        documentation: Displays whether or not the provided file exists.

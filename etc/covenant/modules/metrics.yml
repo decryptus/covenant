@@ -1,0 +1,10 @@
+metrics:
+  routes:
+    metrics:
+      handler:   'metrics'
+      regexp:    '^metrics/(?P<endpoint>[^\/]+)$'
+      op:        'GET'
+      safe_init: true
+    server:
+      handler:   'server'
+      op:        'GET'

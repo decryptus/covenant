@@ -1,3 +1,21 @@
+covenant (0.0.59) unstable; urgency=medium
+
+  * [RELEASE] version: 0.0.59.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Mon, 31 Jan 2022 00:03:05 +0100
+
+covenant (0.0.58) unstable; urgency=medium
+
+  * Reviewed requirements.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Thu, 27 Jan 2022 05:43:25 +0100
+
+covenant (0.0.57) unstable; urgency=medium
+
+  * Added file probe.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Wed, 26 Jan 2022 17:10:36 +0100
+
 covenant (0.0.56) unstable; urgency=medium
 
   * Reviewed requirements.

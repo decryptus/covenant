@@ -1,0 +1,7 @@
+probes:
+  routes:
+    probes:
+      handler:   'probes'
+      regexp:    '^probes?/(?P<endpoint>[^\/]+)$'
+      op:        'GET'
+      safe_init: true

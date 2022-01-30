@@ -1,5 +1,5 @@
 general:
-  listen_addr:        127.0.0.1
+  listen_addr:        0.0.0.0
   listen_port:        9118
   charset:            utf-8
   content_type:       'text/plain; version=0.0.4; charset=utf-8'
@@ -10,6 +10,9 @@ general:
   modules_path:       /usr/local/lib/covenant/modules
   filters_path:       /usr/local/lib/covenant/filters
   plugins_path:       /usr/local/lib/covenant/plugins
+import_modules:
+  - modules/metrics.yml
+  - modules/probes.yml
 endpoints:
   apache1:
     plugin: http
@@ -41,21 +44,9 @@ endpoints:
     vars:
       timeout: 10
     import_probes: probes.d/secure-layer.yml
-modules:
-  metrics:
-    routes:
-      metrics:
-        handler:   'metrics'
-        regexp:    '^metrics/(?P<endpoint>[^\/]+)$'
-        op:        'GET'
-        safe_init: true
-      server:
-        handler:   'server'
-        op:        'GET'
-  probes:
-    routes:
-      probes:
-        handler:   'probes'
-        regexp:    '^probes?/(?P<endpoint>[^\/]+)$'
-        op:        'GET'
-        safe_init: true
+  sshd-pidfile-exists:
+    plugin: filestat
+    import_probes: probes.d/file.yml
+    vars:
+      state_include_paths:
+      - ^/var/run/sshd\.pid$

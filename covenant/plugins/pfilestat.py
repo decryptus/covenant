@@ -4,13 +4,17 @@
 """covenant.plugins.pfilestat"""
 
 import errno
+import json
 import grp
+import hashlib
 import os
 import pwd
 import stat
+import re
 import logging
 
-from six import ensure_binary
+from six import (ensure_binary,
+                 string_types)
 
 from covenant.classes.plugins import CovenantPlugBase, CovenantTargetFailed, PLUGINS
 
@@ -42,6 +46,7 @@ _PERMS = (('readable', os.R_OK),
 
 class CovenantFilestatPlugin(CovenantPlugBase):
     PLUGIN_NAME = 'filestat'
+    _PATTERNS   = {}
 
     @staticmethod
     def _st_flags(st):
@@ -82,9 +87,55 @@ class CovenantFilestatPlugin(CovenantPlugBase):
 
         return r
 
+    def _load_patterns(self, patterns):
+        r = set()
+
+        if not patterns:
+            return r
+
+        if isinstance(patterns, string_types):
+            patterns = [patterns]
+
+        if not isinstance(patterns, (list, tuple)):
+            return r
+
+        xsum = hashlib.md5(json.dumps(patterns)).hexdigest()
+
+        if xsum in self._PATTERNS:
+            return self._PATTERNS[xsum]
+
+        for pattern in patterns:
+            r.add(re.compile(pattern).match)
+
+        self._PATTERNS[xsum] = r
+
+        return r
+
+    @staticmethod
+    def _check_path(xtype, xpath, patterns):
+        if xtype == 'include':
+            if not patterns:
+                return True
+
+            for pattern in patterns:
+                if pattern(xpath):
+                    return True
+        elif xtype == 'exclude':
+            if not patterns:
+                return False
+
+            for pattern in patterns:
+                if pattern(xpath):
+                    return True
+
+        return False
+
     def _result(self, cfg, param_target = None):
         if param_target and not cfg.get('path'):
             cfg['path'] = param_target
+
+        include_paths = self._load_patterns(cfg.get('include_paths'))
+        exclude_paths = self._load_patterns(cfg.get('exclude_paths'))
 
         data = {'exists': False,
                 'path': cfg.pop('path')}
@@ -104,6 +155,12 @@ class CovenantFilestatPlugin(CovenantPlugBase):
             if e.errno == errno.ENOENT:
                 return data
             raise
+
+        if not self._check_path('include', b_path, include_paths):
+            raise ValueError("invalid path: %r, not in include paths" % b_path)
+
+        if self._check_path('exclude', b_path, exclude_paths):
+            raise ValueError("invalid path: %r, in exclude paths" % b_path)
 
         data.update(self._st_flags(st))
         data['exists'] = True

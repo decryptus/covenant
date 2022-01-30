@@ -1,0 +1,9 @@
+version: '3.2'
+services:
+  covenant:
+    image: decryptus/covenant:latest
+    container_name: covenant
+    ports:
+      - '9118:9118'
+    volumes:
+      - './etc/covenant/covenant.yml.example:/etc/covenant/covenant.yml:ro'

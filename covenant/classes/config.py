@@ -9,9 +9,8 @@ import os
 import signal
 import six
 
-from dwho.config import init_modules, parse_conf, stop, DWHO_THREADS
+from dwho.config import import_conf_files, init_modules, parse_conf, stop, DWHO_THREADS
 from dwho.classes.libloader import DwhoLibLoader
-from dwho.classes.modules import MODULES
 from httpdis.httpdis import get_default_options
 from mako.template import Template
 from sonicprobe.helpers import load_yaml
@@ -43,6 +42,8 @@ def load_conf(xfile, options = None):
 
     with open(xfile, 'r') as f:
         conf = parse_conf(load_yaml(f))
+
+    conf = import_conf_files('modules', conf)
 
     init_modules(conf)
 

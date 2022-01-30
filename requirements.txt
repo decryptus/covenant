@@ -9,5 +9,5 @@ pyOpenSSL>=20.0.0
 pyyaml>=3.10
 prometheus-client>=0.6.0
 six>=1.13.0
-sonicprobe>=0.3.44
+sonicprobe>=0.3.45
 requests>=2.21.0
