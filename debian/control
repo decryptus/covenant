@@ -11,5 +11,5 @@ Homepage: https://www.commandersact.com
 Package: covenant
 Architecture: all
 Homepage: https://www.commandersact.com
-Depends: ${misc:Depends}, adduser, autoconf, automake, build-essential, coreutils, coreutils (>= 8.23-4) | realpath, libffi-dev, libtool, lsb-release, python (>= 2.7~), python-dev (>= 2.7~), python-pip, python-pycurl, python-setuptools
+Depends: ${misc:Depends}, adduser, autoconf, automake, build-essential, coreutils, coreutils (>= 8.23-4) | realpath, libffi-dev, libssl-dev, libtool, lsb-release, python (>= 2.7~), python-dev (>= 2.7~), python-pip, python-pycurl, python-setuptools
 Description: Fjord Technologies covenant package

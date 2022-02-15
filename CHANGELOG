@@ -1,3 +1,9 @@
+covenant (0.0.60) unstable; urgency=medium
+
+  * Added debian dependency libssl-dev.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Thu, 10 Feb 2022 15:52:45 +0100
+
 covenant (0.0.59) unstable; urgency=medium
 
   * [RELEASE] version: 0.0.59.
