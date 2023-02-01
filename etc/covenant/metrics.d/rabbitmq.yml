@@ -272,38 +272,67 @@
     - name: name
       label_tasks:
         - '@filter': jmespath
-          expression: "[peer_host,to_string(peer_port)].join(':',@)"
-        - '@labelize': dict
-          'key': peer_host
-          'value': peer_port
-    - name: state
-      label_tasks:
-        - '@filter': jmespath
-          expression: 'state'
+          expression: 'name'
+        - '@filter': regex
+          func: search
+          pattern: '^\<?([^ \<\>]+).*$'
+  collects:
   collects:
     - connection_channels:
         type: gauge
-        value_tasks:
-          - '@filter': jmespath
-            expression: '[0].channels'
+        labels:
+          - name: node
+            label_tasks:
+              - '@filter': jmespath
+                expression: 'node'
+          - name: name
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': channels
+                'default': 0
         documentation: Number of channels using the connection.
     - connection_channel_max:
         type: gauge
-        value_tasks:
-          - '@filter': jmespath
-            expression: '[0].channel_max'
+        labels:
+          - name: node
+            label_tasks:
+              - '@filter': jmespath
+                expression: 'node'
+          - name: name
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': channel_max
+                'default': 0
         documentation: Maximum number of channels on this connection.
     - connection_recv_oct:
         type: gauge
-        value_tasks:
-          - '@filter': jmespath
-            expression: '[0].recv_oct'
+        labels:
+          - name: node
+            label_tasks:
+              - '@filter': jmespath
+                expression: 'node'
+          - name: name
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': recv_oct
+                'default': 0
         documentation: Octets received.
     - connection_send_oct:
         type: gauge
-        value_tasks:
-          - '@filter': jmespath
-            expression: '[0].send_oct'
+        labels:
+          - name: node
+            label_tasks:
+              - '@filter': jmespath
+                expression: 'node'
+          - name: name
+            label_tasks:
+              - '@labelize': dict
+                'key': name
+                'value': send_oct
+                'default': 0
         documentation: Octets send.
 - name: queues
   config:
