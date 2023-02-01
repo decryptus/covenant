@@ -1,3 +1,21 @@
+covenant (0.0.63) unstable; urgency=medium
+
+  * [RELEASE] version: 0.0.63.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Wed, 01 Feb 2023 02:04:59 +0100
+
+covenant (0.0.62) unstable; urgency=medium
+
+  * [RELEASE] version: 0.0.62.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Tue, 25 Oct 2022 11:34:35 +0200
+
+covenant (0.0.61) unstable; urgency=medium
+
+  * [RELEASE] version: 0.0.61.
+
+ -- Adrien Delle Cave <adrien.delle.cave@commandersact.com>  Tue, 25 Oct 2022 11:29:43 +0200
+
 covenant (0.0.60) unstable; urgency=medium
 
   * Added debian dependency libssl-dev.

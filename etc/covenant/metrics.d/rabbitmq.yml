@@ -257,6 +257,54 @@
           - '@filter': jmespath
             expression: 'length([0].partitions)'
         documentation: Network partitions detected.
+- name: connections
+  config:
+    enabled: ${vars.get('connections_enabled', True) | n,my}
+    timeout: ${vars.get('timeout', 10) | n,my}
+    url: ${vars.get('url') | n,my}
+    path: /connections
+    format: json
+  labels:
+    - name: node
+      label_tasks:
+        - '@filter': jmespath
+          expression: 'node'
+    - name: name
+      label_tasks:
+        - '@filter': jmespath
+          expression: "[peer_host,to_string(peer_port)].join(':',@)"
+        - '@labelize': dict
+          'key': peer_host
+          'value': peer_port
+    - name: state
+      label_tasks:
+        - '@filter': jmespath
+          expression: 'state'
+  collects:
+    - connection_channels:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: '[0].channels'
+        documentation: Number of channels using the connection.
+    - connection_channel_max:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: '[0].channel_max'
+        documentation: Maximum number of channels on this connection.
+    - connection_recv_oct:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: '[0].recv_oct'
+        documentation: Octets received.
+    - connection_send_oct:
+        type: gauge
+        value_tasks:
+          - '@filter': jmespath
+            expression: '[0].send_oct'
+        documentation: Octets send.
 - name: queues
   config:
     enabled: ${vars.get('queues_enabled', True) | n,my}
