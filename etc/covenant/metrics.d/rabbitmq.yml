@@ -264,19 +264,6 @@
     url: ${vars.get('url') | n,my}
     path: /connections
     format: json
-  labels:
-    - name: node
-      label_tasks:
-        - '@filter': jmespath
-          expression: 'node'
-    - name: name
-      label_tasks:
-        - '@filter': jmespath
-          expression: 'name'
-        - '@filter': regex
-          func: search
-          pattern: '^\<?([^ \<\>]+).*$'
-  collects:
   collects:
     - connection_channels:
         type: gauge
