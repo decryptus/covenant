@@ -1,5 +1,5 @@
 cryptography>=3.2.1
-dwho>=0.3.59
+dwho>=0.3.61
 httpdis>=0.6.26
 jmespath>=0.9.3
 packaging>=19.0
