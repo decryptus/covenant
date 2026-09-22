@@ -1,0 +1,43 @@
+general:
+  listen_addr:        0.0.0.0
+  listen_port:        9118
+  charset:            utf-8
+  content_type:       'text/plain; version=0.0.4; charset=utf-8'
+  max_workers:        5
+  max_requests:       1000
+  max_life_time:      3600
+  lock_timeout:       10
+  modules_path:       /usr/local/lib/covenant/modules
+  filters_path:       /usr/local/lib/covenant/filters
+  plugins_path:       /usr/local/lib/covenant/plugins
+import_modules:
+  - modules/metrics.yml
+  - modules/probes.yml
+endpoints:
+  orders:
+    plugin: http
+    metrics:
+      - name: status
+        config:
+          url: http://api:8000/status.json
+          format: json
+          timeout: 2
+        collects:
+          - orders_source_up:
+              type: gauge
+              documentation: Whether the source API request succeeded.
+              value: 1
+              on_fail:
+                value: 0
+          - orders_pending:
+              type: gauge
+              documentation: Orders waiting to be processed.
+              value_tasks:
+                - '@filter': jmespath
+                  expression: orders.pending
+          - orders_workers_active:
+              type: gauge
+              documentation: Currently active workers.
+              value_tasks:
+                - '@filter': jmespath
+                  expression: workers.active
