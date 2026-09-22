@@ -1,3 +1,11 @@
+covenant (0.0.67) unstable; urgency=medium
+
+  * [RELEASE] version: 0.0.67.
+  * Build Docker images from tagged source with Python 3.11 and pyjq 2.6.0.
+  * Test images before publishing version tags to Docker Hub with GitHub Actions.
+
+ -- Adrien Delle Cave <pypi@doowan.net>  Tue, 22 Sep 2026 04:30:00 +0000
+
 covenant (0.0.66) unstable; urgency=medium
 
   * [RELEASE] version: 0.0.66.
