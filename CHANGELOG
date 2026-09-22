@@ -5,7 +5,7 @@ covenant (0.0.66) unstable; urgency=medium
   * Apply on_noresult after the final filter and combine label restrictions.
   * Add 24 regression and template tests; preserve existing timeout settings.
 
- -- Adrien Delle Cave <pypi@doowan.net>  Tue, 22 Sep 2026 02:28:40 +0000
+ -- Adrien Delle Cave <decryptus@doowan.net>  Tue, 22 Sep 2026 02:28:40 +0000
 
 covenant (0.0.65) unstable; urgency=medium
 
