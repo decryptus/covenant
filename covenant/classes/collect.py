@@ -141,12 +141,14 @@ class CovenantCollect(object): # pylint: disable=useless-object-inheritance
 
         for task in self.value_tasks:
             if isinstance(data, CovenantNoResult):
-                if self.on_noresult['remove']:
-                    self.remove(True)
-                    return None
-                data = self.on_noresult['value']
                 break
             data = task(value = data)
+
+        if isinstance(data, CovenantNoResult):
+            if self.on_noresult['remove']:
+                self.remove(True)
+                return None
+            return copy.copy(self.on_noresult['value'])
 
         return data
 

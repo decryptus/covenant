@@ -63,7 +63,7 @@ class CovenantSslPlugin(CovenantPlugBase):
         if not isinstance(rs, dict):
             rs = {}
 
-        cert = x509.load_der_x509_certificate(six.ensure_str(cert_der), default_backend())
+        cert = x509.load_der_x509_certificate(cert_der, default_backend())
 
         rs['connect_success'] = True
         rs['cert_not_before'] = int(cert.not_valid_before.strftime('%s'))

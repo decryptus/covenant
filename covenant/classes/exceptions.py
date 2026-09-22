@@ -15,7 +15,7 @@ class CovenantConfigurationError(Exception):
 class CovenantTargetFailed(Exception):
     def __init__(self, message = None, args = None):
         if isinstance(message, Exception):
-            Exception.__init__(self, message.message, message.args)
+            Exception.__init__(self, str(message), message.args)
         else:
             Exception.__init__(self, message, args)
 
