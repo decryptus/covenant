@@ -3,7 +3,7 @@
 Run from the repository root in a dedicated Python environment:
 
 ```sh
-python -m pip install six cryptography prometheus-client sonicprobe dwho httpdis jmespath
+python -m pip install six cryptography prometheus-client sonicprobe "dwho>=0.3.61" httpdis jmespath
 python -m unittest discover -s tests -v
 ```
 
@@ -31,6 +31,6 @@ The tests cover:
   endpoint's persistent registry.
 
 The production timeout settings and request queue behavior are unchanged.
-Python 3.12 requires additional compatibility work in legacy dependencies
-(`pyinotify` imports `asyncore`, and `dwho`'s loader imports `imp`); passing these
-collector tests alone must not be taken as full Python 3.12 support.
+DWho 0.3.61 provides the `asyncore` compatibility dependency and an importlib-based
+loader for Python 3.12. Passing these collector tests alone must not be taken as
+full daemon or deployment validation on that interpreter.
