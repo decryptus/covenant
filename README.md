@@ -313,14 +313,16 @@ configuration, not a sandbox for untrusted input.
 See [tests/README.md](tests/README.md) for local test setup and coverage.
 
 The [Docker Hub workflow](.github/workflows/dockerhub.yml) builds and tests on
-`master` and pull requests. A new stable tag `vX.Y.Z` matching `VERSION` and
-`RELEASE` publishes the tested Linux amd64 image as:
+`master` and pull requests. After successful tests on `master`, a new stable
+version in `VERSION` and `RELEASE` automatically creates its missing `vX.Y.Z`
+tag and publishes the tested Linux amd64 image as:
 
 - `decryptus/covenant:X.Y.Z`
 - `decryptus/covenant:vX.Y.Z`
 
 Publication requires the GitHub repository secret `DOCKERHUB_TOKEN`. The workflow
-does not update `latest`, and a tag must contain the workflow to trigger it.
+does not update `latest` or overwrite existing Git tags. Ordinary commits on an
+already tagged version skip publication. Manual version-tag pushes remain supported.
 See [Docker Hub setup and release instructions](docs/dockerhub.md).
 
 The container checks include a jq expression, the 24 collector/template regression
