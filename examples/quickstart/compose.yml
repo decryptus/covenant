@@ -1,0 +1,14 @@
+services:
+  api:
+    image: python:3.11-slim-bookworm
+    command: [python, -m, http.server, '8000', --directory, /data]
+    volumes:
+      - ./data:/data:ro
+  covenant:
+    image: decryptus/covenant:0.0.67
+    ports:
+      - '127.0.0.1:9118:9118'
+    volumes:
+      - ./covenant.yml:/etc/covenant/covenant.yml:ro
+    depends_on:
+      - api
