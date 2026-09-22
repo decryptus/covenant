@@ -1,3 +1,11 @@
+covenant (0.0.68) unstable; urgency=medium
+
+  * [RELEASE] version: 0.0.68.
+  * Expand README with configuration, Prometheus and troubleshooting examples.
+  * Add a Docker Compose quickstart for JSON API metrics.
+
+ -- Adrien Delle Cave <pypi@doowan.net>  Tue, 22 Sep 2026 05:14:27 +0000
+
 covenant (0.0.67) unstable; urgency=medium
 
   * [RELEASE] version: 0.0.67.
