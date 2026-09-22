@@ -46,6 +46,22 @@ jobs:
           docker run --rm --entrypoint python -v "$PWD/tests:/test/tests:ro" -v "$PWD/etc:/test/etc:ro" -w /test covenant:test -m unittest discover -s tests -v
           docker run --rm --entrypoint python -e EXPECTED_VERSION="$(cat VERSION)" covenant:test -c 'import os; from importlib.metadata import version; assert version("covenant") == os.environ["EXPECTED_VERSION"]'
           docker run --rm --entrypoint covenant covenant:test --help
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build and validate Python distributions
+        run: |
+          python -m pip install build twine
+          python -m build
+          python -m twine check --strict dist/*
+          python .github/scripts/check-distributions.py covenant
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          name: python-distributions
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
       - name: Save tested image
         if: github.event_name == 'push'
         run: docker save covenant:test | gzip > "$RUNNER_TEMP/covenant-image.tar.gz"
@@ -57,6 +73,8 @@ jobs:
           retention-days: 7
 
   publish:
+    outputs:
+      publish: ${{ steps.release.outputs.publish }}
     needs: image
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -111,3 +129,25 @@ jobs:
           docker tag covenant:test "decryptus/covenant:$TAG"
           docker push "decryptus/covenant:${TAG#v}"
           docker push "decryptus/covenant:$TAG"
+
+  pypi:
+    needs: publish
+    if: needs.publish.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: pypi
+    permissions:
+      id-token: write
+    concurrency:
+      group: covenant-pypi
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-distributions
+          path: dist/
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          skip-existing: true

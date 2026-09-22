@@ -1,0 +1,4 @@
+include setup.yml VERSION RELEASE
+include requirements*.txt
+include bin/*
+recursive-include etc *
