@@ -1,10 +1,11 @@
 # Docker Hub publishing
 
 The Docker Hub workflow builds and tests Linux amd64 images on pull requests and
-pushes to master. Pushing a new release tag `vX.Y.Z` also publishes the tested image
-as `decryptus/covenant:X.Y.Z` and `decryptus/covenant:vX.Y.Z`.
-No image is published from branches or pull requests. `latest` is deliberately not
-moved: publishing a maintenance release must not downgrade existing deployments.
+pushes to master. After successful tests on master, it creates the missing `vX.Y.Z`
+tag from VERSION and publishes the tested image as `decryptus/covenant:X.Y.Z` and
+`decryptus/covenant:vX.Y.Z`. Manually pushed version tags remain supported.
+Pull requests only build and test. Ordinary master commits whose version was
+already tagged on an ancestor skip publication. `latest` is deliberately not moved.
 Use an explicit version in docker-compose.yml when deploying a release.
 
 ## One-time setup
@@ -17,20 +18,32 @@ Use an explicit version in docker-compose.yml when deploying a release.
 
 ## Release
 
-Update VERSION, RELEASE, setup.yml, bin/covenant and CHANGELOG consistently, merge
-into master and wait for the Docker Hub build/test job to pass. Then push the tag:
+Update VERSION, RELEASE, setup.yml, bin/covenant and CHANGELOG consistently, then
+merge into master. No manual tag command or additional GitHub token is required.
+The image job builds and tests with read-only repository access. The separate
+publication job downloads that exact tested image and has `contents: write` to
+create a lightweight tag on the tested commit. Repository rules must allow this
+tag creation; the workflow does not bypass tag protections.
 
-```sh
-git tag -a v0.0.67 -m 'version: 0.0.67'
-git push origin v0.0.67
-```
+Only stable X.Y.Z versions are accepted. VERSION and RELEASE must agree, and the
+installed package version is tested against VERSION. Manual tags must match too.
+An existing tag is never moved. A tag on an unrelated commit causes a failure.
+An existing tag on the current commit permits retrying the publication; a tag on
+an ancestor skips it, preserving the previous image for ordinary master changes.
 
-The example assumes the release commit is checked out and declares version 0.0.67.
-Only stable vX.Y.Z tags are accepted. Tag VERSION/RELEASE mismatches fail before
-building. The installed package version is checked against VERSION before upload.
-The workflow must exist in the tagged commit: v0.0.66 predates it and is not
-published retroactively. Do not move existing release tags. If authentication or
-an upload fails, fix the secret and re-run the failed job in Actions.
+Tag creation and Docker Hub publication happen in the same workflow: a tag made
+using GITHUB_TOKEN does not trigger another push workflow. Release jobs are
+serialized to prevent competing tag creations. Docker credentials and the tested
+image are checked before a missing tag is created.
+
+If an upload fails, fix the problem and re-run the failed publication job in
+Actions. The tested image artifact is retained for seven days. After expiry,
+re-run all jobs of that original run to rebuild and publish the original commit.
+Dependency versions are not fully locked, so a rebuild may differ from the first.
+
+On first activation, the workflow will release the current version if its tag is
+missing, including when the triggering commit only installs this automation.
+The workflow must exist in the tagged commit for manually pushed tags to run it.
 
 The image installs this repository's source, not the PyPI release. Python 3.11 is
 used because legacy dependencies still import imp and asyncore, removed in 3.12.
