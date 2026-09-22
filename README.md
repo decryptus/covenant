@@ -344,3 +344,7 @@ integration test against your real services.
 ## License
 
 [GNU General Public License v3](LICENSE).
+
+## Publishing to PyPI
+
+See [PyPI publishing](docs/pypi.md) for Trusted Publisher setup and automated releases.
