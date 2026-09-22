@@ -16,21 +16,19 @@ LOG = logging.getLogger('covenant.controls')
 class CovenantCtrlLabelize(object): # pylint: disable=useless-object-inheritance
     @staticmethod
     def _to_remove(key, kargs):
-        r = False
-
-        if 'include' in kargs:
-            r = key not in kargs['include']
+        if 'include' in kargs and key not in kargs['include']:
+            return True
 
         if 'exclude' in kargs and key in kargs['exclude']:
-            r = key in kargs['exclude']
+            return True
 
-        if 'include_regex' in kargs:
-            r = not re.match(kargs['include_regex'], key)
+        if 'include_regex' in kargs and not re.match(kargs['include_regex'], key):
+            return True
 
-        if 'exclude_regex' in kargs:
-            r = bool(re.match(kargs['exclude_regex'], key))
+        if 'exclude_regex' in kargs and re.match(kargs['exclude_regex'], key):
+            return True
 
-        return r
+        return False
 
     @classmethod
     def dict(cls, *largs, **lkargs): # pylint: disable=unused-argument

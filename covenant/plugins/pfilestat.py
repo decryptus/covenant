@@ -99,13 +99,13 @@ class CovenantFilestatPlugin(CovenantPlugBase):
         if not isinstance(patterns, (list, tuple)):
             return r
 
-        xsum = hashlib.md5(json.dumps(patterns)).hexdigest()
+        xsum = hashlib.md5(json.dumps(patterns).encode('utf-8')).hexdigest()
 
         if xsum in self._PATTERNS:
             return self._PATTERNS[xsum]
 
         for pattern in patterns:
-            r.add(re.compile(pattern).match)
+            r.add(re.compile(ensure_binary(pattern, errors = 'surrogate_or_strict')).match)
 
         self._PATTERNS[xsum] = r
 
