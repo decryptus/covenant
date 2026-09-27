@@ -7,6 +7,7 @@ general:
   max_requests:       1000
   max_life_time:      3600
   lock_timeout:       10
+  result_timeout:     30
   modules_path:       /usr/local/lib/covenant/modules
   filters_path:       /usr/local/lib/covenant/filters
   plugins_path:       /usr/local/lib/covenant/plugins

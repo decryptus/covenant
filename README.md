@@ -264,6 +264,41 @@ by the metrics you configure inside Covenant.
 
 ## Run and configure Covenant
 
+### Collection deadlines
+
+Set a finite result wait in the main YAML configuration:
+
+```yaml
+general:
+  result_timeout: 30
+```
+
+`result_timeout` is expressed in seconds and defaults to **30** when omitted,
+so existing configurations remain valid. Positive fractional values are accepted;
+zero, negative, boolean, null, non-finite and platform-overflow values are rejected
+at startup. This applies to both metric and probe requests, including time spent
+waiting in the endpoint queue. An expired wait returns **HTTP 504**. Existing
+endpoint-not-found (404), endpoint-type (400) and plugin-error (500) responses
+remain unchanged. `lock_timeout` separately bounds acquisition of the module lock.
+
+The deadline bounds the client's result wait; it does **not** interrupt a running
+plugin, cancel backend I/O, or remove an already queued job. Keep backend timeouts
+configured. The endpoint queues remain unbounded; this setting is not queue
+backpressure. Late callbacks are ignored, and completed/expired waits retain no
+result in a module-level dictionary. Collections that previously took more than
+30 seconds now time out unless a larger value is configured. Set the Prometheus
+scrape timeout and backend timeouts consistently with this budget.
+
+Collection dispatch, correlation and completion live in `CollectionService`,
+which accepts endpoint queues and the existing plugin job factory. It consumes
+plain parameters and returns results or domain exceptions, with no HTTP, CLI or
+TUI imports. HTTP modules validate requests and map these exceptions to responses.
+The `CovenantEPTObject` callback contract, plugin hooks, endpoint registries,
+routes, and metric names/labels are preserved. The former private module helpers
+`_push_epts_sync`, `_get_result`, `_set_result` and `results` are replaced by the
+service; custom code using those internals must move to `CollectionService`.
+
+
 Docker is the simplest way to use the tested runtime. To run your own configuration:
 
 ```sh

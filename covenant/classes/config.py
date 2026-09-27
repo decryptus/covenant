@@ -15,6 +15,7 @@ from httpdis.httpdis import get_default_options
 from mako.template import Template
 from sonicprobe.helpers import load_yaml
 
+from covenant.classes.collection import DEFAULT_RESULT_TIMEOUT, validate_result_timeout
 from covenant.classes.exceptions import CovenantConfigurationError
 from covenant.classes.plugins import ENDPOINTS, PLUGINS
 
@@ -43,6 +44,13 @@ def load_conf(xfile, options = None):
     with open(xfile, 'r') as f:
         conf = parse_conf(load_yaml(f))
 
+    try:
+        conf['general']['result_timeout'] = validate_result_timeout(
+            conf['general'].get('result_timeout', DEFAULT_RESULT_TIMEOUT))
+    except ValueError as error:
+        raise CovenantConfigurationError(str(error))
+
+    conf['_config_directory'] = config_dir
     conf = import_conf_files('modules', conf)
 
     init_modules(conf)
