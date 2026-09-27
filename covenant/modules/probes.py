@@ -5,69 +5,28 @@
 
 import gc
 import logging
-import time
-import uuid
 
 from dwho.classes.modules import DWhoModuleBase, MODULES
 from httpdis.httpdis import HttpReqError, HttpResponse
 from sonicprobe.libs import xys
 from sonicprobe.libs.moresynchro import RWLock
 
-from covenant.classes.plugins import CovenantEPTObject, EPTS_SYNC
+
+from covenant.modules.collection import CollectionModuleCompat
 
 LOG = logging.getLogger('covenant.modules.probes')
 
 
 # pylint: disable=attribute-defined-outside-init
-class ProbesModule(DWhoModuleBase):
+class ProbesModule(CollectionModuleCompat, DWhoModuleBase):
     MODULE_NAME     = 'probes'
+    ENDPOINT_TYPE   = 'probe'
 
     LOCK            = RWLock()
 
     def safe_init(self, options):
-        self.results      = {}
+        self._init_collection()
         self.lock_timeout = self.config['general']['lock_timeout']
-
-    def _set_result(self, obj):
-        self.results[obj.get_uid()] = obj
-
-    def _get_result(self, uid):
-        r = {'error':  None,
-             'result': None}
-
-        while True:
-            if uid not in self.results:
-                time.sleep(0.1)
-                continue
-
-            res = self.results.pop(uid)
-            if res.has_error():
-                r['error'] = res.get_errors()
-                LOG.error("failed on call: %r. (errors: %r)", res.get_uid(), r['error'])
-            else:
-                r['result'] = res.get_result()
-                LOG.info("successful on call: %r", res.get_uid())
-                LOG.debug("result on call: %r", r['result'])
-
-            return r
-
-    def _push_epts_sync(self, endpoint, method, params, args = None):
-        if endpoint not in EPTS_SYNC:
-            raise HttpReqError(404, "unable to find endpoint: %r" % endpoint)
-        elif EPTS_SYNC[endpoint].type != 'probe':
-            raise HttpReqError(400, "invalid endpoint type, correct type: %r" % EPTS_SYNC[endpoint].type)
-
-        ept_sync  = EPTS_SYNC[endpoint]
-        uid       = "%s:%s" % (ept_sync.name, uuid.uuid4())
-        ept_sync.qput(CovenantEPTObject(ept_sync.name,
-                                        uid,
-                                        endpoint,
-                                        method,
-                                        params,
-                                        args,
-                                        self._set_result))
-        return uid
-
 
     PROBES_QSCHEMA = xys.load("""
     endpoint: !!str
@@ -88,11 +47,10 @@ class ProbesModule(DWhoModuleBase):
 
         try:
             uid = self._push_epts_sync(params['endpoint'], 'probes', params)
-            res = self._get_result(uid)
-            if res['error']:
-                raise HttpReqError(500, "failed to get results. (errors: %r)" % res['error'])
-
-            return HttpResponse(data = res['result'])
+            result = self._get_result(uid)
+            if result['error']:
+                raise HttpReqError(500, "failed to get results. (errors: %r)" % result['error'])
+            return HttpResponse(data = result['result'])
         except HttpReqError:
             raise
         except Exception as e:

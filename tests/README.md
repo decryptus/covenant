@@ -11,7 +11,8 @@ The suite was validated on Python 3.9.25. It uses real Covenant classes,
 Prometheus serialization, generated DER certificates, temporary files and the
 shipped YAML/Mako templates. Only the HTTP transport is mocked. It does not
 require a running NGINX, Redis or RabbitMQ service, or the optional-to-this-suite
-`pyjq` filter. This is not a full daemon or deployment test.
+`pyjq` filter. The original collector scenarios are not a full daemon or deployment test;
+the additional runtime coverage is described below.
 
 The tests cover:
 
@@ -30,7 +31,29 @@ The tests cover:
 - Dynamic file targets using a temporary registry without modifying the
   endpoint's persistent registry.
 
-The production timeout settings and request queue behavior are unchanged.
+The suite also exercises `CollectionService` using real queues and concurrent
+callers: successful results, plugin errors, bounded waits, late/duplicate callbacks,
+submission failures and invalid timeout settings. The runtime smoke tests start an
+actual HTTPdis listener in an isolated subprocess, load relative YAML imports,
+start real filestat metric/probe plugins, scrape all shipped route aliases, verify
+400/404/500/504 responses, and invoke the DWho SIGTERM stop hooks. Both legacy YAML
+without `result_timeout` and an explicit short deadline are covered.
+
+The runtime fixture does not invoke `bin/covenant`, drop privileges, daemonize,
+or test PID-file ownership. Existing plugin worker threads are daemon threads;
+this verifies HTTP shutdown and stop-hook invocation, not cooperative cancellation
+of every backend operation. No external backend or Docker daemon is required.
+
+Local validation for this change: Python 3.12, DWho 0.3.61, HTTPdis 0.6.28,
+Sonicprobe 0.3.53; 46 tests passed. The Docker workflow runs the same discovery
+against the built Python 3.11 image, including its installed package and dependencies.
+
 DWho 0.3.61 provides the `asyncore` compatibility dependency and an importlib-based
 loader for Python 3.12. Passing these collector tests alone must not be taken as
 full daemon or deployment validation on that interpreter.
+
+Compatibility facade tests additionally cover original signatures and error/result
+shapes, subclass overrides used by the HTTP handlers, result mapping writes,
+concurrent split calls, abandoned-call expiry and late callbacks after consumption
+or timeout. These facades retain bounded waits; they do not restore indefinite
+result retention or concrete-dict identity.

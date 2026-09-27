@@ -264,6 +264,55 @@ by the metrics you configure inside Covenant.
 
 ## Run and configure Covenant
 
+### Collection deadlines
+
+Set a finite result wait in the main YAML configuration:
+
+```yaml
+general:
+  result_timeout: 30
+```
+
+`result_timeout` is expressed in seconds and defaults to **30** when omitted,
+so existing configurations remain valid. Positive fractional values are accepted;
+zero, negative, boolean, null, non-finite and platform-overflow values are rejected
+at startup. This applies to both metric and probe requests, including time spent
+waiting in the endpoint queue. An expired wait returns **HTTP 504**. Existing
+endpoint-not-found (404), endpoint-type (400) and plugin-error (500) responses
+remain unchanged. `lock_timeout` separately bounds acquisition of the module lock.
+
+The deadline bounds the client's result wait; it does **not** interrupt a running
+plugin, cancel backend I/O, or remove an already queued job. Keep backend timeouts
+configured. The endpoint queues remain unbounded; this setting is not queue
+backpressure. Late callbacks are ignored, and completed/expired waits retain no
+result in a module-level dictionary. Collections that previously took more than
+30 seconds now time out unless a larger value is configured. Set the Prometheus
+scrape timeout and backend timeouts consistently with this budget.
+
+Collection dispatch, correlation and completion live in `CollectionService`,
+which accepts endpoint queues and the existing plugin job factory. It consumes
+plain parameters and returns results or domain exceptions, with no HTTP, CLI or
+TUI imports. HTTP modules validate requests and map these exceptions to responses.
+The `CovenantEPTObject` callback contract, plugin hooks, endpoint registries,
+routes, and metric names/labels are preserved. Historical module methods
+`_push_epts_sync(endpoint, method, params, args=None)`, `_set_result(obj)` and
+`_get_result(uid)` remain available as compatibility facades. HTTP handlers still
+call them, so subclass overrides continue to participate. Submission returns the
+UID; retrieval preserves the `{'error': ..., 'result': ...}` shape, including
+plugin errors, and expiration raises HTTP 504.
+
+`results` is now a synchronized mapping view of completed, unconsumed jobs.
+Lookup, membership, iteration, copy, pop and assignment for an active UID are
+supported. It is not a concrete `dict`; replacing the attribute or depending on
+its exact type is not supported. Expired, consumed and unknown callbacks/writes
+are ignored, so they cannot recreate orphaned results. Unlike the old dictionary,
+unconsumed results expire too. A finite deadline starts at submission; delaying
+`_get_result` does not reset it. One active expiry worker per module cleans up
+abandoned calls, is reused across adjacent calls, and exits when idle. New callers
+should use the service API; these methods are retained for transition without a
+scheduled removal.
+
+
 Docker is the simplest way to use the tested runtime. To run your own configuration:
 
 ```sh
