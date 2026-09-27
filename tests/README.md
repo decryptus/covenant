@@ -45,9 +45,15 @@ this verifies HTTP shutdown and stop-hook invocation, not cooperative cancellati
 of every backend operation. No external backend or Docker daemon is required.
 
 Local validation for this change: Python 3.12, DWho 0.3.61, HTTPdis 0.6.28,
-Sonicprobe 0.3.53; 37 tests passed. The Docker workflow runs the same discovery
+Sonicprobe 0.3.53; 46 tests passed. The Docker workflow runs the same discovery
 against the built Python 3.11 image, including its installed package and dependencies.
 
 DWho 0.3.61 provides the `asyncore` compatibility dependency and an importlib-based
 loader for Python 3.12. Passing these collector tests alone must not be taken as
 full daemon or deployment validation on that interpreter.
+
+Compatibility facade tests additionally cover original signatures and error/result
+shapes, subclass overrides used by the HTTP handlers, result mapping writes,
+concurrent split calls, abandoned-call expiry and late callbacks after consumption
+or timeout. These facades retain bounded waits; they do not restore indefinite
+result retention or concrete-dict identity.

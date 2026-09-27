@@ -294,9 +294,23 @@ which accepts endpoint queues and the existing plugin job factory. It consumes
 plain parameters and returns results or domain exceptions, with no HTTP, CLI or
 TUI imports. HTTP modules validate requests and map these exceptions to responses.
 The `CovenantEPTObject` callback contract, plugin hooks, endpoint registries,
-routes, and metric names/labels are preserved. The former private module helpers
-`_push_epts_sync`, `_get_result`, `_set_result` and `results` are replaced by the
-service; custom code using those internals must move to `CollectionService`.
+routes, and metric names/labels are preserved. Historical module methods
+`_push_epts_sync(endpoint, method, params, args=None)`, `_set_result(obj)` and
+`_get_result(uid)` remain available as compatibility facades. HTTP handlers still
+call them, so subclass overrides continue to participate. Submission returns the
+UID; retrieval preserves the `{'error': ..., 'result': ...}` shape, including
+plugin errors, and expiration raises HTTP 504.
+
+`results` is now a synchronized mapping view of completed, unconsumed jobs.
+Lookup, membership, iteration, copy, pop and assignment for an active UID are
+supported. It is not a concrete `dict`; replacing the attribute or depending on
+its exact type is not supported. Expired, consumed and unknown callbacks/writes
+are ignored, so they cannot recreate orphaned results. Unlike the old dictionary,
+unconsumed results expire too. A finite deadline starts at submission; delaying
+`_get_result` does not reset it. One active expiry worker per module cleans up
+abandoned calls, is reused across adjacent calls, and exits when idle. New callers
+should use the service API; these methods are retained for transition without a
+scheduled removal.
 
 
 Docker is the simplest way to use the tested runtime. To run your own configuration:

@@ -11,33 +11,21 @@ from httpdis.httpdis import HttpReqError, HttpResponse
 from sonicprobe.libs import xys
 from sonicprobe.libs.moresynchro import RWLock
 
-from covenant.classes.plugins import CovenantEPTObject, EPTS_SYNC
 
-from covenant.classes.collection import (CollectionService, DEFAULT_RESULT_TIMEOUT,
-                                          UnknownEndpoint, InvalidEndpointType,
-                                          CollectionFailed, CollectionTimeout)
-
-COLLECTION_HTTP_ERRORS = {
-    UnknownEndpoint: 404,
-    InvalidEndpointType: 400,
-    CollectionFailed: 500,
-    CollectionTimeout: 504,
-}
-COLLECTION_EXCEPTIONS = tuple(COLLECTION_HTTP_ERRORS)
+from covenant.modules.collection import CollectionModuleCompat
 
 LOG = logging.getLogger('covenant.modules.probes')
 
 
 # pylint: disable=attribute-defined-outside-init
-class ProbesModule(DWhoModuleBase):
+class ProbesModule(CollectionModuleCompat, DWhoModuleBase):
     MODULE_NAME     = 'probes'
+    ENDPOINT_TYPE   = 'probe'
 
     LOCK            = RWLock()
 
     def safe_init(self, options):
-        self.collection = CollectionService(
-            EPTS_SYNC, CovenantEPTObject,
-            self.config['general'].get('result_timeout', DEFAULT_RESULT_TIMEOUT))
+        self._init_collection()
         self.lock_timeout = self.config['general']['lock_timeout']
 
     PROBES_QSCHEMA = xys.load("""
@@ -58,10 +46,11 @@ class ProbesModule(DWhoModuleBase):
             raise HttpReqError(503, "unable to take LOCK for reading after %s seconds" % self.lock_timeout)
 
         try:
-            result = self.collection.collect(params['endpoint'], 'probe', 'probes', params)
-            return HttpResponse(data = result)
-        except COLLECTION_EXCEPTIONS as error:
-            raise HttpReqError(COLLECTION_HTTP_ERRORS[type(error)], str(error))
+            uid = self._push_epts_sync(params['endpoint'], 'probes', params)
+            result = self._get_result(uid)
+            if result['error']:
+                raise HttpReqError(500, "failed to get results. (errors: %r)" % result['error'])
+            return HttpResponse(data = result['result'])
         except HttpReqError:
             raise
         except Exception as e:
