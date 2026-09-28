@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/svg/logo-horizontal-dark.svg">
+    <img src="assets/brand/svg/logo-horizontal.svg" alt="Covenant" width="520">
+  </picture>
+</p>
+
 # Covenant
 
 **Turn HTTP APIs, Redis data, TLS certificates and file checks into Prometheus
