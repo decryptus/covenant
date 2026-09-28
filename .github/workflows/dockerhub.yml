@@ -22,7 +22,9 @@ jobs:
         with:
           persist-credentials: false
       - name: Test release selection
-        run: python3 -m unittest discover -s .github/tests -v
+        run: |
+          python3 .github/scripts/check-test-collection.py --runner unittest .github/tests
+          python3 -m unittest discover -s .github/tests -v
       - name: Validate version tag
         if: startsWith(github.ref, 'refs/tags/')
         env:
@@ -43,6 +45,7 @@ jobs:
       - name: Test the built image
         run: |
           docker run --rm --entrypoint python covenant:test -c 'import pyjq; assert pyjq.first(".value", {"value": 42}) == 42'
+          docker run --rm --entrypoint python -v "$PWD/tests:/test/tests:ro" -v "$PWD/etc:/test/etc:ro" -v "$PWD/.github/scripts:/test/scripts:ro" -w /test covenant:test /test/scripts/check-test-collection.py --runner unittest tests
           docker run --rm --entrypoint python -v "$PWD/tests:/test/tests:ro" -v "$PWD/etc:/test/etc:ro" -w /test covenant:test -m unittest discover -s tests -v
           docker run --rm --entrypoint python -e EXPECTED_VERSION="$(cat VERSION)" covenant:test -c 'import os; from importlib.metadata import version; assert version("covenant") == os.environ["EXPECTED_VERSION"]'
           docker run --rm --entrypoint covenant covenant:test --help
