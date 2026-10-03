@@ -71,7 +71,7 @@ def snapshot_metrics(text):
             if key in ('certificate_info', 'certificate_tls_verification') and sample.value != 1:
                 raise InvalidObservation('Invalid information gauge')
             if key in ('certificates_observed', 'certificate_issuance_retry_count') and (
-                    sample.value < 0 or not sample.value.is_integer()):
+                    sample.value < 0 or sample.value != int(sample.value)):
                 raise InvalidObservation('Invalid count')
             rows[identity] = (labels, sample.value)
             output.add_metric([labels[name] for name in SCHEMA[key]], sample.value)
