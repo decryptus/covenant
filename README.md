@@ -14,6 +14,13 @@ Covenant is a configurable, multi-endpoint Prometheus exporter. It separates dat
 collection from transformation and metric exposition, so you can adapt a source
 without writing a separate exporter for every service.
 
+Prometheus evaluates alert rules; Alertmanager handles notification delivery,
+grouping and silences. Covenant does not implement a notification engine.
+
+The optional [CertLord collector](docs/certlord.md) exposes validated certificate
+observations, with sample Prometheus rules for expiry, retries and source freshness.
+It requires Python 3.8+ and is not included in the older quickstart image below.
+
 ## Why Covenant?
 
 Your internal API already knows how many orders are waiting, how many workers are

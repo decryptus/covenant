@@ -1,0 +1,13 @@
+# Merge into your Covenant configuration. Keep the exporter private.
+endpoints:
+  certificates:
+    plugin: certlord
+    metrics:
+      - name: certlord
+        config:
+          url: https://certlord.example/api/certificates/metrics
+          username: covenant-reader
+          password_file: secrets/certlord-read.password
+          timeout: 10
+          # ca_file: certlord-ca.pem
+        collects: []
