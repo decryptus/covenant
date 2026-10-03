@@ -6,7 +6,8 @@ endpoints:
       - name: certlord
         config:
           url: https://certlord.example/api/certificates/metrics
-          token_file: secrets/certlord-read.token
+          username: covenant-reader
+          password_file: secrets/certlord-read.password
           timeout: 10
           # ca_file: certlord-ca.pem
         collects: []
