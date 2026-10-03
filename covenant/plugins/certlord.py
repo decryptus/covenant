@@ -19,7 +19,7 @@ if sys.version_info >= (3, 8):
     from covenant.classes.plugins import CovenantPlugBase, PLUGINS
     from covenant.services.certlord import MAX_BYTES, snapshot_metrics
 
-    CONFIG_KEYS = frozenset(('url', 'timeout', 'token_file', 'ca_file'))
+    CONFIG_KEYS = frozenset(('url', 'timeout', 'token_file', 'ca_file', 'username', 'password_file'))
     TOKEN_PATTERN = re.compile(r'[A-Za-z0-9._~+/-]+=*\Z')
     UP = b'# HELP covenant_certlord_source_up Whether the complete CertLord snapshot was collected.\n# TYPE covenant_certlord_source_up gauge\n'
 
@@ -55,9 +55,17 @@ if sys.version_info >= (3, 8):
             self._timeout = timeout
             directory = self.config['covenant']['config_dir']
             self._token_file = self._path(cfg.get('token_file'), directory)
+            self._password_file = self._path(cfg.get('password_file'), directory)
+            self._username = cfg.get('username')
+            if self._password_file or self._username is not None:
+                if (not self._password_file or not isinstance(self._username, str)
+                        or not self._username or ':' in self._username
+                        or any(ord(char) < 33 or ord(char) > 126 for char in self._username)
+                        or self._token_file):
+                    raise CovenantConfigurationError('Use either a token or a username and password file')
             self._verify = self._path(cfg.get('ca_file'), directory) or True
-            if not loopback and not self._token_file:
-                raise CovenantConfigurationError('Remote CertLord collection requires a read token file')
+            if not loopback and not (self._token_file or self._password_file):
+                raise CovenantConfigurationError('Remote CertLord collection requires read credentials')
 
         @staticmethod
         def _path(value, directory):
@@ -73,17 +81,30 @@ if sys.version_info >= (3, 8):
                 raise CovenantConfigurationError('CertLord does not accept dynamic targets')
             try:
                 headers = {'Accept': 'text/plain'}
+                auth = None
+                if self._password_file:
+                    with open(self._password_file, encoding='ascii') as stream:
+                        password = stream.read(8193)
+                    if len(password) > 8192:
+                        raise ValueError('Oversized password file')
+                    password = password.rstrip('\r\n')
+                    if not password or any(ord(char) < 32 or ord(char) > 126 for char in password):
+                        raise ValueError('Invalid password file')
+                    auth = (self._username, password)
                 if self._token_file:
                     with open(self._token_file, encoding='ascii') as stream:
-                        token = stream.read(8193).strip()
-                    if not token or len(token) > 8192 or not TOKEN_PATTERN.fullmatch(token):
+                        token = stream.read(8193)
+                    if len(token) > 8192:
+                        raise ValueError('Oversized token file')
+                    token = token.strip()
+                    if not token or not TOKEN_PATTERN.fullmatch(token):
                         raise ValueError('Invalid token file')
                     headers['Authorization'] = 'Bearer ' + token
                 started = time.monotonic()
                 with requests.Session() as session:
                     # Do not inherit netrc credentials or proxy settings for a privileged read.
                     session.trust_env = False
-                    with session.get(self._url, headers=headers, timeout=self._timeout,
+                    with session.get(self._url, headers=headers, auth=auth, timeout=self._timeout,
                                      verify=self._verify, allow_redirects=False, stream=True) as response:
                         if response.status_code != 200:
                             raise ValueError('Collection failed')
