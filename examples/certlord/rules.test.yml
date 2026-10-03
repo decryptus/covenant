@@ -1,0 +1,151 @@
+rule_files:
+- certlord.rules.yml
+evaluation_interval: 1m
+tests:
+- name: healthy empty inventory
+  interval: 1m
+  input_series:
+  - series: up{job="covenant-certlord",instance="fixture"}
+    values: 1x30
+  - series: covenant_certlord_source_up{job="covenant-certlord",instance="fixture"}
+    values: 1x30
+  - series: certlord_observation_completed_timestamp_seconds{job="covenant-certlord",instance="fixture"}
+    values: 0+60x30
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: CertlordObservationUnavailable
+    exp_alerts: []
+  - eval_time: 10m
+    alertname: CertlordCertificateExpiring
+    exp_alerts: []
+- name: expiry then replacement resolves
+  interval: 1m
+  input_series:
+  - series: up{job="covenant-certlord",instance="fixture"}
+    values: 1x30
+  - series: covenant_certlord_source_up{job="covenant-certlord",instance="fixture"}
+    values: 1x30
+  - series: certlord_observation_completed_timestamp_seconds{job="covenant-certlord",instance="fixture"}
+    values: 0+60x30
+  - series: certlord_certificate_not_after_timestamp_seconds{job="covenant-certlord",instance="fixture",certificate_id="12345678-1234-4234-8234-123456789abc"}
+    values: 100000x10 9999999x20
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: CertlordCertificateExpiring
+    exp_alerts:
+    - exp_labels:
+        job: covenant-certlord
+        instance: fixture
+        severity: warning
+        certificate_id: 12345678-1234-4234-8234-123456789abc
+      exp_annotations:
+        summary: Stored certificate expires within 14 days or has expired
+  - eval_time: 12m
+    alertname: CertlordCertificateExpiring
+    exp_alerts: []
+- name: source failure suppresses expiry
+  interval: 1m
+  input_series:
+  - series: up{job="covenant-certlord",instance="fixture"}
+    values: 1x30
+  - series: covenant_certlord_source_up{job="covenant-certlord",instance="fixture"}
+    values: '0x30'
+  - series: certlord_observation_completed_timestamp_seconds{job="covenant-certlord",instance="fixture"}
+    values: 0+60x30
+  - series: certlord_certificate_not_after_timestamp_seconds{job="covenant-certlord",instance="fixture",certificate_id="12345678-1234-4234-8234-123456789abc"}
+    values: 100000x30
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: CertlordObservationUnavailable
+    exp_alerts:
+    - exp_labels:
+        job: covenant-certlord
+        instance: fixture
+        severity: warning
+      exp_annotations:
+        summary: CertLord observations are unavailable or stale
+  - eval_time: 10m
+    alertname: CertlordCertificateExpiring
+    exp_alerts: []
+- name: stale snapshot
+  interval: 1m
+  input_series:
+  - series: up{job="covenant-certlord",instance="fixture"}
+    values: 1x30
+  - series: covenant_certlord_source_up{job="covenant-certlord",instance="fixture"}
+    values: 1x30
+  - series: certlord_observation_completed_timestamp_seconds{job="covenant-certlord",instance="fixture"}
+    values: '0x30'
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: CertlordObservationUnavailable
+    exp_alerts:
+    - exp_labels:
+        job: covenant-certlord
+        instance: fixture
+        severity: warning
+      exp_annotations:
+        summary: CertLord observations are unavailable or stale
+- name: future clock
+  interval: 1m
+  input_series:
+  - series: up{job="covenant-certlord",instance="fixture"}
+    values: 1x30
+  - series: covenant_certlord_source_up{job="covenant-certlord",instance="fixture"}
+    values: 1x30
+  - series: certlord_observation_completed_timestamp_seconds{job="covenant-certlord",instance="fixture"}
+    values: 9999999x30
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: CertlordObservationUnavailable
+    exp_alerts:
+    - exp_labels:
+        job: covenant-certlord
+        instance: fixture
+        severity: warning
+      exp_annotations:
+        summary: CertLord observations are unavailable or stale
+- name: exporter unavailable
+  interval: 1m
+  input_series:
+  - series: up{job="covenant-certlord",instance="fixture"}
+    values: '0x30'
+  - series: covenant_certlord_source_up{job="covenant-certlord",instance="fixture"}
+    values: 1x30
+  - series: certlord_observation_completed_timestamp_seconds{job="covenant-certlord",instance="fixture"}
+    values: 0+60x30
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: CertlordObservationUnavailable
+    exp_alerts:
+    - exp_labels:
+        job: covenant-certlord
+        instance: fixture
+        severity: warning
+      exp_annotations:
+        summary: CertLord observations are unavailable or stale
+- name: retry then renewal resolves
+  interval: 1m
+  input_series:
+  - series: up{job="covenant-certlord",instance="fixture"}
+    values: 1x30
+  - series: covenant_certlord_source_up{job="covenant-certlord",instance="fixture"}
+    values: 1x30
+  - series: certlord_observation_completed_timestamp_seconds{job="covenant-certlord",instance="fixture"}
+    values: 0+60x30
+  - series: certlord_certificate_issuance_retry_count{job="covenant-certlord",instance="fixture",certificate_id="12345678-1234-4234-8234-123456789abc"}
+    values: 3x12 stale _x17
+  alert_rule_test:
+  - eval_time: 11m
+    alertname: CertlordAcmeRetries
+    exp_alerts:
+    - exp_labels:
+        job: covenant-certlord
+        instance: fixture
+        severity: warning
+        certificate_id: 12345678-1234-4234-8234-123456789abc
+      exp_annotations:
+        summary: ACME issuance or renewal remains pending with retries
+  - eval_time: 14m
+    alertname: CertlordAcmeRetries
+    exp_alerts: []
