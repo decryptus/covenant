@@ -16,19 +16,30 @@ Older interpreters do not register this plugin; existing plugins remain unchange
 
 Merge `examples/certlord/endpoint.yml` into your existing Covenant YAML. Use one
 metrics target per endpoint. Set `general.result_timeout: 30`. Configure the fixed
-CertLord HTTPS URL, a private token file with CertLord **read** permission, and
-optionally a CA file. Paths are relative to the main Covenant configuration.
-Keep the token file readable only by the service account; replace it atomically
+CertLord HTTPS URL, a username with CertLord **read** permission, a private
+`password_file`, and optionally a CA file. Paths are relative to the main Covenant configuration.
+Keep the password file readable only by the service account; replace it atomically
 for rotation. It is reread on each collection. No credential is embedded in the
 example. Certificates and hostnames are verified; redirects, environment proxies,
 netrc credentials and request-supplied targets are not accepted. HTTP is accepted
-only for literal loopback IPs; missing tokens there work only with CertLord's
+only for literal loopback IPs; missing credentials there work only with CertLord's
 explicit local authentication policy.
+
+CertLord RC1's standard HTTPdis configuration uses HTTP Basic. Configure its
+`general.auth_basic_file` and grant the selected user only `[read]` under
+`api_authentication.permissions`. The example uses that supported mode over HTTPS.
+Password files contain printable ASCII, optionally followed by a newline; spaces
+inside the password are preserved. Credential files are bounded to 8192 bytes.
+
+`token_file` is an alternative only if your CertLord ingress/provider explicitly
+supports Bearer authentication and supplies the verified reader identity. It is
+not a built-in CertLord RC1 token provisioning facility. Do not combine it with
+`username` or `password_file`.
 
 Scrape Covenant at `/metrics/certificates`. Keep Covenant private and protect its
 HTTP interface using your normal authenticated ingress. UUIDs and lifecycle
 metadata are operational information. Configure Prometheus-to-Covenant ingress
-credentials separately from the Covenant-to-CertLord read token.
+credentials separately from the Covenant-to-CertLord read credentials.
 
 The source emits `covenant_certlord_source_up` plus validated CertLord gauges.
 Every response is a new snapshot: failures emit source_up=0 with no cached
