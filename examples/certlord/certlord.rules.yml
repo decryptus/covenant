@@ -1,0 +1,45 @@
+groups:
+  - name: certlord
+    rules:
+      - record: certlord:observation_fresh
+        expr: |
+          (covenant_certlord_source_up{job="covenant-certlord"} == 1)
+          and on(job, instance) (up{job="covenant-certlord"} == 1)
+          and on(job, instance) (time() - certlord_observation_completed_timestamp_seconds{job="covenant-certlord"} < 300)
+          and on(job, instance) (certlord_observation_completed_timestamp_seconds{job="covenant-certlord"} <= time() + 60)
+      - alert: CertlordObservationUnavailable
+        expr: |
+          (up{job="covenant-certlord"} unless on(job, instance) certlord:observation_fresh)
+          or absent(up{job="covenant-certlord"})
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: CertLord observations are unavailable or stale
+      - alert: CertlordCertificateExpiring
+        expr: |
+          (certlord_certificate_not_after_timestamp_seconds{job="covenant-certlord"} - time() < 14 * 86400)
+          and on(job, instance) certlord:observation_fresh
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Stored certificate expires within 14 days or has expired
+      - alert: CertlordAcmeRetries
+        expr: |
+          (certlord_certificate_issuance_retry_count{job="covenant-certlord"} > 0)
+          and on(job, instance) certlord:observation_fresh
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: ACME issuance or renewal remains pending with retries
+      - alert: CertlordCertificateMaterialUnavailable
+        expr: |
+          (certlord_certificate_info{job="covenant-certlord",material_state=~"missing|invalid"} == 1)
+          and on(job, instance) certlord:observation_fresh
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Stored certificate material is missing or invalid
