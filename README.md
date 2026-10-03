@@ -19,7 +19,7 @@ grouping and silences. Covenant does not implement a notification engine.
 
 The optional [CertLord collector](docs/certlord.md) exposes validated certificate
 observations, with sample Prometheus rules for expiry, retries and source freshness.
-It requires Python 3.8+ and is not included in the older quickstart image below.
+It requires Python 3.8+ and is included from Covenant 0.0.71.
 
 ## Why Covenant?
 
@@ -62,7 +62,7 @@ orders_workers_active 3.0
 Edit `examples/quickstart/data/status.json`, then call the endpoint again to see the
 new values. Collection happens when the endpoint is scraped.
 
-The example pins `decryptus/covenant:0.0.67` and exposes port 9118 only on the local
+The example pins `decryptus/covenant:0.0.71` and exposes port 9118 only on the local
 host. If the first request arrives before the API is ready, retry it.
 
 ```sh
@@ -333,7 +333,7 @@ Docker is the simplest way to use the tested runtime. To run your own configurat
 docker run --rm --name covenant \
   -p 127.0.0.1:9118:9118 \
   -v "$PWD/covenant.yml:/etc/covenant/covenant.yml:ro" \
-  decryptus/covenant:0.0.67
+  decryptus/covenant:0.0.71
 ```
 
 For a Python installation, `pip install covenant` installs the version published
@@ -388,8 +388,8 @@ does not update `latest` or overwrite existing Git tags. Ordinary commits on an
 already tagged version skip publication. Manual version-tag pushes remain supported.
 See [Docker Hub setup and release instructions](docs/dockerhub.md).
 
-The container checks include a jq expression, the 24 collector/template regression
-tests, the installed package version and CLI startup. They do not replace a full
+The container checks include a jq expression, the collected unittest suite covering collectors, templates, runtime integration
+and CertLord observations, the installed package version and CLI startup. They do not replace a full
 integration test against your real services.
 
 ## Troubleshooting

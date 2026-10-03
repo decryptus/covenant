@@ -1,3 +1,13 @@
+covenant (0.0.71) unstable; urgency=medium
+
+  * Add an optional read-only CertLord observation collector (Python 3.8+).
+  * Validate complete metric snapshots and discard certificate gauges on failure.
+  * Support verified HTTPS and rotating HTTP Basic credential files.
+  * Add Prometheus rules for expiry, retries, material and observation freshness.
+  * Keep notification delivery in Alertmanager; update configuration examples.
+
+ -- Codex <codex@openai.com>  Sat, 03 Oct 2026 17:00:00 +0000
+
 covenant (0.0.70) unstable; urgency=medium
 
   * Separate collection orchestration from HTTP with compatible legacy facades.
