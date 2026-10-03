@@ -137,6 +137,34 @@ class TransportTests(unittest.TestCase):
                 response.iter_content.return_value = [data]
                 self.assertIn(b'source_up 0', collector._do_call(request()))
 
+    def test_basic_password_rotation_and_oversized_credentials(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, 'password')
+            collector = plugin(directory, username='reader', password_file='password')
+            with patch('covenant.plugins.certlord.requests.Session') as factory:
+                session = factory.return_value.__enter__.return_value
+                response = session.get.return_value.__enter__.return_value
+                response.status_code = 200
+                response.iter_content.return_value = [EMPTY.encode()]
+                for password in ('first-secret', 'rotated secret'):
+                    with open(path, 'w') as stream:
+                        stream.write(password + '\n')
+                    self.assertIn(b'source_up 1', collector._do_call(request()))
+                    self.assertEqual(session.get.call_args.kwargs['auth'], ('reader', password))
+                for cfg in ({'username': 'reader'}, {'password_file': 'password'},
+                            {'username': 'a:b', 'password_file': 'password'},
+                            {'username': 'reader', 'password_file': 'password', 'token_file': 'token'}):
+                    with self.assertRaises(CovenantConfigurationError):
+                        plugin(directory, **cfg)
+                for cfg in ({'username': 'reader', 'password_file': 'password'},
+                            {'token_file': 'password'}):
+                    candidate = plugin(directory, **cfg)
+                    with open(path, 'w') as stream:
+                        stream.write('secret' + ' ' * 9000)
+                    factory.reset_mock()
+                    self.assertIn(b'source_up 0', candidate._do_call(request()))
+                    factory.assert_not_called()
+
 
 class RuntimeTests(unittest.TestCase):
     def test_real_yaml_worker_source_and_httpdis(self):
