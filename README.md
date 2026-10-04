@@ -411,3 +411,6 @@ integration test against your real services.
 ## Publishing to PyPI
 
 See [PyPI publishing](docs/pypi.md) for Trusted Publisher setup and automated releases.
+
+See [configuration validation](docs/configuration-validation.md) for YAML schema
+coverage and compatibility.
