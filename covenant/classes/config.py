@@ -17,6 +17,7 @@ from sonicprobe.helpers import load_yaml
 
 from covenant.classes.collection import DEFAULT_RESULT_TIMEOUT, validate_result_timeout
 from covenant.classes.exceptions import CovenantConfigurationError
+from covenant.classes.configuration_schema import validate_configuration, validate_component
 from covenant.classes.plugins import ENDPOINTS, PLUGINS
 
 _TPL_IMPORTS = ('from os import environ as ENV',
@@ -42,7 +43,7 @@ def load_conf(xfile, options = None):
     config_dir = os.path.dirname(os.path.abspath(xfile))
 
     with open(xfile, 'r') as f:
-        conf = parse_conf(load_yaml(f))
+        conf = parse_conf(validate_configuration(load_yaml(f)))
 
     try:
         conf['general']['result_timeout'] = validate_result_timeout(
@@ -81,19 +82,19 @@ def load_conf(xfile, options = None):
         cfg['covenant']['plugin_name'] = ept_cfg['plugin']
 
         if ept_cfg.get('import_vars'):
-            cfg['vars'].update(import_file(ept_cfg['import_vars'], config_dir, cfg))
+            cfg['vars'].update(validate_component(import_file(ept_cfg['import_vars'], config_dir, cfg), 'vars'))
 
         if 'vars' in ept_cfg:
             cfg['vars'].update(copy.deepcopy(ept_cfg['vars']))
 
         if ept_cfg.get('import_metrics'):
-            metrics.extend(import_file(ept_cfg['import_metrics'], config_dir, cfg))
+            metrics.extend(validate_component(import_file(ept_cfg['import_metrics'], config_dir, cfg), 'metrics'))
 
         if 'metrics' in ept_cfg:
             metrics.extend(copy.deepcopy(ept_cfg['metrics']))
 
         if ept_cfg.get('import_probes'):
-            probes.extend(import_file(ept_cfg['import_probes'], config_dir, cfg))
+            probes.extend(validate_component(import_file(ept_cfg['import_probes'], config_dir, cfg), 'probes'))
 
         if 'probes' in ept_cfg:
             probes.extend(copy.deepcopy(ept_cfg['probes']))
