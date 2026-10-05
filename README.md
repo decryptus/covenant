@@ -371,14 +371,6 @@ credentials; see the [credentials example](etc/covenant/credentials.yml.example)
 and provide deployment-specific files securely. Imported Mako templates are trusted
 configuration, not a sandbox for untrusted input.
 
-## Tests
-
-See [tests/README.md](tests/README.md) for local test setup and coverage.
-
-The container checks include a jq expression, the collected unittest suite covering collectors, templates, runtime integration
-and CertLord observations, the installed package version and CLI startup. They do not replace a full
-integration test against your real services.
-
 ## Troubleshooting
 
 | Symptom | Check |
@@ -396,3 +388,8 @@ integration test against your real services.
 
 See [configuration validation](docs/configuration-validation.md) for YAML schema
 coverage and compatibility.
+
+## Documentation
+
+- **Users:** installation, configuration, operation and API usage in this README and the user guide.
+- **Contributors:** [architecture, tests and development](https://github.com/decryptus/covenant/blob/master/CONTRIBUTING.md).

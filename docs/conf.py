@@ -66,7 +66,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -183,3 +183,43 @@ epub_exclude_files = ['search.html']
 # Napoleon settings
 #napoleon_google_docstring = True
 #napoleon_numpy_docstring = False
+
+# Keep both documentation audiences explicit on every generated page.
+html_context = {'contributor_index': 'contributors', 'contributor_pages': ['contributors', 'contributing']}
+html_sidebars = {'**': ['about.html', 'documentation-tracks.html', 'localtoc.html', 'searchbox.html']}
+
+REPOSITORY_DOCUMENTATION_URL = 'https://github.com/decryptus/covenant/blob/master/'
+
+
+def documentation_links(app, pagename, templatename, context, doctree):
+    """Resolve repository README links in the generated documentation."""
+    import re
+    from pathlib import Path
+    from urllib.parse import urlsplit
+    source_root = Path(app.srcdir)
+    repository_root = source_root.parent
+    def replace_link(match):
+        href = match.group(1)
+        parsed = urlsplit(href)
+        if parsed.scheme or parsed.netloc or not parsed.path:
+            return match.group(0)
+        if (Path(app.outdir) / pagename).parent.joinpath(parsed.path).exists():
+            return match.group(0)
+        for base in (source_root, repository_root):
+            target = (base / parsed.path).resolve()
+            if not target.is_relative_to(repository_root) or not target.exists():
+                continue
+            docname = app.env.path2doc(str(target))
+            if docname in app.env.found_docs:
+                uri = app.builder.get_relative_uri(pagename, docname)
+            else:
+                uri = REPOSITORY_DOCUMENTATION_URL + target.relative_to(repository_root).as_posix()
+            if parsed.fragment:
+                uri += '#' + parsed.fragment
+            return 'href="' + uri + '"'
+        return match.group(0)
+    context['body'] = re.sub(r'href="([^"]+)"', replace_link, context.get('body', ''))
+
+
+def setup(app):
+    app.connect('html-page-context', documentation_links)
