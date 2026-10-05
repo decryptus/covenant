@@ -371,21 +371,9 @@ credentials; see the [credentials example](etc/covenant/credentials.yml.example)
 and provide deployment-specific files securely. Imported Mako templates are trusted
 configuration, not a sandbox for untrusted input.
 
-## Tests and Docker releases
+## Tests
 
 See [tests/README.md](tests/README.md) for local test setup and coverage.
-
-The [Docker Hub workflow](.github/workflows/dockerhub.yml) builds and tests on
-`master` and pull requests. After successful tests on `master`, a new stable
-version in `VERSION` and `RELEASE` automatically creates its missing `vX.Y.Z`
-tag and publishes the tested Linux amd64 image as:
-
-- `decryptus/covenant:X.Y.Z`
-- `decryptus/covenant:vX.Y.Z`
-
-The workflow does not update `latest` or overwrite existing Git tags. Ordinary commits on an
-already tagged version skip publication. Manual version-tag pushes remain supported.
-See [Docker Hub release instructions](docs/dockerhub.md).
 
 The container checks include a jq expression, the collected unittest suite covering collectors, templates, runtime integration
 and CertLord observations, the installed package version and CLI startup. They do not replace a full
@@ -401,15 +389,10 @@ integration test against your real services.
 | Metric absent | Source response, filter expression, and `on_fail`/`on_noresult` behavior |
 | Nginx version collection fails | Disable `version_enabled` unless `/nginx_version` is configured |
 | Files reported absent | Container mount path, permissions and include/exclude expressions |
-| Image not published | Tag/version checks and Docker Hub credentials in the Actions log |
 
 ## License
 
 [GNU General Public License v3](LICENSE).
-
-## Publishing to PyPI
-
-See [PyPI publishing](docs/pypi.md) for Trusted Publisher setup and automated releases.
 
 See [configuration validation](docs/configuration-validation.md) for YAML schema
 coverage and compatibility.
