@@ -8,14 +8,6 @@ Pull requests only build and test. Ordinary master commits whose version was
 already tagged on an ancestor skip publication. `latest` is deliberately not moved.
 Use an explicit version in docker-compose.yml when deploying a release.
 
-## One-time setup
-
-1. Ensure the Docker Hub repository `decryptus/covenant` exists.
-2. Create a Docker Hub personal access token with read/write access for that image.
-3. In this GitHub repository, Settings > Secrets and variables > Actions, add a
-   repository secret named `DOCKERHUB_TOKEN` containing the token. Never commit it.
-   The workflow authenticates as `decryptus`.
-
 ## Release
 
 Update VERSION, RELEASE, setup.yml, bin/covenant and CHANGELOG consistently, then
