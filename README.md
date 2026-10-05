@@ -383,10 +383,9 @@ tag and publishes the tested Linux amd64 image as:
 - `decryptus/covenant:X.Y.Z`
 - `decryptus/covenant:vX.Y.Z`
 
-Publication requires the GitHub repository secret `DOCKERHUB_TOKEN`. The workflow
-does not update `latest` or overwrite existing Git tags. Ordinary commits on an
+The workflow does not update `latest` or overwrite existing Git tags. Ordinary commits on an
 already tagged version skip publication. Manual version-tag pushes remain supported.
-See [Docker Hub setup and release instructions](docs/dockerhub.md).
+See [Docker Hub release instructions](docs/dockerhub.md).
 
 The container checks include a jq expression, the collected unittest suite covering collectors, templates, runtime integration
 and CertLord observations, the installed package version and CLI startup. They do not replace a full
