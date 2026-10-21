@@ -3,16 +3,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """covenant.plugins.pssl"""
 
+import calendar
 import logging
 import socket
 import ssl
-
-from datetime import datetime
+import time
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 
 import six
+from urllib3.util.ssl_match_hostname import CertificateError, match_hostname
 
 from sonicprobe.libs import network, urisup
 
@@ -52,8 +53,8 @@ class CovenantSslPlugin(CovenantPlugBase):
     @staticmethod
     def _valid_hostname(valid_hosts, host):
         try:
-            ssl.match_hostname(valid_hosts, host)
-        except ssl.CertificateError:
+            match_hostname(valid_hosts, host)
+        except CertificateError:
             return False
 
         return True
@@ -66,12 +67,20 @@ class CovenantSslPlugin(CovenantPlugBase):
         cert = x509.load_der_x509_certificate(cert_der, default_backend())
 
         rs['connect_success'] = True
-        rs['cert_not_before'] = int(cert.not_valid_before.strftime('%s'))
-        rs['cert_not_after'] = int(cert.not_valid_after.strftime('%s'))
-        rs['cert_has_expired'] = cert.not_valid_after < datetime.utcnow()
+        before = getattr(cert, 'not_valid_before_utc', None)
+        after = getattr(cert, 'not_valid_after_utc', None)
+        if before is None:
+            before = cert.not_valid_before
+        if after is None:
+            after = cert.not_valid_after
+        rs['cert_not_before'] = calendar.timegm(before.utctimetuple())
+        rs['cert_not_after'] = calendar.timegm(after.utctimetuple())
+        rs['cert_has_expired'] = rs['cert_not_after'] < time.time()
         rs['cert_serial_no'] = cert.serial_number
-        rs['cert_issuer_cn'] = cert.issuer.get_attributes_for_oid(x509.OID_COMMON_NAME)[0].value
-        rs['cert_cn'] = cert.subject.get_attributes_for_oid(x509.OID_COMMON_NAME)[0].value
+        issuer_names = cert.issuer.get_attributes_for_oid(x509.OID_COMMON_NAME)
+        subject_names = cert.subject.get_attributes_for_oid(x509.OID_COMMON_NAME)
+        rs['cert_issuer_cn'] = issuer_names[0].value if issuer_names else None
+        rs['cert_cn'] = subject_names[0].value if subject_names else None
         rs['cert_emails'] = []
         rs['cert_dns_names'] = []
         rs['cert_ip_addresses'] = []
@@ -107,10 +116,23 @@ class CovenantSslPlugin(CovenantPlugBase):
             socket.socket(ip_protocol),
             server_hostname = server_hostname)
 
-        conn.settimeout(timeout)
-        conn.connect((host, int(port)))
+        try:
+            conn.settimeout(timeout)
+            conn.connect((host, int(port)))
+        except BaseException:
+            conn.close()
+            raise
 
         return conn
+
+    @staticmethod
+    def _close(conn):
+        try:
+            conn.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass  # A failed/closed peer still requires local descriptor cleanup.
+        finally:
+            conn.close()
 
     def _subject_alt_name(self, cert, rs = None, valid_hosts = None):
         if not isinstance(rs, dict):
@@ -222,11 +244,11 @@ class CovenantSslPlugin(CovenantPlugBase):
 
                     if cfg['verify_peer']:
                         if conn:
-                            conn.shutdown(socket.SHUT_RDWR)
-                            conn.close()
+                            self._close(conn)
                             conn = None
 
                         context.verify_mode = ssl.CERT_REQUIRED
+                        context.check_hostname = True
                         context.load_default_certs(ssl.Purpose.SERVER_AUTH)
                         conn = self._connect(context,
                                              host,
@@ -253,8 +275,7 @@ class CovenantSslPlugin(CovenantPlugBase):
                         data["%s_success" % self.type] = True
             finally:
                 if conn:
-                    conn.shutdown(socket.SHUT_RDWR)
-                    conn.close()
+                    self._close(conn)
 
             target(data)
 

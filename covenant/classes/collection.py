@@ -17,6 +17,7 @@ except ImportError:  # Historical Python 2.7 runtime.
     from time import time as monotonic
 
 DEFAULT_RESULT_TIMEOUT = 30.0
+MAX_PENDING_RESULTS = 256
 RESULT_WORKER_IDLE_TIMEOUT = 0.1
 MAX_RESULT_TIMEOUT = getattr(threading, 'TIMEOUT_MAX', 2147483.0)
 LOG = logging.getLogger('covenant.collection')
@@ -39,6 +40,10 @@ class CollectionFailed(CollectionError):
 
 
 class CollectionTimeout(CollectionError):
+    pass
+
+
+class CollectionBusy(CollectionError):
     pass
 
 
@@ -102,8 +107,10 @@ class CollectionService(object):
             raise InvalidEndpointType('invalid endpoint type, correct type: %r' % ept_sync.type)
 
         uid = '%s:%s' % (ept_sync.name, uuid.uuid4())
-        return ept_sync, self.object_factory(ept_sync.name, uid, endpoint, method,
-                                             params, args, callback)
+        obj = self.object_factory(ept_sync.name, uid, endpoint, method,
+                                  params, args, callback)
+        obj.deadline = monotonic() + self.result_timeout
+        return ept_sync, obj
 
     def collect(self, endpoint, endpoint_type, method, params, args = None):
         completion = _Completion()
@@ -111,10 +118,12 @@ class CollectionService(object):
                                      completion.complete)
         uid = obj.get_uid()
         try:
-            # CovenantEPTSync uses an unbounded Queue: submission does not wait
-            # for capacity. The finite wait includes time spent queued for a worker.
+            # Admission is nonblocking and bounded. A caller deadline does not
+            # interrupt backend work that has already started.
             ept_sync.qput(obj)
-            result = completion.wait(self.result_timeout)
+            result = completion.wait(max(0, obj.deadline - monotonic()))
+            if monotonic() >= obj.deadline:
+                raise CollectionTimeout('collection result expired')
             if result.has_error():
                 LOG.error('failed on call: %r. (errors: %r)', uid, result.get_errors())
                 raise CollectionFailed('failed to get results. (errors: %r)' % result.get_errors())
@@ -208,7 +217,9 @@ class CollectionCalls(object):
         uid = obj.get_uid()
         with self.condition:
             self._expire()
-            self.pending[uid] = _PendingCall(monotonic() + self.service.result_timeout, None)
+            if len(self.pending) >= MAX_PENDING_RESULTS:
+                raise CollectionBusy('collection result capacity full')
+            self.pending[uid] = _PendingCall(obj.deadline, None)
             if self.worker is None:
                 self.worker = threading.Thread(target = self._reap, name = 'covenant-results')
                 self.worker.daemon = True

@@ -6,13 +6,15 @@ from httpdis.httpdis import HttpReqError
 
 from covenant.classes.collection import (CollectionCalls, CollectionService,
                                           DEFAULT_RESULT_TIMEOUT, UnknownEndpoint,
-                                          InvalidEndpointType, CollectionTimeout)
+                                          InvalidEndpointType, CollectionTimeout,
+                                          CollectionBusy)
 from covenant.classes.plugins import CovenantEPTObject, EPTS_SYNC
 
 COLLECTION_HTTP_ERRORS = {
     UnknownEndpoint: 404,
     InvalidEndpointType: 400,
     CollectionTimeout: 504,
+    CollectionBusy: 503,
 }
 COLLECTION_EXCEPTIONS = tuple(COLLECTION_HTTP_ERRORS)
 

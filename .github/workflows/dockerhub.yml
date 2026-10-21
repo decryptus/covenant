@@ -78,6 +78,7 @@ jobs:
   publish:
     outputs:
       publish: ${{ steps.release.outputs.publish }}
+      tag: ${{ steps.release.outputs.tag }}
     needs: image
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -154,3 +155,30 @@ jobs:
         with:
           packages-dir: dist/
           skip-existing: true
+
+  github-release:
+    needs: [publish, pypi]
+    if: needs.publish.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-distributions
+          path: dist/
+      - name: Publish the matching immutable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.publish.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            exit 0
+          fi
+          gh release create "$RELEASE_TAG" dist/* --verify-tag \
+            --title "Covenant ${RELEASE_TAG#v}" --notes-file "docs/release-${RELEASE_TAG#v}.md"

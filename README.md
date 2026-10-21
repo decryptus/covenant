@@ -62,7 +62,7 @@ orders_workers_active 3.0
 Edit `examples/quickstart/data/status.json`, then call the endpoint again to see the
 new values. Collection happens when the endpoint is scraped.
 
-The example pins `decryptus/covenant:0.0.71` and exposes port 9118 only on the local
+The example pins `decryptus/covenant:0.0.72` and exposes port 9118 only on the local
 host. If the first request arrives before the API is ready, retry it.
 
 ```sh
@@ -333,7 +333,7 @@ Docker is the simplest way to use the tested runtime. To run your own configurat
 docker run --rm --name covenant \
   -p 127.0.0.1:9118:9118 \
   -v "$PWD/covenant.yml:/etc/covenant/covenant.yml:ro" \
-  decryptus/covenant:0.0.71
+  decryptus/covenant:0.0.72
 ```
 
 For a Python installation, `pip install covenant` installs the version published
