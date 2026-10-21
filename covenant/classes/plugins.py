@@ -16,6 +16,9 @@ from prometheus_client import generate_latest
 
 from covenant.classes.exceptions import CovenantTargetFailed # pylint: disable=unused-import
 from covenant.classes.target import CovenantRegistry, CovenantTarget
+from covenant.classes.collection import CollectionBusy, monotonic
+
+MAX_PENDING_COLLECTIONS = 256
 
 LOG = logging.getLogger('covenant.plugins')
 
@@ -102,11 +105,14 @@ class CovenantEPTSync(object): # pylint: disable=useless-object-inheritance
     def __init__(self, name, xtype):
         self.name    = name
         self.type    = xtype
-        self.queue   = _queue.Queue()
+        self.queue   = _queue.Queue(MAX_PENDING_COLLECTIONS)
         self.results = {}
 
     def qput(self, item):
-        return self.queue.put(item)
+        try:
+            return self.queue.put_nowait(item)
+        except _queue.Full:
+            raise CollectionBusy('collection queue full')
 
     def qget(self, block = True, timeout = None):
         return self.queue.get(block, timeout)
@@ -177,9 +183,13 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
     def run(self):
         while True:
             r = None
+            obj = EPTS_SYNC[self.name].qget(True)
 
             try:
-                obj  = EPTS_SYNC[self.name].qget(True)
+                deadline = getattr(obj, 'deadline', None)
+                if deadline is not None and monotonic() >= deadline:
+                    obj.add_error('collection expired before execution')
+                    continue
                 func = "do_%s" % obj.get_method()
                 if not hasattr(self, func):
                     LOG.warning("unknown method %r for endpoint %r", func, self.name)
@@ -192,7 +202,12 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
             else:
                 obj.set_result(r)
             finally:
-                obj()
+                try:
+                    obj()
+                except Exception:
+                    # A caller's result hook must not terminate the shared worker.
+                    # Never retry a callback with an unknown partial outcome.
+                    LOG.error('collection callback failed for endpoint %r', self.name)
 
     @abc.abstractmethod
     def _do_call(self, obj, targets = None, registry = None):

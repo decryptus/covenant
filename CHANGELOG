@@ -1,3 +1,10 @@
+covenant (0.0.72) stable; urgency=medium
+
+  * Correct TLS hostname, SAN-only certificate and UTC validity handling.
+  * Bound queued work and retained results; isolate completion callback failures.
+
+ -- Adrien Delle Cave <pypi@doowan.net>  Wed, 21 Oct 2026 12:00:00 +0000
+
 covenant (0.0.71) unstable; urgency=medium
 
   * Add an optional read-only CertLord observation collector (Python 3.8+).

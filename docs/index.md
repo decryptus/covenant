@@ -11,6 +11,7 @@ Installation, configuration, public APIs and troubleshooting.
 
    certlord
    configuration-validation
+   release-0.0.72
 
 
 Contributor documentation

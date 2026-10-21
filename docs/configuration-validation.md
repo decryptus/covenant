@@ -29,3 +29,35 @@ python -m unittest discover -s tests -v
 
 These tests use synthetic data and mocked adapters or loopback services. They do
 not establish provider availability or production acceptance.
+
+# Collection overload and expiration
+
+Each endpoint accepts at most 256 queued collection requests, in addition to
+the collection currently executing. Admission never waits for space: when the
+queue is full, metrics and probes return HTTP 503. There is no automatic retry.
+This replaces the previous unbounded queue behavior.
+
+Each split submission/retrieval instance also retains at most 256 outstanding
+calls across its endpoints, including completed results not yet retrieved. A
+full result store refuses new submissions with the same HTTP 503 response,
+even when the endpoint queue is empty. Retrieving, deleting or expiring a result
+releases its slot. The existing result deadline remains active; this limit does
+not evict a valid result to admit another caller.
+
+Requests submitted through the collection service carry the existing
+`general.result_timeout` deadline. A worker discards an expired request before
+starting its plugin call. The caller still receives HTTP 504 on expiration;
+late results cannot replace the result of another request. Legacy directly
+constructed plugin jobs without a deadline retain their execution behavior,
+but share the same queue capacity.
+
+The deadline does not interrupt a plugin call already running. If a plugin is
+blocked, expired queued requests occupy bounded slots until the worker resumes;
+new requests can continue to receive HTTP 503. Configure backend timeouts and
+investigate the blocked dependency. The request-count bound is not a byte-size
+limit or a guarantee of bounded backend execution time.
+
+An exception in a custom completion callback is logged without retrying that
+callback and does not stop the endpoint worker. Later queued requests continue
+to be processed. If the failed callback did not deliver the result, its caller
+still reaches the original result deadline.
