@@ -26,6 +26,11 @@ if sys.version_info >= (3, 8):
 
     class CovenantCertlordPlugin(CovenantPlugBase):
         PLUGIN_NAME = 'certlord'
+        ACCEPT = 'text/plain'
+        UP_METRIC = 'covenant_certlord_source_up'
+
+        def _snapshot(self, text, collected_at, elapsed):
+            return snapshot_metrics(text)
 
         def safe_init(self):
             super().safe_init()
@@ -67,6 +72,10 @@ if sys.version_info >= (3, 8):
             if not loopback and not (self._token_file or self._password_file):
                 raise CovenantConfigurationError('Remote CertLord collection requires read credentials')
 
+        def _up(self, value):
+            header = UP if self.UP_METRIC == 'covenant_certlord_source_up' else ('# TYPE %s gauge\n' % self.UP_METRIC).encode('ascii')
+            return header + ('%s %s\n' % (self.UP_METRIC, value)).encode('ascii')
+
         @staticmethod
         def _path(value, directory):
             if value is None:
@@ -80,7 +89,7 @@ if sys.version_info >= (3, 8):
             if obj.get_params().get('target'):
                 raise CovenantConfigurationError('CertLord does not accept dynamic targets')
             try:
-                headers = {'Accept': 'text/plain'}
+                headers = {'Accept': self.ACCEPT}
                 auth = None
                 if self._password_file:
                     with open(self._password_file, encoding='ascii') as stream:
@@ -115,12 +124,12 @@ if sys.version_info >= (3, 8):
                             if size > MAX_BYTES or time.monotonic() - started > self._timeout:
                                 raise ValueError('Collection limit exceeded')
                             chunks.append(chunk)
-                        output = snapshot_metrics(b''.join(chunks).decode('utf-8'))
-                return UP + b'covenant_certlord_source_up 1\n' + output
+                        output = self._snapshot(b''.join(chunks).decode('utf-8'), time.time(), time.monotonic() - started)
+                return self._up(1) + output
             except Exception:
                 # No raw URL, response body, token or exception text in output/logs.
                 # A fresh failure snapshot contains no previously healthy certificate gauges.
-                return UP + b'covenant_certlord_source_up 0\n'
+                return self._up(0)
 
 
     PLUGINS.register(CovenantCertlordPlugin)
