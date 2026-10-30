@@ -10,6 +10,7 @@ Installation, configuration, public APIs and troubleshooting.
    :caption: User guide and reference
 
    certlord
+   observations
    configuration-validation
    release-0.0.72
 

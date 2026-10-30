@@ -393,3 +393,7 @@ coverage and compatibility.
 
 - **Users:** installation, configuration, operation and API usage in this README and the user guide.
 - **Contributors:** [architecture, tests and development](https://github.com/decryptus/covenant/blob/master/CONTRIBUTING.md).
+
+Complete inventory exporters for Monit-Docker and CertLord are available through
+the optional [observation plugins](docs/observations.md). Existing numeric collectors
+keep their current configuration and output.

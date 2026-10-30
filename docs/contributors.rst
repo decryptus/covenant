@@ -9,3 +9,4 @@ For installation and operation, return to :doc:`/index`.
    :caption: Contributors
 
    contributing
+   observations-acceptance
