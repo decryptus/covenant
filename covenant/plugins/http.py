@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """covenant.plugins.http"""
 
+from functools import partial
 import logging
+import math
 import os
 import requests
 import six
@@ -27,6 +29,41 @@ _ALLOWED_METHODS = ('delete',
                     'patch',
                     'post',
                     'put')
+
+
+DEFAULT_HTTP_TIMEOUT = 10
+DEFAULT_MAX_RESPONSE_BYTES = 4 * 1024 * 1024
+READ_CHUNK_BYTES = 16 * 1024
+
+
+def _response_limits(cfg):
+    value = cfg.get('timeout')
+    try:
+        timeout = DEFAULT_HTTP_TIMEOUT if value is None else float(value)
+        if isinstance(value, bool) or timeout <= 0 or math.isnan(timeout) or math.isinf(timeout):
+            raise ValueError
+    except (TypeError, ValueError, OverflowError):
+        raise CovenantConfigurationError('HTTP timeout must be positive and finite')
+    limit = cfg.get('max_response_bytes', DEFAULT_MAX_RESPONSE_BYTES)
+    if isinstance(limit, bool) or not isinstance(limit, six.integer_types) or limit <= 0:
+        raise CovenantConfigurationError('max_response_bytes must be a positive integer')
+    return timeout, limit
+
+
+def _buffer_response(limit, response, **kwargs):
+    # Requests consumes redirect bodies internally, even with stream=True.
+    # Cache only the successful payload before its redirect or decoding logic runs.
+    try:
+        body = bytearray()
+        if response.status_code == requests.codes['ok']:
+            for chunk in response.iter_content(min(READ_CHUNK_BYTES, limit + 1)):
+                if len(body) + len(chunk) > limit:
+                    raise ValueError('HTTP response exceeds max_response_bytes')
+                body.extend(chunk)
+        response._content = bytes(body)
+    finally:
+        response.close()
+    return response
 
 
 class CredentialAdapter(HTTPAdapter):
@@ -62,6 +99,7 @@ class CovenantHttpPlugin(CovenantPlugBase):
                 self._import_credential_targets(cfg)
         super(CovenantHttpPlugin, self).safe_init()
         for target in self.targets:
+            _response_limits(target.config)
             CredentialTargets(target.config.get('credential_targets', []))
 
     def _import_credential_targets(self, cfg):
@@ -124,10 +162,12 @@ class CovenantHttpPlugin(CovenantPlugBase):
             if 'ssl_verify' in cfg:
                 cfg['verify'] = bool(cfg.pop('ssl_verify'))
 
-            if cfg.get('timeout') is not None:
-                cfg['timeout'] = float(cfg['timeout'])
-            else:
-                cfg['timeout'] = None
+            cfg['timeout'], limit = _response_limits(cfg)
+            cfg.pop('max_response_bytes', None)
+            cfg['stream'] = True
+            hooks = requests.Request(hooks=cfg.get('hooks')).hooks
+            hooks['response'].insert(0, partial(_buffer_response, limit))
+            cfg['hooks'] = hooks
 
             if not isinstance(cfg.get('headers'), dict):
                 cfg['headers'] = None
