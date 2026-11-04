@@ -1,3 +1,10 @@
+covenant (0.0.75) stable; urgency=medium
+
+  * Scope Redis credentials and client certificates to approved dynamic destinations.
+  * Default native listeners to loopback and publish Compose ports on host loopback.
+
+ -- Codex <codex@openai.com>  Wed, 04 Nov 2026 19:15:00 +0000
+
 covenant (0.0.74) stable; urgency=medium
 
   * Return HTTP 500 for unexpected scrape failures and 400 for invalid queries.
