@@ -39,7 +39,7 @@ start real filestat metric/probe plugins, scrape all shipped route aliases, veri
 400/404/500/504 responses, and invoke the DWho SIGTERM stop hooks. Both legacy YAML
 without `result_timeout` and an explicit short deadline are covered.
 
-The runtime fixture does not invoke `bin/covenant`, drop privileges, daemonize,
+The HTTP route fixture does not invoke `bin/covenant`, drop privileges, daemonize,
 or test PID-file ownership. Existing plugin worker threads are daemon threads;
 this verifies HTTP shutdown and stop-hook invocation, not cooperative cancellation
 of every backend operation. No external backend or Docker daemon is required.
@@ -57,3 +57,9 @@ shapes, subclass overrides used by the HTTP handlers, result mapping writes,
 concurrent split calls, abandoned-call expiry and late callbacks after consumption
 or timeout. These facades retain bounded waits; they do not restore indefinite
 result retention or concrete-dict identity.
+
+
+On Linux with the full CLI dependencies (including pyjq), daemon startup tests
+exercise foreground and detached bind failures, missing service identities and
+the live process UID, GID and supplementary groups. The Docker workflow runs
+these against the installed executable as root with an inherited root group.

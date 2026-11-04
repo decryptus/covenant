@@ -38,16 +38,8 @@ DEFAULT_LOGFILE  = "/var/log/covenant/daemon.log"
 DEFAULT_USER     = "covenant"
 DEFAULT_GROUP    = "covenant"
 
-try:
-    COVENANT_USER  = pwd.getpwnam(os.environ.get('COVENANT_USER') or DEFAULT_USER).pw_name
-except KeyError:
-    COVENANT_USER  = pwd.getpwuid(os.geteuid())[0]
-
-try:
-    COVENANT_GROUP = grp.getgrnam(os.environ.get('COVENANT_GROUP') or DEFAULT_GROUP).gr_name
-except KeyError:
-    COVENANT_GROUP = grp.getgrgid(os.getegid())[0]
-
+COVENANT_USER    = os.environ.get('COVENANT_USER') or None
+COVENANT_GROUP   = os.environ.get('COVENANT_GROUP') or None
 COVENANT_PIDFILE = os.environ.get('COVENANT_PIDFILE') or DEFAULT_PIDFILE
 COVENANT_LOGFILE = os.environ.get('COVENANT_LOGFILE') or DEFAULT_LOGFILE
 
@@ -88,12 +80,12 @@ def argv_parse_check():
                         dest      = 'username',
                         type      = six.ensure_text,
                         default   = COVENANT_USER,
-                        help      = "Use username for the process instead of %(default)s")
+                        help      = "Service user (default: COVENANT_USER or covenant)")
     parser.add_argument("-g",
                         dest      = 'groupname',
                         type      = six.ensure_text,
                         default   = COVENANT_GROUP,
-                        help      = "Use groupname for the process instead of %(default)s")
+                        help      = "Service group (default: COVENANT_GROUP or covenant)")
     parser.add_argument("--logfile",
                         dest      = 'logfile',
                         type      = six.ensure_text,
@@ -114,6 +106,53 @@ def argv_parse_check():
     return args
 
 
+def service_identity(options):
+    username = options.username
+    groupname = options.groupname
+    if os.geteuid() == 0:
+        username = username or DEFAULT_USER
+        groupname = groupname or DEFAULT_GROUP
+    try:
+        user = pwd.getpwnam(username) if username else pwd.getpwuid(os.geteuid())
+    except KeyError:
+        raise SystemExit("unknown service user %r" % (username or os.geteuid()))
+    try:
+        group = grp.getgrnam(groupname) if groupname else grp.getgrgid(os.getegid())
+    except KeyError:
+        raise SystemExit("unknown service group %r" % (groupname or os.getegid()))
+    return user, group.gr_gid
+
+
+def run_detached(options, user, gid, root_logger):
+    # Sonicprobe detaches before HTTPdis binds. Wait for the serving loop so
+    # the original launcher can report bind, PID and privilege failures.
+    reader, writer = os.pipe()
+    pid = os.fork()
+    if pid:
+        os.close(writer)
+        try:
+            ready = os.read(reader, 1)
+        finally:
+            os.close(reader)
+            os.waitpid(pid, 0)
+        if ready != b'1':
+            raise SystemExit(1)
+        return
+
+    os.close(reader)
+    with os.fdopen(writer, 'wb', 0) as startup:
+        daemonize.daemonize()
+
+        class ReadyServer(httpdis.KillableThreadingHTTPServer):
+            def serve_until_killed(self):
+                if not startup.closed:
+                    startup.write(b'1')
+                    startup.close()
+                return super(ReadyServer, self).serve_until_killed()
+
+        serve(options, user, gid, root_logger, ReadyServer)
+
+
 def main(options):
     """
     Main function; start the server
@@ -121,8 +160,8 @@ def main(options):
     set_softname(SYSLOG_NAME)
     set_softver(__version__)
 
-    uid = pwd.getpwnam(options.username)[2]
-    gid = grp.getgrnam(options.groupname)[2]
+    user, gid = service_identity(options)
+    uid = user.pw_uid
 
     make_piddir(options.pidfile, uid, gid)
     make_logdir(options.logfile, uid, gid)
@@ -136,27 +175,33 @@ def main(options):
     httpdis.init(options, False)
     DWHO_THREADS.append(httpdis.stop)
 
-    if not options.foreground:
-        LOG.info("Transforming into a daemon from hell")
-        daemonize.daemonize()
+    if options.foreground:
+        serve(options, user, gid, root_logger, httpdis.KillableThreadingHTTPServer)
+    else:
+        run_detached(options, user, gid, root_logger)
 
+
+def serve(options, user, gid, root_logger, server_class):
     LOG.info("locking PID")
     daemonize.lock_pidfile_or_die(options.pidfile)
 
     try:
         LOG.info("pidfile ok")
         root_logger.setLevel(options.loglevel)
-        os.chown(options.pidfile, uid, gid)
+        os.chown(options.pidfile, user.pw_uid, gid)
+        if os.geteuid() == 0:
+            os.initgroups(user.pw_name, gid)
         os.setgid(gid)
-        os.setuid(uid)
+        os.setuid(user.pw_uid)
         os.umask(0o22)
 
         start_endpoints()
-        httpdis.run(options)
-    except (KeyboardInterrupt, SystemExit):
+        httpdis.run(options, http_server_class=server_class)
+    except KeyboardInterrupt:
         pass
     except Exception:
-        LOG.exception("bad things happen")
+        LOG.exception("Covenant daemon failed")
+        raise SystemExit(1)
     finally:
         daemonize.unlock_pidfile(options.pidfile)
 
