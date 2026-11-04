@@ -291,9 +291,11 @@ general:
 so existing configurations remain valid. Positive fractional values are accepted;
 zero, negative, boolean, null, non-finite and platform-overflow values are rejected
 at startup. This applies to both metric and probe requests, including time spent
-waiting in the endpoint queue. An expired wait returns **HTTP 504**. Existing
-endpoint-not-found (404), endpoint-type (400) and plugin-error (500) responses
-remain unchanged. `lock_timeout` separately bounds acquisition of the module lock.
+waiting in the endpoint queue. An expired wait returns **HTTP 504**. Unknown endpoints
+return 404. Invalid query parameters and endpoint-type mismatches return 400.
+Unexpected failures on metric, probe and server routes return a generic 500.
+A plugin that successfully reports upstream failure through a metric can still
+return a valid scrape with that metric set to zero. `lock_timeout` separately bounds acquisition of the module lock.
 
 The deadline bounds the client's result wait; it does **not** interrupt a running
 plugin, cancel backend I/O, or remove an already queued job. Keep backend timeouts

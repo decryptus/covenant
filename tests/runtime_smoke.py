@@ -8,6 +8,7 @@ import sys
 import tempfile
 import threading
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import requests
 import yaml
@@ -89,11 +90,28 @@ def main():
                                    ('probe/files', 400)):
                 response = requests.get(base + '/' + route, timeout=3)
                 assert response.status_code == status, (route, response.status_code, response.text)
+            for route, owner, method in (
+                    ('metrics/files', metrics.MetricsModule, '_push_epts_sync'),
+                    ('probe/file-probe', probes.ProbesModule, '_push_epts_sync'),
+                    ('server', metrics, 'generate_latest')):
+                with patch.object(owner, method, side_effect=RuntimeError('private exception detail')):
+                    response = requests.get(base + '/' + route, timeout=3)
+                    assert response.status_code == 500, (route, response.status_code)
+                    assert 'private exception detail' not in response.text
+                response = requests.get(base + '/' + route, params={'target': config_path}, timeout=3)
+                assert response.status_code == 200, (route, response.status_code)
+
             def fail(obj):
-                obj.add_error('plugin failure')
+                obj.add_error('private plugin detail')
                 obj()
-            EPTS_SYNC['files'].qput = fail
-            assert requests.get(base + '/metrics/files', timeout=3).status_code == 500
+
+            for endpoint, route in (('files', 'metrics/files'), ('file-probe', 'probes/file-probe')):
+                with patch.object(EPTS_SYNC[endpoint], 'qput', fail):
+                    response = requests.get(base + '/' + route, timeout=3)
+                    assert response.status_code == 500, (route, response.status_code)
+                    assert 'private plugin detail' not in response.text
+                response = requests.get(base + '/' + route, params={'unknown': 'invalid'}, timeout=3)
+                assert response.status_code == 400, (route, response.status_code)
             if sys.argv[1] == 'bounded':
                 for endpoint, route in (('files', 'metrics/files'), ('file-probe', 'probe/file-probe')):
                     EPTS_SYNC[endpoint].qput = lambda obj: None

@@ -40,7 +40,7 @@ class ProbesModule(CollectionModuleCompat, DWhoModuleBase):
             raise HttpReqError(400, "invalid arguments type")
 
         if not xys.validate(params, self.PROBES_QSCHEMA):
-            raise HttpReqError(415, "invalid arguments for command")
+            raise HttpReqError(400, "invalid arguments for command")
 
         if not self.LOCK.acquire_read(self.lock_timeout):
             raise HttpReqError(503, "unable to take LOCK for reading after %s seconds" % self.lock_timeout)
@@ -49,12 +49,13 @@ class ProbesModule(CollectionModuleCompat, DWhoModuleBase):
             uid = self._push_epts_sync(params['endpoint'], 'probes', params)
             result = self._get_result(uid)
             if result['error']:
-                raise HttpReqError(500, "failed to get results. (errors: %r)" % result['error'])
+                raise HttpReqError(500, "collection failed")
             return HttpResponse(data = result['result'])
         except HttpReqError:
             raise
-        except Exception as e:
-            LOG.exception(e)
+        except Exception:
+            LOG.exception("collection failed")
+            raise HttpReqError(500, "collection failed")
         finally:
             gc.collect()
             self.LOCK.release()

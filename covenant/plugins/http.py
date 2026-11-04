@@ -152,8 +152,7 @@ class CovenantHttpPlugin(CovenantPlugBase):
                     req = getattr(requests, method)(**cfg)
 
                 if req.status_code != requests.codes['ok']:
-                    raise LookupError("invalid status code: %r. (error: %r)"
-                                      % (req.status_code, req.text))
+                    raise LookupError("upstream HTTP status %d" % req.status_code)
 
                 if xformat == 'json':
                     data = req.json()
@@ -165,7 +164,7 @@ class CovenantHttpPlugin(CovenantPlugBase):
                               target.name,
                               e)
             finally:
-                if req:
+                if req is not None:
                     req.close()
 
             target(data)
