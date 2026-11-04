@@ -79,6 +79,22 @@ class TemplateTests(unittest.TestCase):
         self.assertIn(b'up 0.0\n', output)
         self.assertIn(b'exporter_scrape_failures_total 1.0\n', output)
 
+    def test_upstream_error_body_is_kept_out_of_logs(self):
+        plugin = CovenantHttpPlugin('test-http-error-body')
+        config = template('metrics.d/nginx.yml', {'url': 'http://configured.invalid'})[0]
+        plugin.targets = [CovenantTarget(registry=plugin.registry, **config)]
+        response = requests.Response()
+        response.status_code = 403
+        response._content = b'private upstream body'
+        with patch('covenant.plugins.http.requests.get', return_value=response), \
+                patch.object(response, 'close') as close, \
+                self.assertLogs('covenant.plugins.http', level='ERROR') as logs:
+            output = plugin._fetch(request())
+        close.assert_called_once_with()
+        self.assertIn(b'up 0.0\n', output)
+        self.assertIn('403', logs.output[0])
+        self.assertNotIn('private upstream body', '\n'.join(logs.output))
+
     def test_shipped_network_templates_have_timeouts(self):
         for filename in ('apache', 'nginx', 'rabbitmq'):
             for target in template('metrics.d/%s.yml' % filename):
