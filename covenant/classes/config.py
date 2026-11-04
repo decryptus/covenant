@@ -20,6 +20,7 @@ from covenant.classes.exceptions import CovenantConfigurationError
 from covenant.classes.configuration_schema import validate_configuration, validate_component
 from covenant.classes.plugins import ENDPOINTS, PLUGINS
 
+DEFAULT_LISTEN_ADDR = '127.0.0.1'
 _TPL_IMPORTS = ('from os import environ as ENV',
                 'from sonicprobe.helpers import to_yaml as my')
 LOG          = logging.getLogger('covenant.config')
@@ -44,6 +45,9 @@ def load_conf(xfile, options = None):
 
     with open(xfile, 'r') as f:
         conf = parse_conf(validate_configuration(load_yaml(f)))
+
+    if conf['general'].get('listen_addr') is None:
+        conf['general']['listen_addr'] = DEFAULT_LISTEN_ADDR
 
     try:
         conf['general']['result_timeout'] = validate_result_timeout(

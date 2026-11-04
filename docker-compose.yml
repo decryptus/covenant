@@ -1,9 +1,12 @@
 version: '3.2'
 services:
   covenant:
-    image: decryptus/covenant:latest
+    image: decryptus/covenant:0.0.74
     container_name: covenant
+    environment:
+      COVENANT_EXTRA_OPTS: --listen-addr 0.0.0.0
     ports:
-      - '9118:9118'
+      - '127.0.0.1:9118:9118'
     volumes:
       - './etc/covenant/covenant.yml.example:/etc/covenant/covenant.yml:ro'
+      - './etc/covenant/credentials.yml.example:/etc/covenant/credentials.yml.example:ro'

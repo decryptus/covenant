@@ -51,9 +51,15 @@ def main():
         shutil.copytree(os.path.join(CONFIG_DIR, 'probes.d'), os.path.join(directory, 'probes.d'))
         with open(os.path.join(CONFIG_DIR, 'covenant.yml.example')) as stream:
             conf = yaml.safe_load(stream)
-        conf['general'].update(listen_addr='127.0.0.1', listen_port=0)
+        assert conf['general']['listen_addr'] == '127.0.0.1'
+        conf['general']['listen_port'] = 0
+        if sys.argv[1] == 'legacy':
+            del conf['general']['listen_addr']
+        elif sys.argv[1] == 'override':
+            conf['general']['listen_addr'] = '0.0.0.0'
         conf['general'].pop('result_timeout', None)
         if sys.argv[1] == 'bounded':
+            conf['general']['listen_addr'] = None
             conf['general']['result_timeout'] = 0.05
         conf['endpoints'] = {
             'files': {'plugin': 'filestat', 'import_metrics': 'probes.d/file.yml'},
@@ -62,7 +68,10 @@ def main():
         config_path = os.path.join(directory, 'covenant.yml')
         with open(config_path, 'w') as stream:
             yaml.safe_dump(conf, stream)
-        options = load_conf(config_path, SimpleNamespace())
+        cli = SimpleNamespace(listen_addr='127.0.0.1') if sys.argv[1] == 'override' else SimpleNamespace()
+        options = load_conf(config_path, cli)
+        if sys.argv[1] == 'override':
+            assert options.configuration['general']['listen_addr'] == '0.0.0.0'
         assert options.configuration['_config_directory'] == directory
         if sys.argv[1] != 'bounded':
             assert options.configuration['general']['result_timeout'] == 30
@@ -77,6 +86,7 @@ def main():
         try:
             assert READY.wait(3), 'server did not start'
             assert not ERRORS, ERRORS
+            assert ADDRESS[0][0] == '127.0.0.1', ADDRESS[0]
             base = 'http://%s:%s' % ADDRESS[0]
             for route in ('metrics/files', 'probe/file-probe', 'probes/file-probe'):
                 response = requests.get(base + '/' + route, params={'target': config_path}, timeout=3)

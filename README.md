@@ -71,6 +71,20 @@ docker compose -f examples/quickstart/compose.yml logs covenant
 docker compose -f examples/quickstart/compose.yml down
 ```
 
+## Listener and Prometheus access
+
+A native Covenant process defaults to `127.0.0.1` when `general.listen_addr`
+is omitted or null. An explicit YAML address takes precedence over the default,
+and `--listen-addr` overrides YAML. If Prometheus runs on a different machine,
+set `general.listen_addr` to the exporter's private monitoring address and
+restrict inbound access to the intended scrapers.
+
+Both Compose examples publish `127.0.0.1:9118:9118` on the host. Covenant
+listens on `0.0.0.0` **inside the container** so Prometheus on the same Docker
+network can scrape `covenant:9118`. Other containers on that network can also
+reach the unauthenticated routes. For a remote Prometheus, replace the host
+loopback in the port mapping with the host's private monitoring address.
+
 ## Service identity and startup
 
 When launched by root, Covenant requires an existing service user and group
@@ -351,6 +365,9 @@ docker run --rm --name covenant \
   -v "$PWD/covenant.yml:/etc/covenant/covenant.yml:ro" \
   decryptus/covenant:0.0.74
 ```
+
+For this bridge-network command, set `general.listen_addr: 0.0.0.0` in the
+mounted YAML so the published port can reach the container.
 
 For a Python installation, `pip install covenant` installs the version published
 on PyPI, which may differ from GitHub or Docker Hub. Installing from the repository
