@@ -1,3 +1,11 @@
+covenant (0.0.74) stable; urgency=medium
+
+  * Return HTTP 500 for unexpected scrape failures and 400 for invalid queries.
+  * Drop inherited groups, require configured service identities and report startup failures.
+  * Bound successful HTTP payloads to 4 MiB by default and use a finite network timeout.
+
+ -- Codex <codex@openai.com>  Wed, 04 Nov 2026 18:35:00 +0000
+
 covenant (0.0.73) stable; urgency=medium
 
   * Scope dynamic HTTP credentials to configured destinations on each redirect.
