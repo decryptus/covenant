@@ -1,5 +1,5 @@
 general:
-  listen_addr:        0.0.0.0
+  listen_addr:        127.0.0.1
   listen_port:        9118
   charset:            utf-8
   content_type:       'text/plain; version=0.0.4; charset=utf-8'

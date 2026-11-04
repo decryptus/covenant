@@ -27,6 +27,9 @@ class RuntimeCompatibilityTests(unittest.TestCase):
     def test_legacy_yaml_without_result_timeout(self):
         self.run_runtime('legacy')
 
+    def test_listener_cli_override(self):
+        self.run_runtime('override')
+
     def test_configured_deadline_is_http_504_on_both_routes(self):
         self.run_runtime('bounded')
 
