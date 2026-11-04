@@ -17,6 +17,9 @@ LABEL maintainer="docker@doowan.net"
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash ca-certificates curl libcurl4 libmagic1 \
     && rm -rf /var/lib/apt/lists/*
+RUN groupadd --system covenant \
+    && useradd --system --gid covenant --no-create-home --shell /usr/sbin/nologin covenant \
+    && install -d -o covenant -g covenant /run/covenant /var/log/covenant
 COPY --from=builder /wheels /wheels
 RUN python -m pip install --no-cache-dir --no-index --find-links=/wheels covenant \
     && rm -rf /wheels

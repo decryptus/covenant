@@ -71,6 +71,20 @@ docker compose -f examples/quickstart/compose.yml logs covenant
 docker compose -f examples/quickstart/compose.yml down
 ```
 
+## Service identity and startup
+
+When launched by root, Covenant requires an existing service user and group
+(default: `covenant`). The Docker image and Debian package provide both. For a
+custom installation, create the account or select existing names with `-u` and
+`-g` or `COVENANT_USER` and `COVENANT_GROUP`. Explicit unknown names stop
+startup. A non-root launch defaults to its current user and group. Ensure its PID and log directories are writable.
+
+Before starting collectors as the service user, a root launcher switches its
+supplementary groups to that account's memberships. Give the service account
+access to any files it must probe. In detached mode the launcher waits for the
+HTTP listener to enter its serving loop. Startup errors return a nonzero status
+in both detached and foreground (`-f`) mode.
+
 ## How it works
 
 1. A client requests `/metrics/<endpoint>` or `/probe/<endpoint>`.
