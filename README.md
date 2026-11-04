@@ -489,6 +489,43 @@ destination, replace the entire list with `credential_targets: ['*']`. Anyone
 able to select a target for that probe can then receive its credentials. A
 fixed URL without this setting continues using the existing HTTP transport.
 
+### Credentials for dynamic Redis targets
+
+Redis targets support the same exact origins, single-label wildcards, hostname
+regexes, literal IP networks and shared YAML lists as HTTP. Use `redis` or
+`rediss` in Redis rules. Both schemes default to port 6379. With the shipped
+template, place the settings in endpoint `vars`:
+
+```yaml
+endpoints:
+  cache-fleet:
+    plugin: redis
+    credentials: credentials.yml?__section=cache
+    import_metrics: metrics.d/redis.yml
+    vars:
+      timeout: 3
+      credential_targets:
+        - 'rediss://*.cache.example.org:6380'
+```
+
+For example, scrape
+`/metrics/cache-fleet?target=rediss://node1.cache.example.org:6380/0`.
+Set `vars.import_credential_targets` to a YAML file relative to the main config
+to share rules. For inline metric or probe definitions, put both options in the
+target's `config` block.
+
+**Migration.** Before upgrading authenticated dynamic Redis endpoints, list
+their credential destinations. An omitted or empty list probes anonymously.
+An unmatched destination receives neither the configured Redis login nor a
+configured TLS client certificate. A sole quoted `'*'` allows every network
+destination chosen by the caller to receive the probe's credentials.
+
+Dynamic URLs accept a host, optional port and optional numeric database path.
+Move connection options from query strings into trusted configuration; keep
+userinfo and Unix socket URLs in fixed configuration. A fixed configured URL
+continues to take precedence over the caller's target and uses its configured
+credentials. Prefer `rediss://` with verified TLS when sending credentials.
+
 ## Troubleshooting
 
 | Symptom | Check |
