@@ -12,3 +12,4 @@ six>=1.13.0
 sonicprobe>=0.3.57
 requests>=2.21.0
 urllib3>=1.26,<3
+ipaddress; python_version < '3.3'

@@ -6,10 +6,15 @@
 import logging
 import requests
 
+from requests.adapters import HTTPAdapter
+from requests.auth import HTTPBasicAuth
+
 from sonicprobe.libs import urisup
 
 from covenant.classes.exceptions import CovenantConfigurationError
 from covenant.classes.plugins import CovenantPlugBase, CovenantTargetFailed, PLUGINS
+
+from covenant.services.credential_targets import CredentialTargets
 
 LOG = logging.getLogger('covenant.plugins.http')
 
@@ -21,8 +26,36 @@ _ALLOWED_METHODS = ('delete',
                     'put')
 
 
+class CredentialAdapter(HTTPAdapter):
+    """Apply configured credentials to each prepared URL, including redirects."""
+    def __init__(self, policy, cfg):
+        super(CredentialAdapter, self).__init__()
+        self.policy = policy
+        self.configured_headers = cfg.pop('headers') or {}
+        self.configured_auth = cfg.pop('auth', None)
+        self.configured_cert = cfg.pop('cert', None)
+
+    def send(self, request, **kwargs):
+        outgoing = request.copy()
+        if self.policy.allows(outgoing.url):
+            outgoing.headers.update(self.configured_headers)
+            if self.configured_auth:
+                HTTPBasicAuth(*self.configured_auth)(outgoing)
+            kwargs['cert'] = self.configured_cert
+        else:
+            for header in ('Authorization', 'Cookie', 'Proxy-Authorization'):
+                outgoing.headers.pop(header, None)
+            kwargs['cert'] = None
+        return super(CredentialAdapter, self).send(outgoing, **kwargs)
+
+
 class CovenantHttpPlugin(CovenantPlugBase):
     PLUGIN_NAME = 'http'
+
+    def safe_init(self):
+        super(CovenantHttpPlugin, self).safe_init()
+        for target in self.targets:
+            CredentialTargets(target.config.get('credential_targets', []))
 
     def _do_call(self, obj, targets = None, registry = None): # pylint: disable=unused-argument
         if not targets:
@@ -43,7 +76,9 @@ class CovenantHttpPlugin(CovenantPlugBase):
             if 'uri' in cfg and not cfg.get('url'):
                 cfg['url'] = cfg.pop('uri')
 
-            if param_target and not cfg.get('url'):
+            dynamic = not cfg.get('url')
+            rules = cfg.pop('credential_targets', None)
+            if param_target and dynamic:
                 cfg['url'] = param_target
 
             if not cfg.get('url'):
@@ -79,7 +114,16 @@ class CovenantHttpPlugin(CovenantPlugBase):
                 raise CovenantConfigurationError("invalid http method: %r" % method)
 
             try:
-                req = getattr(requests, method)(**cfg)
+                if dynamic or rules is not None:
+                    with requests.Session() as session:
+                        session.trust_env = False
+                        adapter = CredentialAdapter(CredentialTargets(rules or []), cfg)
+                        session.mount('http://', adapter)
+                        session.mount('https://', adapter)
+                        cfg.setdefault('allow_redirects', method != 'head')
+                        req = session.request(method, **cfg)
+                else:
+                    req = getattr(requests, method)(**cfg)
 
                 if req.status_code != requests.codes['ok']:
                     raise LookupError("invalid status code: %r. (error: %r)"

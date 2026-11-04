@@ -371,6 +371,54 @@ credentials; see the [credentials example](etc/covenant/credentials.yml.example)
 and provide deployment-specific files securely. Imported Mako templates are trusted
 configuration, not a sandbox for untrusted input.
 
+### Credentials for dynamic HTTP probes
+
+Add this endpoint under `endpoints` in your Covenant YAML. Create the
+`monitoring` section (keys `username` and `password`) in a private
+`credentials.yml` next to the main configuration.
+
+```yaml
+  internal-health:
+    plugin: http
+    credentials: credentials.yml?__section=monitoring
+    probes:
+      - name: health
+        config:
+          path: /health
+          timeout: 3
+          credential_targets:
+            - 'https://api.example.org'
+            - 'https://*.services.example.org'
+            - regex: 'node[0-9]+\.monitoring\.example\.org'
+              scheme: https
+              port: 443
+            - cidr: '10.42.0.0/24'
+              scheme: https
+              port: 8443
+        collects:
+          - upstream_up:
+              type: gauge
+              documentation: Whether the upstream returned HTTP 200.
+              value: 1
+              on_fail:
+                value: 0
+```
+
+Call `/probe/internal-health?target=https://node42.monitoring.example.org`.
+Covenant requests `/health` with the configured credentials. An unmatched host
+is still probed anonymously. A rule matches the scheme, effective port and
+whole hostname. `*.` matches one DNS label. CIDR rules accept literal IPs
+only. Redirect destinations are checked individually. Configured headers
+(including custom API keys), Basic auth, cookies and client certificates are
+withheld from unmatched destinations. Keep secrets out of request URLs,
+parameters and bodies. Scoped requests ignore environment proxies and netrc.
+
+**Migration:** a dynamic target with omitted or empty `credential_targets`
+now receives no configured credentials. To explicitly trust every HTTP(S)
+destination, replace the entire list with `credential_targets: ['*']`. Anyone
+able to select a target for that probe can then receive its credentials. A
+fixed URL without this setting continues using the existing HTTP transport.
+
 ## Troubleshooting
 
 | Symptom | Check |
