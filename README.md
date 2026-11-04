@@ -374,9 +374,18 @@ legacy dependencies import `imp` and `asyncore`, removed in Python 3.12.
 
 ### Timeouts and access
 
-The network templates expose `vars.timeout`. HTTP and TLS use a source `timeout`;
-the Redis template sets `socket_timeout` and `socket_connect_timeout`. A custom
-HTTP definition should set `config.timeout` explicitly. `general.lock_timeout`
+The network templates expose `vars.timeout`. HTTP and TLS use a source `timeout`.
+The Redis template sets `socket_timeout` and `socket_connect_timeout`.
+HTTP defaults to 10 seconds for connection and read inactivity when `timeout`
+is omitted or null. An explicit positive timeout still takes precedence. This
+is not a deadline for the entire download.
+
+HTTP targets accept up to 4 MiB (4,194,304 decoded bytes) per successful
+response. Set `config.max_response_bytes` to a positive integer to change the
+limit, or set `vars.max_response_bytes` with the shipped Apache, NGINX and
+RabbitMQ templates. Raise it before upgrading if an existing response is larger.
+An oversized response triggers the target's configured failure metrics. Bodies
+from redirects and unsuccessful HTTP statuses are discarded. `general.lock_timeout`
 is not an overall collection deadline. Allow enough Prometheus scrape time for
 all sources configured in an endpoint.
 

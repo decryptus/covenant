@@ -3,6 +3,9 @@
   config:
     enabled: ${vars.get('overview_enabled', True) | n,my}
     timeout: ${vars.get('timeout', 10) | n,my}
+% if 'max_response_bytes' in vars:
+    max_response_bytes: ${vars['max_response_bytes'] | n,my}
+% endif
     url: ${vars.get('url') | n,my}
     path: /overview
     format: json
@@ -106,6 +109,9 @@
   config:
     enabled: ${vars.get('exchanges_enabled', True) | n,my}
     timeout: ${vars.get('timeout', 10) | n,my}
+% if 'max_response_bytes' in vars:
+    max_response_bytes: ${vars['max_response_bytes'] | n,my}
+% endif
     url: ${vars.get('url') | n,my}
     path: /exchanges
     format: json
@@ -162,6 +168,9 @@
   config:
     enabled: ${vars.get('nodes_enabled', True) | n,my}
     timeout: ${vars.get('timeout', 10) | n,my}
+% if 'max_response_bytes' in vars:
+    max_response_bytes: ${vars['max_response_bytes'] | n,my}
+% endif
     url: ${vars.get('url') | n,my}
     path: /nodes
     format: json
@@ -261,6 +270,9 @@
   config:
     enabled: ${vars.get('connections_enabled', True) | n,my}
     timeout: ${vars.get('timeout', 10) | n,my}
+% if 'max_response_bytes' in vars:
+    max_response_bytes: ${vars['max_response_bytes'] | n,my}
+% endif
     url: ${vars.get('url') | n,my}
     path: /connections
     format: json
@@ -325,6 +337,9 @@
   config:
     enabled: ${vars.get('queues_enabled', True) | n,my}
     timeout: ${vars.get('timeout', 10) | n,my}
+% if 'max_response_bytes' in vars:
+    max_response_bytes: ${vars['max_response_bytes'] | n,my}
+% endif
     url: ${vars.get('url') | n,my}
     path: /queues
     format: json
