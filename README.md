@@ -413,6 +413,34 @@ only. Redirect destinations are checked individually. Configured headers
 withheld from unmatched destinations. Keep secrets out of request URLs,
 parameters and bodies. Scoped requests ignore environment proxies and netrc.
 
+To share rules across HTTP probes or metrics, put `import_credential_targets`
+in the same target `config` block. For example:
+
+```yaml
+config:
+  path: /health
+  timeout: 3
+  import_credential_targets: rules/monitoring.yml
+  credential_targets:                 # Optional extra rules for this target
+    - 'https://api.example.org'
+```
+
+`rules/monitoring.yml` contains a plain YAML list:
+
+```yaml
+- 'https://*.services.example.org'
+- regex: 'node[0-9]+\.monitoring\.example\.org'
+  scheme: https
+  port: 443
+```
+
+Relative paths start at the directory containing the main Covenant YAML,
+including when the probe itself comes from an imported template. Covenant
+loads the rules at startup. Restart it after editing the file. Imported rules
+come first, followed by inline rules. A missing file, malformed list or invalid
+rule prevents startup. The unrestricted `'*'` must be the only rule across both
+lists. Use `[]` for an empty file policy.
+
 **Migration:** a dynamic target with omitted or empty `credential_targets`
 now receives no configured credentials. To explicitly trust every HTTP(S)
 destination, replace the entire list with `credential_targets: ['*']`. Anyone

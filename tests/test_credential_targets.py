@@ -1,7 +1,12 @@
 """HTTP credential rules and redirect behavior over real local sockets."""
+from pathlib import Path
+import tempfile
 import threading
 import unittest
 from contextlib import contextmanager
+from unittest.mock import patch
+
+import yaml
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from covenant.classes.exceptions import CovenantConfigurationError
@@ -53,6 +58,46 @@ class CredentialTests(unittest.TestCase):
         for invalid in (None, '*', ['*', 'https://api.example.org'], [{'regex': '.+'}]):
             with self.assertRaises(CovenantConfigurationError):
                 CredentialTargets(invalid)
+
+    def test_shared_rules_loaded_once_for_probes_and_metrics(self):
+        with tempfile.TemporaryDirectory() as directory, upstream() as (_, first, calls), \
+                upstream() as (_, second, arrivals), patch('covenant.classes.plugins.EPTS_SYNC'):
+            path = Path(directory, 'shared.yml')
+            path.write_text(yaml.safe_dump([first]))
+            plugins = []
+            for kind in ('metrics', 'probes'):
+                plugin = CovenantHttpPlugin(kind)
+                cfg = {'import_credential_targets': 'shared.yml', 'headers': {'X-Key': 'test'}}
+                if kind == 'probes':
+                    cfg['credential_targets'] = [second]
+                plugin.config = {'covenant': {'config_dir': directory},
+                                 kind: [{'name': 'health', 'config': cfg, 'collects': []}]}
+                plugin.safe_init()
+                plugins.append(plugin)
+            path.unlink()
+            for plugin in plugins:
+                for url in (first, second):
+                    request = CovenantEPTObject('test', 'test:1', 'test', plugin.name,
+                                                {'target': url}, {}, lambda obj: None)
+                    getattr(plugin, 'do_' + plugin.name)(request)
+                self.assertEqual(calls[-1][2], 'test')
+                self.assertEqual(arrivals[-1][2], 'test' if plugin.name == 'probes' else None)
+
+    def test_invalid_import_fails_at_initialization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory, 'rules.yml')
+            cases = [(None, []), ('[', []), ('rules: []', []), ('- invalid-origin', []),
+                     ("- '*'", ['https://api.example.org']), ('[]', 'invalid')]
+            for content, inline in cases:
+                with self.subTest(content=content, inline=inline):
+                    if content is not None:
+                        path.write_text(content)
+                    plugin = CovenantHttpPlugin('invalid-import')
+                    cfg = {'import_credential_targets': path.name, 'credential_targets': inline}
+                    plugin.config = {'covenant': {'config_dir': directory},
+                                     'probes': [{'name': 'health', 'config': cfg, 'collects': []}]}
+                    with self.assertRaises(CovenantConfigurationError):
+                        plugin.safe_init()
 
     def test_dynamic_probe_and_redirects(self):
         plugin = CovenantHttpPlugin('credential-test')

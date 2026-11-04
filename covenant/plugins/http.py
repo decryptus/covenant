@@ -4,7 +4,10 @@
 """covenant.plugins.http"""
 
 import logging
+import os
 import requests
+import six
+import yaml
 
 from requests.adapters import HTTPAdapter
 from requests.auth import HTTPBasicAuth
@@ -53,9 +56,32 @@ class CovenantHttpPlugin(CovenantPlugBase):
     PLUGIN_NAME = 'http'
 
     def safe_init(self):
+        for target in self.config.get('metrics', []) + self.config.get('probes', []):
+            cfg = target.get('config')
+            if isinstance(cfg, dict) and 'import_credential_targets' in cfg:
+                self._import_credential_targets(cfg)
         super(CovenantHttpPlugin, self).safe_init()
         for target in self.targets:
             CredentialTargets(target.config.get('credential_targets', []))
+
+    def _import_credential_targets(self, cfg):
+        source = cfg['import_credential_targets']
+        if not isinstance(source, six.string_types) or not source.strip() or '\x00' in source:
+            raise CovenantConfigurationError('import_credential_targets requires a YAML file path')
+        path = os.path.join(self.config['covenant']['config_dir'], source)
+        try:
+            with open(path, 'rb') as stream:
+                imported = yaml.safe_load(stream)
+        except (IOError, OSError, yaml.YAMLError, UnicodeError):
+            raise CovenantConfigurationError('cannot read import_credential_targets file %r' % source)
+
+        inline = cfg.get('credential_targets', [])
+        if not isinstance(imported, list) or not isinstance(inline, list):
+            raise CovenantConfigurationError('imported and inline credential_targets must be lists')
+        rules = imported + inline
+        CredentialTargets(rules)
+        cfg['credential_targets'] = rules
+        del cfg['import_credential_targets']
 
     def _do_call(self, obj, targets = None, registry = None): # pylint: disable=unused-argument
         if not targets:
