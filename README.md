@@ -267,7 +267,10 @@ curl --get --fail http://localhost:9118/probe/secure-layer1 \
   --data-urlencode 'target=https://example.com'
 ```
 
-The template includes connection/probe success and certificate validity metrics.
+The shipped configuration example permits this probe to connect to `example.com`
+on port 443. If you copy the example, replace or extend `allowed_targets`
+with the TLS services you monitor. The template reports connection success
+and certificate validity.
 
 ### Restrict caller-supplied network targets
 
