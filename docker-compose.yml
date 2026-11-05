@@ -10,3 +10,4 @@ services:
     volumes:
       - './etc/covenant/covenant.yml.example:/etc/covenant/covenant.yml:ro'
       - './etc/covenant/credentials.yml.example:/etc/covenant/credentials.yml.example:ro'
+      - './etc/covenant/rules:/etc/covenant/rules:ro'

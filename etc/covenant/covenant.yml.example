@@ -51,3 +51,13 @@ endpoints:
     vars:
       state_include_paths:
       - ^/(var/)?run/sshd\.pid$
+
+  # Optional shared file rules. Uncomment this endpoint to enable it.
+  # application-file:
+  #   plugin: filestat
+  #   import_probes: probes.d/file.yml
+  #   import_state_include_paths: rules/files-allowed.yml
+  #   import_state_exclude_paths: rules/files-denied.yml
+  #   vars:
+  #     state_include_paths: ['^/srv/monapp/ready$']
+  #     state_exclude_paths: ['^/watched/maintenance/']
