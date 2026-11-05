@@ -44,9 +44,10 @@ endpoints:
     import_metrics: metrics.d/redis.yml
   secure-layer1:
     plugin: ssl
-    # Optional: restrict dynamic TLS probes by destination host and port.
+    # Set the hosts and ports this endpoint should probe.
+    allowed_targets: ['tls://example.com:443']
+    # Optional shared rules extend the corresponding local lists.
     # import_allowed_targets: rules/tls-allowed.yml
-    # allowed_targets: ['tls://status.example.net:443']
     # import_disallowed_targets: rules/tls-disallowed.yml
     # disallowed_targets: ['tls://legacy.example.net:443']
     vars:

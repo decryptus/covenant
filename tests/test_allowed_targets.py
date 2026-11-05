@@ -85,6 +85,18 @@ class AllowedTargetTests(unittest.TestCase):
                     with self.subTest(key=key, content=content), self.assertRaises(CovenantConfigurationError):
                         load(**{key: 'missing.yml' if content is None else 'bad.yml'})
 
+    def test_shipped_tls_endpoint_connects_only_to_documented_origin(self):
+        directory = Path(__file__).resolve().parents[1] / 'etc' / 'covenant'
+        settings = yaml.safe_load((directory / 'covenant.yml.example').read_text())
+        probe = settings['endpoints']['secure-layer1']
+        plugin = endpoint(CovenantSslPlugin, probe['allowed_targets'])
+        with patch.object(plugin, '_connect', side_effect=OSError('test')) as connect:
+            for url in ('https://127.0.0.1', 'https://example.com:8443'):
+                plugin._do_call(request(url), targets=[Mock(config={})])
+                connect.assert_not_called()
+            plugin._do_call(request('https://example.com'), targets=[Mock(config={})])
+            self.assertEqual(connect.call_args.args[1:3], ('example.com', 443))
+
     def test_example_wildcard_and_regex_exclusion(self):
         from covenant.services.credential_targets import EndpointTargets, TlsTargetOrigins, load_origin_rules
         directory = Path(__file__).resolve().parents[1] / 'etc' / 'covenant'
