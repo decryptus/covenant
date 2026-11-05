@@ -17,7 +17,7 @@ from sonicprobe.libs import urisup
 from covenant.classes.exceptions import CovenantConfigurationError
 from covenant.classes.plugins import CovenantPlugBase, CovenantTargetFailed, PLUGINS
 
-from covenant.services.credential_targets import CredentialTargets
+from covenant.services.credential_targets import CredentialTargets, TargetOrigins
 
 LOG = logging.getLogger('covenant.plugins.http')
 
@@ -80,7 +80,8 @@ def _buffer_response(limit, response, **kwargs):
 
 class CredentialAdapter(HTTPAdapter):
     """Apply configured credentials to each prepared URL, including redirects."""
-    def __init__(self, policy, cfg):
+    def __init__(self, policy, cfg, allowed_targets=None):
+        self.allowed_targets = allowed_targets
         super(CredentialAdapter, self).__init__()
         self.policy = policy
         self.configured_headers = cfg.pop('headers') or {}
@@ -88,6 +89,8 @@ class CredentialAdapter(HTTPAdapter):
         self.configured_cert = cfg.pop('cert', None)
 
     def send(self, request, **kwargs):
+        if self.allowed_targets is not None:
+            self.allowed_targets.require(request.url)
         outgoing = request.copy()
         if self.policy.allows(outgoing.url):
             outgoing.headers.update(self.configured_headers)
@@ -103,6 +106,7 @@ class CredentialAdapter(HTTPAdapter):
 
 class CovenantHttpPlugin(CovenantPlugBase):
     PLUGIN_NAME = 'http'
+    TARGET_ORIGINS = TargetOrigins
 
     def safe_init(self):
         CredentialTargets.load_imports(self.config)
@@ -176,7 +180,8 @@ class CovenantHttpPlugin(CovenantPlugBase):
                 with requests.Session() as session:
                     session.trust_env = trust_env
                     if dynamic or rules is not None:
-                        adapter = CredentialAdapter(CredentialTargets(rules or []), cfg)
+                        adapter = CredentialAdapter(CredentialTargets(rules or []), cfg,
+                                                    self.allowed_targets if dynamic else None)
                         session.mount('http://', adapter)
                         session.mount('https://', adapter)
                     cfg.setdefault('allow_redirects', method != 'head')

@@ -14,7 +14,7 @@ from dwho.classes.plugins import DWhoPluginBase
 from dwho.config import load_credentials
 from prometheus_client import generate_latest
 
-from covenant.classes.exceptions import CovenantTargetFailed # pylint: disable=unused-import
+from covenant.classes.exceptions import CovenantConfigurationError, CovenantTargetFailed # pylint: disable=unused-import
 from covenant.classes.target import CovenantRegistry, CovenantTarget
 from covenant.classes.collection import CollectionBusy, monotonic
 
@@ -125,7 +125,10 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
     def PLUGIN_NAME(self):
         return
 
+    TARGET_ORIGINS = None
+
     def __init__(self, name):
+        self.allowed_targets = None
         threading.Thread.__init__(self)
         DWhoPluginBase.__init__(self)
         self.daemon      = True
@@ -157,6 +160,16 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
         return r
 
     def safe_init(self):
+        if self.TARGET_ORIGINS is not None:
+            component_configs = [item.get('config') for kind in ('metrics', 'probes')
+                                 for item in self.config.get(kind, [])]
+            if any(isinstance(cfg, dict) and 'allowed_targets' in cfg
+                   for cfg in component_configs + [self.config.get('vars')]):
+                raise CovenantConfigurationError('set allowed_targets on the endpoint alongside plugin')
+        if 'allowed_targets' in self.config:
+            if self.TARGET_ORIGINS is None:
+                raise CovenantConfigurationError('allowed_targets requires a network plugin with destination checks')
+            self.allowed_targets = self.TARGET_ORIGINS(self.config['allowed_targets'])
         if self.config.get('credentials'):
             self.credentials = load_credentials(self.config['credentials'],
                                                 config_dir = self.config['covenant']['config_dir'])

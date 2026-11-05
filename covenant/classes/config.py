@@ -115,6 +115,8 @@ def load_conf(xfile, options = None):
             cfg['credentials'] = ept_cfg['credentials']
 
         load_file_path_imports(ept_cfg, metrics + probes, config_dir)
+        if 'allowed_targets' in ept_cfg:
+            cfg['allowed_targets'] = ept_cfg['allowed_targets']
         cfg['metrics'] = metrics
         cfg['probes'] = probes
 

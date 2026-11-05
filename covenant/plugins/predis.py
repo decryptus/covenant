@@ -10,7 +10,7 @@ import redis
 from covenant.classes.exceptions import CovenantConfigurationError
 from covenant.classes.plugins import CovenantPlugBase, CovenantTargetFailed, PLUGINS
 
-from covenant.services.credential_targets import RedisCredentialTargets
+from covenant.services.credential_targets import RedisCredentialTargets, RedisTargetOrigins
 
 LOG = logging.getLogger('covenant.plugins.redis')
 
@@ -44,6 +44,7 @@ def _dynamic_url(value):
 
 class CovenantRedisPlugin(CovenantPlugBase):
     PLUGIN_NAME = 'redis'
+    TARGET_ORIGINS = RedisTargetOrigins
 
     def safe_init(self):
         RedisCredentialTargets.load_imports(self.config)
@@ -86,6 +87,8 @@ class CovenantRedisPlugin(CovenantPlugBase):
             try:
                 if param_target and not cfg.get('url'):
                     cfg['url'] = _dynamic_url(param_target)
+                    if self.allowed_targets is not None:
+                        self.allowed_targets.require(cfg['url'])
                     if not RedisCredentialTargets(rules).allows(cfg['url']):
                         for option in _CREDENTIAL_OPTIONS:
                             cfg.pop(option, None)
