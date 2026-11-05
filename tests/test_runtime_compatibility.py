@@ -23,6 +23,8 @@ class RuntimeCompatibilityTests(unittest.TestCase):
                                 universal_newlines=True, timeout=20)
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertIn('runtime compatibility OK: ' + mode, result.stdout)
+        self.assertIn('GET /probe/file-probe HTTP/1.1', result.stdout)
+        self.assertNotIn('private-target-marker', result.stdout)
         self.assertNotIn('private exception detail', result.stdout)
         self.assertNotIn('private plugin detail', result.stdout)
 

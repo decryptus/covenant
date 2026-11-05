@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Isolated runtime probe: real YAML, plugins, HTTPdis socket and SIGTERM hook."""
 
+import logging
 import os
 import re
 import shutil
@@ -45,6 +46,8 @@ def serve(options):
 
 
 def main():
+    httpdis.LOG.setLevel(logging.DEBUG)
+    httpdis.LOG.addHandler(logging.StreamHandler())
     set_softname('covenant')
     set_softver('0.0.69')
     with tempfile.TemporaryDirectory() as directory:
@@ -64,7 +67,7 @@ def main():
             conf['general']['result_timeout'] = 0.05
         config_path = os.path.join(directory, 'covenant.yml')
         shared_rule = '^' + re.escape(config_path) + '$'
-        local_path = os.path.join(directory, 'local')
+        local_path = os.path.join(directory, 'private-target-marker')
         denied_path = os.path.join(directory, 'denied')
         for path in (local_path, denied_path):
             with open(path, 'w'):
