@@ -73,6 +73,10 @@ docker compose -f examples/quickstart/compose.yml down
 
 ## Listener and Prometheus access
 
+HTTPdis 0.6.36 denies cross-origin browser preflights by default. A browser
+dashboard can reach Covenant through a same-origin reverse proxy. Prometheus
+scrapes and direct API clients require no CORS configuration.
+
 A native Covenant process defaults to `127.0.0.1` when `general.listen_addr`
 is omitted or null. An explicit YAML address takes precedence over the default,
 and `--listen-addr` overrides YAML. If Prometheus runs on a different machine,
