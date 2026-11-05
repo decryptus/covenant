@@ -292,6 +292,29 @@ under `credential_targets`. Allowing a destination grants no credentials.
 A configured fixed URL or URI takes precedence over the caller's target and
 uses the endpoint's existing fixed-destination and redirect settings.
 
+To share destination rules, put the imports on the endpoint next to the local
+lists. For example, under `endpoints`:
+
+```yaml
+  secure-layer1:
+    plugin: ssl
+    import_probes: probes.d/secure-layer.yml
+    import_allowed_targets: rules/tls-allowed.yml
+    allowed_targets: ['tls://status.example.net:443']
+    import_disallowed_targets: rules/tls-disallowed.yml
+    disallowed_targets: ['tls://legacy.example.net:443']
+```
+
+Each file contains a plain YAML list of the same origin rules. Relative paths
+start at the main configuration directory. At startup Covenant combines each
+file with its corresponding inline list. In all four lists a rule such as
+`{scheme: tls, port: 443, regex: 'node[0-9]+[.]example[.]net'}` matches the
+whole hostname together with the specified scheme and port. A matching exclusion always wins,
+including on HTTP redirects. With exclusions alone, other destinations remain
+available. An empty combined allowlist rejects every dynamic destination.
+An empty exclusion list excludes none. An unreadable file, malformed list or
+invalid rule prevents startup. Restart after editing shared rules.
+
 ### File existence probe
 
 ```yaml

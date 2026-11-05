@@ -49,18 +49,40 @@ def _rule(value, ports):
     return scheme, port, 'cidr', ipaddress.ip_network(six.text_type(value['cidr']))
 
 
+DESTINATION_OPTIONS = ('allowed_targets', 'disallowed_targets')
+DESTINATION_KEYS = DESTINATION_OPTIONS + tuple('import_' + key for key in DESTINATION_OPTIONS)
+
+
+def load_origin_rules(cfg, option, directory):
+    key = 'import_' + option
+    inline = cfg.get(option, [])
+    if key not in cfg:
+        return inline
+    source = cfg[key]
+    if not isinstance(source, six.string_types) or not source.strip() or '\x00' in source:
+        raise CovenantConfigurationError('%s requires a YAML file path' % key)
+    try:
+        with open(os.path.join(directory, source), 'rb') as stream:
+            imported = yaml.safe_load(stream)
+    except (IOError, OSError, yaml.YAMLError, UnicodeError):
+        raise CovenantConfigurationError('cannot read %s file %r' % (key, source))
+    if not isinstance(imported, list) or not isinstance(inline, list):
+        raise CovenantConfigurationError('imported and inline %s must be lists' % option)
+    return imported + inline
+
+
 class TargetOrigins(object):
     DEFAULT_PORTS = {'http': 80, 'https': 443}
     OPTION = 'allowed_targets'
 
-    def __init__(self, values):
+    def __init__(self, values, option=None):
         self.unrestricted = values == ['*']
         try:
             if not isinstance(values, list):
                 raise ValueError('expected a list')
             self.rules = [] if self.unrestricted else [_rule(value, self.DEFAULT_PORTS) for value in values]
         except (TypeError, ValueError, re.error) as error:
-            raise CovenantConfigurationError('invalid %s: %s' % (self.OPTION, error))
+            raise CovenantConfigurationError('invalid %s: %s' % (option or self.OPTION, error))
 
     def allows(self, url):
         return self.allows_origin(*_origin(url, self.DEFAULT_PORTS))
@@ -88,7 +110,18 @@ class TargetOrigins(object):
 
     def require(self, url):
         if not self.allows(url):
-            raise ValueError('destination denied by allowed_targets')
+            raise ValueError('destination denied by endpoint target rules')
+
+
+class EndpointTargets(TargetOrigins):
+    def __init__(self, matcher, config):
+        self.DEFAULT_PORTS = matcher.DEFAULT_PORTS
+        self.allowed = matcher(config.get('allowed_targets', ['*']))
+        self.disallowed = matcher(config.get('disallowed_targets', []), option='disallowed_targets')
+
+    def allows_origin(self, scheme, host, port):
+        return (not self.disallowed.allows_origin(scheme, host, port)
+                and self.allowed.allows_origin(scheme, host, port))
 
 
 class TlsTargetOrigins(TargetOrigins):
@@ -107,27 +140,10 @@ class CredentialTargets(TargetOrigins):
         for target in config.get('metrics', []) + config.get('probes', []):
             cfg = target.get('config')
             if isinstance(cfg, dict) and 'import_credential_targets' in cfg:
-                cls._import_rules(cfg, config['covenant']['config_dir'])
-
-    @classmethod
-    def _import_rules(cls, cfg, directory):
-        source = cfg['import_credential_targets']
-        if not isinstance(source, six.string_types) or not source.strip() or '\x00' in source:
-            raise CovenantConfigurationError('import_credential_targets requires a YAML file path')
-        path = os.path.join(directory, source)
-        try:
-            with open(path, 'rb') as stream:
-                imported = yaml.safe_load(stream)
-        except (IOError, OSError, yaml.YAMLError, UnicodeError):
-            raise CovenantConfigurationError('cannot read import_credential_targets file %r' % source)
-
-        inline = cfg.get('credential_targets', [])
-        if not isinstance(imported, list) or not isinstance(inline, list):
-            raise CovenantConfigurationError('imported and inline credential_targets must be lists')
-        rules = imported + inline
-        cls(rules)
-        cfg['credential_targets'] = rules
-        del cfg['import_credential_targets']
+                rules = load_origin_rules(cfg, cls.OPTION, config['covenant']['config_dir'])
+                cls(rules)
+                cfg[cls.OPTION] = rules
+                del cfg['import_credential_targets']
 
 
 class RedisCredentialTargets(CredentialTargets):
