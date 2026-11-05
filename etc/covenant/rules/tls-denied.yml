@@ -1,0 +1,3 @@
+- scheme: tls
+  port: 443
+  regex: 'dev[0-9]+\.services\.example\.org'

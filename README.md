@@ -62,7 +62,7 @@ orders_workers_active 3.0
 Edit `examples/quickstart/data/status.json`, then call the endpoint again to see the
 new values. Collection happens when the endpoint is scraped.
 
-The example pins `decryptus/covenant:0.0.81` and exposes port 9118 only on the local
+The example pins `decryptus/covenant:0.0.82` and exposes port 9118 only on the local
 host. If the first request arrives before the API is ready, retry it.
 
 ```sh
@@ -271,11 +271,33 @@ The template includes connection/probe success and certificate validity metrics.
 
 ### Restrict caller-supplied network targets
 
-Set `allowed_targets` on the endpoint, alongside `plugin` and `import_probes`.
-The same rule applies to a metrics endpoint that accepts a caller-supplied
-`target`. An omitted list preserves free target selection. An empty list
-rejects every caller-supplied destination. A rejected collection follows the
-endpoint's configured failure metrics.
+Set the policy alongside `plugin` and `import_probes` (or `import_metrics`).
+All four options accept the same rule forms: an exact origin, a single-label
+hostname wildcard, a full hostname regex or a literal IP range (CIDR).
+The two import options take a file path; the file contains a YAML list.
+
+```yaml
+endpoints:
+  certificate:
+    plugin: ssl
+    import_probes: probes.d/secure-layer.yml
+    import_allowed_targets: rules/tls-allowed.yml
+    allowed_targets: ['tls://status.example.org:443']
+    import_disallowed_targets: rules/tls-denied.yml
+    disallowed_targets: ['tls://staging.services.example.org:443']
+```
+
+For example, [tls-allowed.yml](etc/covenant/rules/tls-allowed.yml) allows
+`tls://*.services.example.org:443`. [tls-denied.yml](etc/covenant/rules/tls-denied.yml)
+uses a regex to exclude development nodes within that same wildcard.
+
+Imports are read once at startup, relative to the main configuration file.
+Covenant adds local entries to the corresponding imported list. **An exclusion
+wins** even when the allow rule is an exact match. With exclusions alone, other
+destinations are permitted. An explicitly empty combined allow list denies all
+dynamic destinations; an empty deny list excludes none. An unreadable file or
+invalid rule prevents startup. A bare `'*'` must be the only entry in its
+combined list. A rejected collection follows the endpoint's failure metrics.
 
 | Plugin | Example rule | What is matched |
 | --- | --- | --- |
@@ -287,6 +309,8 @@ The TLS rule uses `tls://` regardless of the service name in the request.
 For example, `target=https://example.com` uses port 443. A hostname rule
 trusts DNS for that hostname. To allow only literal IP targets in a range,
 use a CIDR rule, for example `{scheme: tls, port: 443, cidr: '192.0.2.0/24'}`.
+A CIDR exclusion matches literal addresses; a DNS alias can resolve to the same IP.
+For untrusted callers, allow only the intended origins and control their DNS.
 Rules also support the single-label wildcard and hostname regex forms described
 under `credential_targets`. Allowing a destination grants no credentials.
 A configured fixed URL or URI takes precedence over the caller's target and
@@ -453,7 +477,7 @@ Docker is the simplest way to use the tested runtime. To run your own configurat
 docker run --rm --name covenant \
   -p 127.0.0.1:9118:9118 \
   -v "$PWD/covenant.yml:/etc/covenant/covenant.yml:ro" \
-  decryptus/covenant:0.0.81
+  decryptus/covenant:0.0.82
 ```
 
 For this bridge-network command, set `general.listen_addr: 0.0.0.0` in the

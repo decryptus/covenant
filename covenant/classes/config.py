@@ -19,6 +19,7 @@ from covenant.classes.collection import DEFAULT_RESULT_TIMEOUT, validate_result_
 from covenant.classes.exceptions import CovenantConfigurationError
 from covenant.classes.configuration_schema import validate_configuration, validate_component
 from covenant.classes.plugins import ENDPOINTS, PLUGINS
+from covenant.services.credential_targets import NETWORK_TARGET_OPTIONS
 from covenant.services.file_path_imports import load_file_path_imports
 
 DEFAULT_LISTEN_ADDR = '127.0.0.1'
@@ -115,8 +116,7 @@ def load_conf(xfile, options = None):
             cfg['credentials'] = ept_cfg['credentials']
 
         load_file_path_imports(ept_cfg, metrics + probes, config_dir)
-        if 'allowed_targets' in ept_cfg:
-            cfg['allowed_targets'] = ept_cfg['allowed_targets']
+        cfg.update((key, ept_cfg[key]) for key in NETWORK_TARGET_OPTIONS if key in ept_cfg)
         cfg['metrics'] = metrics
         cfg['probes'] = probes
 

@@ -221,7 +221,7 @@ class CovenantSslPlugin(CovenantPlugBase):
             try:
                 if param_target and not cfg.get('uri') and self.allowed_targets is not None:
                     if not self.allowed_targets.allows_origin('tls', host.lower(), int(port)):
-                        raise ValueError('destination denied by allowed_targets')
+                        raise ValueError('destination denied by endpoint target policy')
                 server_hostname = common_name or host
 
                 context = ssl.create_default_context()

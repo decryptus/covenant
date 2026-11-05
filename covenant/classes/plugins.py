@@ -18,6 +18,8 @@ from covenant.classes.exceptions import CovenantConfigurationError, CovenantTarg
 from covenant.classes.target import CovenantRegistry, CovenantTarget
 from covenant.classes.collection import CollectionBusy, monotonic
 
+from covenant.services.credential_targets import EndpointTargetPolicy, NETWORK_TARGET_OPTIONS
+
 MAX_PENDING_COLLECTIONS = 256
 
 LOG = logging.getLogger('covenant.plugins')
@@ -163,13 +165,13 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
         if self.TARGET_ORIGINS is not None:
             component_configs = [item.get('config') for kind in ('metrics', 'probes')
                                  for item in self.config.get(kind, [])]
-            if any(isinstance(cfg, dict) and 'allowed_targets' in cfg
+            if any(isinstance(cfg, dict) and any(k in cfg for k in NETWORK_TARGET_OPTIONS)
                    for cfg in component_configs + [self.config.get('vars')]):
-                raise CovenantConfigurationError('set allowed_targets on the endpoint alongside plugin')
-        if 'allowed_targets' in self.config:
+                raise CovenantConfigurationError('set network target rules on the endpoint alongside plugin')
+        if any(k in self.config for k in NETWORK_TARGET_OPTIONS):
             if self.TARGET_ORIGINS is None:
-                raise CovenantConfigurationError('allowed_targets requires a network plugin with destination checks')
-            self.allowed_targets = self.TARGET_ORIGINS(self.config['allowed_targets'])
+                raise CovenantConfigurationError('network target rules require a plugin with destination checks')
+            self.allowed_targets = EndpointTargetPolicy(self.TARGET_ORIGINS, self.config)
         if self.config.get('credentials'):
             self.credentials = load_credentials(self.config['credentials'],
                                                 config_dir = self.config['covenant']['config_dir'])

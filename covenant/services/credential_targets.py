@@ -1,12 +1,49 @@
 """Match network destinations for probe access and credential policies."""
 import os
 import re
+import socket
 
 import six
 import yaml
 from six.moves.urllib_parse import urlsplit
 
 from covenant.classes.exceptions import CovenantConfigurationError
+
+
+NETWORK_TARGET_OPTIONS = ('allowed_targets', 'import_allowed_targets',
+                          'disallowed_targets', 'import_disallowed_targets')
+
+
+def _merged_rules(config, key, directory):
+    imported_key = 'import_' + key
+    inline = config.get(key, [])
+    if not isinstance(inline, list):
+        raise CovenantConfigurationError('%s requires a YAML list' % key)
+    if imported_key not in config:
+        return inline
+    source = config[imported_key]
+    if not isinstance(source, six.string_types) or not source.strip() or '\x00' in source:
+        raise CovenantConfigurationError('%s requires a YAML file path' % imported_key)
+    try:
+        with open(os.path.join(directory, source), 'rb') as stream:
+            shared = yaml.safe_load(stream)
+    except (IOError, OSError, UnicodeError, yaml.YAMLError):
+        raise CovenantConfigurationError('cannot read %s file %r' % (imported_key, source))
+    if not isinstance(shared, list):
+        raise CovenantConfigurationError('%s file must contain a YAML list' % imported_key)
+    return shared + inline
+
+
+def _canonical_host(host):
+    host = host.lower().rstrip('.')
+    if ':' in host:
+        import ipaddress
+        return six.text_type(ipaddress.IPv6Address(six.text_type(host.split('%', 1)[0])))
+    try:
+        # Match the IPv4 spellings accepted by socket.connect, including 127.1.
+        return socket.inet_ntoa(socket.inet_aton(host))
+    except (socket.error, UnicodeError):
+        return host.encode('idna').decode('ascii').rstrip('.')
 
 
 def _origin(url, ports):
@@ -19,17 +56,18 @@ def _origin(url, ports):
     return parts.scheme, parts.hostname.lower(), port
 
 
-def _rule(value, ports):
+def _rule(value, ports, canonical_host=False):
     if isinstance(value, six.string_types):
         parts = urlsplit(value)
         scheme, host, port = _origin(value, ports)
         if parts.username is not None or parts.query or parts.fragment or parts.path not in ('', '/'):
             raise ValueError('expected an origin without user information, query or path')
         if host.startswith('*.') and '*' not in host[2:] and len(host) > 2:
-            return scheme, port, 'wildcard', host[2:]
+            suffix = host[2:]
+            return scheme, port, 'wildcard', _canonical_host(suffix) if canonical_host else suffix
         if '*' in host:
             raise ValueError('wildcard must replace the first DNS label')
-        return scheme, port, 'host', host
+        return scheme, port, 'host', _canonical_host(host) if canonical_host else host
 
     if not isinstance(value, dict) or set(value) not in (
             {'scheme', 'port', 'regex'}, {'scheme', 'port', 'cidr'}):
@@ -53,14 +91,15 @@ class TargetOrigins(object):
     DEFAULT_PORTS = {'http': 80, 'https': 443}
     OPTION = 'allowed_targets'
 
-    def __init__(self, values):
+    def __init__(self, values, option=None):
         self.unrestricted = values == ['*']
         try:
             if not isinstance(values, list):
                 raise ValueError('expected a list')
-            self.rules = [] if self.unrestricted else [_rule(value, self.DEFAULT_PORTS) for value in values]
-        except (TypeError, ValueError, re.error) as error:
-            raise CovenantConfigurationError('invalid %s: %s' % (self.OPTION, error))
+            self.rules = [] if self.unrestricted else [
+                _rule(value, self.DEFAULT_PORTS, canonical_host=option == 'disallowed_targets') for value in values]
+        except (TypeError, ValueError, OverflowError, re.error) as error:
+            raise CovenantConfigurationError('invalid %s: %s' % (option or self.OPTION, error))
 
     def allows(self, url):
         return self.allows_origin(*_origin(url, self.DEFAULT_PORTS))
@@ -91,6 +130,37 @@ class TargetOrigins(object):
             raise ValueError('destination denied by allowed_targets')
 
 
+class EndpointTargetPolicy(object):
+    def __init__(self, origins, config):
+        directory = config.get('covenant', {}).get('config_dir')
+        self.ports = origins.DEFAULT_PORTS
+        self.allowed = None
+        self.denied = None
+        if 'allowed_targets' in config or 'import_allowed_targets' in config:
+            self.allowed = origins(_merged_rules(config, 'allowed_targets', directory))
+        if 'disallowed_targets' in config or 'import_disallowed_targets' in config:
+            self.denied = origins(_merged_rules(config, 'disallowed_targets', directory), 'disallowed_targets')
+
+    def allows(self, url):
+        return self.allows_origin(*_origin(url, self.ports))
+
+    def allows_origin(self, scheme, host, port):
+        if self.denied is not None:
+            canonical = _canonical_host(host)
+            if self.denied.allows_origin(scheme, host, port) or self.denied.allows_origin(scheme, canonical, port):
+                return False
+            if ':' in canonical:
+                import ipaddress
+                mapped = ipaddress.IPv6Address(canonical).ipv4_mapped
+                if mapped is not None and self.denied.allows_origin(scheme, six.text_type(mapped), port):
+                    return False
+        return self.allowed is None or self.allowed.allows_origin(scheme, host, port)
+
+    def require(self, url):
+        if not self.allows(url):
+            raise ValueError('destination denied by endpoint target policy')
+
+
 class TlsTargetOrigins(TargetOrigins):
     DEFAULT_PORTS = {'tls': 443}
 
@@ -111,20 +181,7 @@ class CredentialTargets(TargetOrigins):
 
     @classmethod
     def _import_rules(cls, cfg, directory):
-        source = cfg['import_credential_targets']
-        if not isinstance(source, six.string_types) or not source.strip() or '\x00' in source:
-            raise CovenantConfigurationError('import_credential_targets requires a YAML file path')
-        path = os.path.join(directory, source)
-        try:
-            with open(path, 'rb') as stream:
-                imported = yaml.safe_load(stream)
-        except (IOError, OSError, yaml.YAMLError, UnicodeError):
-            raise CovenantConfigurationError('cannot read import_credential_targets file %r' % source)
-
-        inline = cfg.get('credential_targets', [])
-        if not isinstance(imported, list) or not isinstance(inline, list):
-            raise CovenantConfigurationError('imported and inline credential_targets must be lists')
-        rules = imported + inline
+        rules = _merged_rules(cfg, 'credential_targets', directory)
         cls(rules)
         cfg['credential_targets'] = rules
         del cfg['import_credential_targets']

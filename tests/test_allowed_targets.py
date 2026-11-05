@@ -17,10 +17,16 @@ from test_redis_credentials import redis_peer
 from test_templates import request
 
 
-def endpoint(plugin_type, rules):
+_OMITTED = object()
+
+
+def endpoint(plugin_type, rules=_OMITTED, **options):
     plugin = plugin_type('limited')
-    plugin.config = {'allowed_targets': rules, 'probes': [
+    plugin.config = {'probes': [
         {'name': 'status', 'config': {}, 'collects': []}]}
+    plugin.config.update(options)
+    if rules is not _OMITTED:
+        plugin.config['allowed_targets'] = rules
     with patch('covenant.classes.plugins.EPTS_SYNC'):
         plugin.safe_init()
     return plugin
@@ -38,6 +44,67 @@ class AllowedTargetTests(unittest.TestCase):
                 plugin.do_probes(request(second))
             self.assertEqual(len(hits), 2)
             self.assertEqual(denied, [])
+
+    def test_imported_exclusions_block_http_redirects_even_without_an_allowlist(self):
+        with tempfile.TemporaryDirectory() as folder, upstream() as (server, first, hits), upstream() as (_, second, denied):
+            path = Path(folder, 'exclude.yml')
+            path.write_text(yaml.safe_dump([second]))
+            plugin = endpoint(CovenantHttpPlugin, import_disallowed_targets=path.name,
+                              covenant={'config_dir': folder})
+            path.unlink()
+            server.location = second
+            with self.assertLogs('covenant.plugins.http'):
+                plugin.do_probes(request(first))
+            self.assertEqual(len(hits), 1)
+            self.assertEqual(denied, [])
+
+    def test_imported_and_inline_rules_share_syntax_and_deny_wins(self):
+        with tempfile.TemporaryDirectory() as folder:
+            Path(folder, 'allow.yml').write_text(yaml.safe_dump(['tls://*.example.test']))
+            Path(folder, 'deny.yml').write_text(yaml.safe_dump([
+                {'scheme': 'tls', 'port': 443, 'regex': r'node[0-9]+\.example\.test'}]))
+            plugin = endpoint(CovenantSslPlugin, ['tls://local.test'],
+                              import_allowed_targets='allow.yml', import_disallowed_targets='deny.yml',
+                              disallowed_targets=['tls://old.example.test'], covenant={'config_dir': folder})
+            for host, expected in [('one.example.test', True), ('a.b.example.test', False),
+                                   ('local.test', True), ('other.test', False),
+                                   ('old.example.test', False), ('node12.example.test', False)]:
+                self.assertEqual(plugin.allowed_targets.allows('tls://' + host), expected, host)
+
+    def test_redis_exclusion_precedes_connect_and_credential_check(self):
+        plugin = endpoint(CovenantRedisPlugin, ['*'], disallowed_targets=[
+            {'scheme': 'redis', 'port': 6379, 'cidr': '127.0.0.0/8'}])
+        with patch('covenant.plugins.predis.redis.from_url') as connect:
+            for host in ('127.0.0.1', '127.1', '2130706433', '[::ffff:127.0.0.1]'):
+                target = Mock(config={'credential_targets': ['*']}, credentials=None)
+                plugin._do_call(request('redis://' + host), targets=[target])
+                self.assertIsInstance(target.call_args[0][0], CovenantTargetFailed)
+            connect.assert_not_called()
+
+    def test_deny_only_wildcard_matches_case_and_absolute_dns_name(self):
+        plugin = endpoint(CovenantSslPlugin, disallowed_targets=['tls://*.example.test'])
+        for host in ('NODE.EXAMPLE.TEST.', 'node.example.test'):
+            with patch.object(plugin, '_connect') as connect:
+                plugin._do_call(request('https://' + host), targets=[Mock(config={})])
+                connect.assert_not_called()
+        self.assertTrue(plugin.allowed_targets.allows('tls://node.example.test:8443'))
+
+    def test_empty_and_invalid_imports(self):
+        with tempfile.TemporaryDirectory() as folder:
+            loc = {'config_dir': folder}
+            path = Path(folder, 'rules.yml')
+            for key in ('import_allowed_targets', 'import_disallowed_targets'):
+                for content in (None, '', 'rules: []', '[', '- tls://bad:0'):
+                    if content is None:
+                        if path.exists():
+                            path.unlink()
+                    else:
+                        path.write_text(content)
+                    with self.subTest(key=key, data=content), self.assertRaises(CovenantConfigurationError):
+                        endpoint(CovenantSslPlugin, covenant=loc, **{key: path.name})
+                path.write_text('[]')
+                plugin = endpoint(CovenantSslPlugin, covenant=loc, **{key: path.name})
+                self.assertEqual(plugin.allowed_targets.allows('tls://any.test'), key == 'import_disallowed_targets')
 
     def test_fixed_http_origin_wins_over_the_requested_target(self):
         with upstream() as (_, fixed, hits), upstream() as (_, other, denied):
@@ -87,9 +154,13 @@ class AllowedTargetTests(unittest.TestCase):
                 patch.object(config, 'DWHO_THREADS', []), patch('covenant.classes.plugins.EPTS_SYNC'):
             path = Path(folder, 'covenant.yml')
             path.write_text(yaml.safe_dump({'general': {}, 'endpoints': {'tls-test': {
-                'plugin': 'ssl', 'allowed_targets': [], 'probes': [
+                'plugin': 'ssl', 'import_allowed_targets': 'shared.yml',
+                'disallowed_targets': ['tls://excluded.example'], 'probes': [
                     {'name': 'status', 'config': {}, 'collects': []}]}}}))
+            Path(folder, 'shared.yml').write_text("- 'tls://*.example'\n")
             config.load_conf(str(path), SimpleNamespace())
+            self.assertTrue(config.ENDPOINTS['tls-test'].allowed_targets.allows('tls://ok.example'))
+            self.assertFalse(config.ENDPOINTS['tls-test'].allowed_targets.allows('tls://excluded.example'))
             self.assertFalse(config.ENDPOINTS['tls-test'].allowed_targets.allows('tls://example.com'))
         for rules in (None, 'tls://host', ['https://host'], ['tls://host:0']):
             with self.subTest(rules=rules), self.assertRaises(CovenantConfigurationError):
