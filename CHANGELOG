@@ -1,3 +1,10 @@
+covenant (0.0.82) stable; urgency=medium
+
+  * Import endpoint allow and deny lists for dynamic HTTP, Redis and TLS targets.
+  * Combine shared and local rules at startup; exclusions take precedence.
+
+ -- Codex <codex@openai.com>  Thu, 05 Nov 2026 08:00:00 +0000
+
 covenant (0.0.81) stable; urgency=medium
 
   * Validate builtintypes methods against an explicit list at configuration load.

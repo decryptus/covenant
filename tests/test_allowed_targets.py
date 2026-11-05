@@ -127,6 +127,24 @@ class AllowedTargetTests(unittest.TestCase):
                 connect.assert_not_called()
                 self.assertIsInstance(target.call_args[0][0], CovenantTargetFailed)
 
+    def test_redis_exclusion_precedes_connect_and_credential_check(self):
+        plugin = endpoint(CovenantRedisPlugin, ['*'], disallowed_targets=[
+            {'scheme': 'redis', 'port': 6379, 'cidr': '127.0.0.0/8'}])
+        with patch('covenant.plugins.predis.redis.from_url') as connect:
+            for host in ('127.0.0.1', '127.1', '2130706433', '[::ffff:127.0.0.1]'):
+                target = Mock(config={'credential_targets': ['*']}, credentials=None)
+                plugin._do_call(request('redis://' + host), targets=[target])
+                self.assertIsInstance(target.call_args[0][0], CovenantTargetFailed)
+            connect.assert_not_called()
+
+    def test_deny_only_wildcard_matches_case_and_absolute_dns_name(self):
+        plugin = endpoint(CovenantSslPlugin, ['*'], disallowed_targets=['tls://*.example.test'])
+        for host in ('NODE.EXAMPLE.TEST.', 'node.example.test'):
+            with patch.object(plugin, '_connect') as connect:
+                plugin._do_call(request('https://' + host), targets=[Mock(config={})])
+                connect.assert_not_called()
+        self.assertTrue(plugin.allowed_targets.allows('tls://node.example.test:8443'))
+
     def test_ssl_uses_socket_destination_even_with_an_allowed_common_name(self):
         plugin = endpoint(CovenantSslPlugin, ['tls://good.example:443'])
         with patch.object(plugin, '_connect', side_effect=OSError('test')) as connect:

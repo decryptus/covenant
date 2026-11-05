@@ -62,7 +62,7 @@ orders_workers_active 3.0
 Edit `examples/quickstart/data/status.json`, then call the endpoint again to see the
 new values. Collection happens when the endpoint is scraped.
 
-The example pins `decryptus/covenant:0.0.81` and exposes port 9118 only on the local
+The example pins `decryptus/covenant:0.0.82` and exposes port 9118 only on the local
 host. If the first request arrives before the API is ready, retry it.
 
 ```sh
@@ -273,7 +273,7 @@ The template includes connection/probe success and certificate validity metrics.
 
 Set `allowed_targets` on the endpoint, alongside `plugin` and `import_probes`.
 The same rule applies to a metrics endpoint that accepts a caller-supplied
-`target`. An omitted list preserves free target selection. An empty list
+`target`. Omitting both allow and deny rules preserves free target selection. An empty allow list
 rejects every caller-supplied destination. A rejected collection follows the
 endpoint's configured failure metrics.
 
@@ -287,6 +287,9 @@ The TLS rule uses `tls://` regardless of the service name in the request.
 For example, `target=https://example.com` uses port 443. A hostname rule
 trusts DNS for that hostname. To allow only literal IP targets in a range,
 use a CIDR rule, for example `{scheme: tls, port: 443, cidr: '192.0.2.0/24'}`.
+CIDR exclusions match literal addresses. A DNS alias can resolve to the same address;
+for untrusted callers, allow only the intended origins and control their DNS.
+Use ASCII DNS names (Punycode for internationalized names) in rules.
 Rules also support the single-label wildcard and hostname regex forms described
 under `credential_targets`. Allowing a destination grants no credentials.
 A configured fixed URL or URI takes precedence over the caller's target and
@@ -476,7 +479,7 @@ Docker is the simplest way to use the tested runtime. To run your own configurat
 docker run --rm --name covenant \
   -p 127.0.0.1:9118:9118 \
   -v "$PWD/covenant.yml:/etc/covenant/covenant.yml:ro" \
-  decryptus/covenant:0.0.81
+  decryptus/covenant:0.0.82
 ```
 
 For this bridge-network command, set `general.listen_addr: 0.0.0.0` in the

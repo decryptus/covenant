@@ -1,12 +1,25 @@
 """Match network destinations for probe access and credential policies."""
 import os
 import re
+import socket
 
 import six
 import yaml
 from six.moves.urllib_parse import urlsplit
 
 from covenant.classes.exceptions import CovenantConfigurationError
+
+
+def _canonical_host(host):
+    host = host.lower().rstrip('.')
+    if ':' in host:
+        import ipaddress
+        return six.text_type(ipaddress.IPv6Address(six.text_type(host.split('%', 1)[0])))
+    try:
+        # Match the IPv4 spellings accepted by socket.connect, including 127.1.
+        return socket.inet_ntoa(socket.inet_aton(host))
+    except (socket.error, UnicodeError):
+        return host.encode('idna').decode('ascii').rstrip('.')
 
 
 def _origin(url, ports):
@@ -19,17 +32,18 @@ def _origin(url, ports):
     return parts.scheme, parts.hostname.lower(), port
 
 
-def _rule(value, ports):
+def _rule(value, ports, canonical_host=False):
     if isinstance(value, six.string_types):
         parts = urlsplit(value)
         scheme, host, port = _origin(value, ports)
         if parts.username is not None or parts.query or parts.fragment or parts.path not in ('', '/'):
             raise ValueError('expected an origin without user information, query or path')
         if host.startswith('*.') and '*' not in host[2:] and len(host) > 2:
-            return scheme, port, 'wildcard', host[2:]
+            suffix = host[2:]
+            return scheme, port, 'wildcard', _canonical_host(suffix) if canonical_host else suffix
         if '*' in host:
             raise ValueError('wildcard must replace the first DNS label')
-        return scheme, port, 'host', host
+        return scheme, port, 'host', _canonical_host(host) if canonical_host else host
 
     if not isinstance(value, dict) or set(value) not in (
             {'scheme', 'port', 'regex'}, {'scheme', 'port', 'cidr'}):
@@ -80,8 +94,10 @@ class TargetOrigins(object):
         try:
             if not isinstance(values, list):
                 raise ValueError('expected a list')
-            self.rules = [] if self.unrestricted else [_rule(value, self.DEFAULT_PORTS) for value in values]
-        except (TypeError, ValueError, re.error) as error:
+            self.rules = [] if self.unrestricted else [
+                _rule(value, self.DEFAULT_PORTS, canonical_host=option == 'disallowed_targets')
+                for value in values]
+        except (TypeError, ValueError, OverflowError, re.error) as error:
             raise CovenantConfigurationError('invalid %s: %s' % (option or self.OPTION, error))
 
     def allows(self, url):
@@ -120,8 +136,19 @@ class EndpointTargets(TargetOrigins):
         self.disallowed = matcher(config.get('disallowed_targets', []), option='disallowed_targets')
 
     def allows_origin(self, scheme, host, port):
-        return (not self.disallowed.allows_origin(scheme, host, port)
-                and self.allowed.allows_origin(scheme, host, port))
+        if self.disallowed.unrestricted:
+            return False
+        if self.disallowed.rules:
+            canonical = _canonical_host(host)
+            if (self.disallowed.allows_origin(scheme, host, port)
+                    or self.disallowed.allows_origin(scheme, canonical, port)):
+                return False
+            if ':' in canonical:
+                import ipaddress
+                mapped = ipaddress.IPv6Address(canonical).ipv4_mapped
+                if mapped is not None and self.disallowed.allows_origin(scheme, six.text_type(mapped), port):
+                    return False
+        return self.allowed.allows_origin(scheme, host, port)
 
 
 class TlsTargetOrigins(TargetOrigins):
