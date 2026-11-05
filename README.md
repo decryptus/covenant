@@ -284,9 +284,13 @@ application-file:
     state_exclude_paths: ['^/watched/maintenance/']
 ```
 
-Each imported file contains a plain YAML list of regex strings. For example,
-`rules/files-allowed.yml` could contain `['^/watched/']` and
-`rules/files-denied.yml` could contain `['^/watched/private/']`.
+To try this with the repository's Compose example, uncomment `application-file`
+in [covenant.yml.example](etc/covenant/covenant.yml.example). Compose mounts
+the [allowed paths](etc/covenant/rules/files-allowed.yml) and
+[excluded paths](etc/covenant/rules/files-denied.yml) read-only. Each file
+contains a YAML list of regular expressions. Mount the directory to probe
+at `/watched` so its files are visible to Covenant.
+
 Both imports are optional. Paths are relative to the main configuration.
 Covenant combines each imported list with its endpoint's local rules at startup.
 An exclusion always wins, even over a local inclusion. Restart after edits.
