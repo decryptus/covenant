@@ -1,3 +1,12 @@
+covenant (0.0.77) stable; urgency=medium
+
+  * Let fixed HTTP targets disable proxy and netrc inheritance with trust_env.
+  * Expose trust_env and allow_redirects in the Apache, NGINX and RabbitMQ templates.
+  * Require HTTPdis 0.6.35 or later for bounded HTTP request parsing.
+  * Include shared filestat path lists in the example configuration.
+
+ -- Codex <codex@openai.com>  Thu, 05 Nov 2026 03:02:30 +0000
+
 covenant (0.0.76) stable; urgency=medium
 
   * Enforce filestat path filters on the requested and resolved paths.
