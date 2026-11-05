@@ -8,6 +8,7 @@ WORKDIR /src
 COPY requirements.txt setup.py setup.cfg setup.yml README.md ./
 COPY covenant ./covenant
 COPY bin ./bin
+COPY etc/covenant ./etc/covenant
 # setup.py imports yaml during metadata generation.
 RUN python -m pip install --no-cache-dir 'setuptools<81' wheel PyYAML \
     && python -m pip wheel --no-cache-dir --no-build-isolation --wheel-dir /wheels .
