@@ -271,6 +271,30 @@ This also applies with `state_follow: false`, because link metrics include
 the destination and its access permissions. An allowed missing file reports
 absence. The shipped template reports `file_exists 0` for a denied probe.
 
+To share file rules, opt in per endpoint using the shipped template:
+
+```yaml
+application-file:
+  plugin: filestat
+  import_probes: probes.d/file.yml
+  import_state_include_paths: rules/files-allowed.yml
+  import_state_exclude_paths: rules/files-denied.yml
+  vars:
+    state_include_paths: ['^/srv/monapp/ready$']
+    state_exclude_paths: ['^/watched/maintenance/']
+```
+
+Each imported file contains a plain YAML list of regex strings. For example,
+`rules/files-allowed.yml` could contain `['^/watched/']` and
+`rules/files-denied.yml` could contain `['^/watched/private/']`.
+Both imports are optional. Paths are relative to the main configuration.
+Covenant combines each imported list with its endpoint's local rules at startup.
+An exclusion always wins, even over a local inclusion. Restart after edits.
+An unreadable or invalid import prevents startup, as does an imported inclusion
+list with no rules after merging. The same endpoint directives apply to inline
+probes or metrics, combining with each target's `config.include_paths` and
+`config.exclude_paths`.
+
 For a directory alias, allow both spellings of the intended file. For example,
 `^/(var/)?run/sshd[.]pid$` supports both `/var/run/sshd.pid` and
 `/run/sshd.pid`. Existing rules that cover only the alias need updating.

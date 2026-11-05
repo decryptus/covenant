@@ -62,12 +62,23 @@ def main():
         if sys.argv[1] == 'bounded':
             conf['general']['listen_addr'] = None
             conf['general']['result_timeout'] = 0.05
-        conf['endpoints'] = {
-            'files': {'plugin': 'filestat', 'import_metrics': 'probes.d/file.yml'},
-            'file-probe': {'plugin': 'filestat', 'import_probes': 'probes.d/file.yml',
-                           'vars': {'state_include_paths': '^' + re.escape(directory) + '/'}},
-        }
         config_path = os.path.join(directory, 'covenant.yml')
+        shared_rule = '^' + re.escape(config_path) + '$'
+        local_path = os.path.join(directory, 'local')
+        denied_path = os.path.join(directory, 'denied')
+        for path in (local_path, denied_path):
+            with open(path, 'w'):
+                pass
+        for name, rules in (('shared.yml', [shared_rule]), ('denied.yml', ['^' + re.escape(denied_path) + '$'])):
+            with open(os.path.join(directory, name), 'w') as stream:
+                yaml.safe_dump(rules, stream)
+        file_endpoint = {'plugin': 'filestat', 'import_state_include_paths': 'shared.yml',
+                         'import_state_exclude_paths': 'denied.yml'}
+        conf['endpoints'] = {
+            'files': dict(file_endpoint, import_metrics='probes.d/file.yml'),
+            'file-probe': dict(file_endpoint, import_probes='probes.d/file.yml',
+                               vars={'state_include_paths': '^' + re.escape(directory) + '/'}),
+        }
         with open(config_path, 'w') as stream:
             yaml.safe_dump(conf, stream)
         cli = SimpleNamespace(listen_addr='127.0.0.1') if sys.argv[1] == 'override' else SimpleNamespace()
@@ -101,6 +112,12 @@ def main():
                 response = requests.get(base + '/probe/file-probe', params={'target': target}, timeout=3)
                 assert response.status_code == 200, response.text
                 assert ('file_exists %d.0\n' % value).encode() in response.content, response.text
+            for route, path, expected in (('metrics/files', local_path, 0),
+                                          ('probe/file-probe', local_path, 1),
+                                          ('probe/file-probe', denied_path, 0)):
+                response = requests.get(base + '/' + route, params={'target': path}, timeout=3)
+                assert response.status_code == 200, response.text
+                assert ('file_exists %d.0\n' % expected).encode() in response.content, response.text
             response = requests.get(base + '/server', timeout=3)
             assert response.status_code == 200, response.text
             assert b'version_info{' in response.content, response.content

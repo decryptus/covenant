@@ -19,6 +19,7 @@ from covenant.classes.collection import DEFAULT_RESULT_TIMEOUT, validate_result_
 from covenant.classes.exceptions import CovenantConfigurationError
 from covenant.classes.configuration_schema import validate_configuration, validate_component
 from covenant.classes.plugins import ENDPOINTS, PLUGINS
+from covenant.services.file_path_imports import load_file_path_imports
 
 DEFAULT_LISTEN_ADDR = '127.0.0.1'
 _TPL_IMPORTS = ('from os import environ as ENV',
@@ -113,6 +114,7 @@ def load_conf(xfile, options = None):
         if ept_cfg.get('credentials'):
             cfg['credentials'] = ept_cfg['credentials']
 
+        load_file_path_imports(ept_cfg, metrics + probes, config_dir)
         cfg['metrics'] = metrics
         cfg['probes'] = probes
 
