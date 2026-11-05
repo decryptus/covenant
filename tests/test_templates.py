@@ -45,6 +45,18 @@ def request(target=None):
 
 
 class TemplateTests(unittest.TestCase):
+    def test_regex_flag_names_aliases_and_numeric_masks(self):
+        for flags in (['I', 'MULTILINE'], 10, '10'):
+            tasks = CovenantTarget.load_tasks([{'@filter': 'regex', 'func': 'search',
+                                                'pattern': '^([a-z]+)$', 'flags': flags}])
+            self.assertEqual(tasks[0](value='123\nABC'), 'ABC')
+
+    def test_invalid_regex_flags_fail_while_loading_the_task(self):
+        for flags in ('search', '__dict__', 'unknown', {}, [None], [True], -1, 1 << 24):
+            with self.subTest(flags=flags), self.assertRaisesRegex(ValueError, 'invalid regex flags'):
+                CovenantTarget.load_tasks([{'@filter': 'regex', 'func': 'search',
+                                            'pattern': '(.)', 'flags': flags}])
+
     def test_nginx_success_failure_and_recovery(self):
         registry = CovenantRegistry()
         target = CovenantTarget(registry=registry, **template('metrics.d/nginx.yml')[0])
