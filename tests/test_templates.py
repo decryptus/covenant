@@ -70,7 +70,7 @@ class TemplateTests(unittest.TestCase):
         config = template('metrics.d/nginx.yml', {
             'url': 'http://configured.invalid', 'timeout': 0.25})[0]
         plugin.targets = [CovenantTarget(registry=plugin.registry, **config)]
-        with patch('covenant.plugins.http.requests.get',
+        with patch('covenant.plugins.http.requests.Session.request',
                    side_effect=requests.exceptions.Timeout('test timeout')) as get:
             with self.assertLogs('covenant.plugins.http', level='ERROR'):
                 output = plugin._fetch(request('http://other.invalid'))
@@ -86,7 +86,7 @@ class TemplateTests(unittest.TestCase):
         response = requests.Response()
         response.status_code = 403
         response._content = b'private upstream body'
-        with patch('covenant.plugins.http.requests.get', return_value=response), \
+        with patch('covenant.plugins.http.requests.Session.request', return_value=response), \
                 patch.object(response, 'close') as close, \
                 self.assertLogs('covenant.plugins.http', level='ERROR') as logs:
             output = plugin._fetch(request())

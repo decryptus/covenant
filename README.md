@@ -448,6 +448,23 @@ from redirects and unsuccessful HTTP statuses are discarded. `general.lock_timeo
 is not an overall collection deadline. Allow enough Prometheus scrape time for
 all sources configured in an endpoint.
 
+For a fixed HTTP URL, set `config.trust_env: false` to ignore proxy environment
+variables, automatic `.netrc` credentials and the Requests environment CA bundle.
+TLS verification stays enabled by default. Set `config.allow_redirects: false`
+to stop at the first redirect. With the Apache, NGINX and RabbitMQ templates,
+put these options in endpoint `vars`:
+
+```yaml
+vars:
+  url: 'https://apache.example.org/server-status/?auto'
+  trust_env: false
+  allow_redirects: false
+```
+
+Fixed URLs without credential rules inherit the environment by default.
+Dynamic destinations and targets with `credential_targets` always ignore it.
+Setting `trust_env: true` for either prevents startup.
+
 Keep collection endpoints on a trusted network. Dynamic `target` parameters let
 callers select destinations or paths permitted by the plugin configuration. For
 HTTP endpoints with credentials, prefer a fixed configured URL. Do not commit

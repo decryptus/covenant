@@ -20,6 +20,8 @@ endpoints:
     vars:
       timeout: 2
       url: 'http://localhost:8080/server-status/?auto'
+      # trust_env: false        # Ignore environment proxies, CA bundles and .netrc.
+      # allow_redirects: false
     import_metrics: metrics.d/apache.yml
   nginx1:
     plugin: http

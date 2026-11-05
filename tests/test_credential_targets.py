@@ -1,4 +1,5 @@
 """HTTP credential rules and redirect behavior over real local sockets."""
+import os
 from pathlib import Path
 import tempfile
 import threading
@@ -98,6 +99,33 @@ class CredentialTests(unittest.TestCase):
                                      'probes': [{'name': 'health', 'config': cfg, 'collects': []}]}
                     with self.assertRaises(CovenantConfigurationError):
                         plugin.safe_init()
+
+    def test_fixed_target_can_disable_environment_proxy_and_netrc(self):
+        plugin = CovenantHttpPlugin('fixed-target')
+        with tempfile.TemporaryDirectory() as directory, upstream() as (_, url, direct), \
+                upstream() as (_, proxy, forwarded):
+            netrc = Path(directory, '.netrc')
+            netrc.write_text('machine 127.0.0.1 login probe password example\n')
+            netrc.chmod(0o600)
+            with patch.dict(os.environ, {'NETRC': str(netrc), 'http_proxy': proxy}, clear=True):
+                for options in ({}, {'trust_env': True}, {'trust_env': False},
+                                {'credential_targets': []}):
+                    target = CovenantTarget('health', dict(options, url=url), [], plugin.registry)
+                    plugin.targets = [target]
+                    req = CovenantEPTObject('test', 'test:1', 'test', 'probes', {}, {}, lambda obj: None)
+                    plugin.do_probes(req)
+            self.assertEqual(len(forwarded), 2)
+            self.assertTrue(all(auth for _, auth, _ in forwarded))
+            self.assertEqual(direct, [('/', None, None), ('/', None, None)])
+
+    def test_invalid_trust_env_rejected_at_startup(self):
+        for options in ({'trust_env': True}, {'url': 'http://fixed.test', 'trust_env': 'false'},
+                        {'url': 'http://fixed.test', 'trust_env': True, 'credential_targets': []}):
+            plugin = CovenantHttpPlugin('invalid-environment')
+            plugin.config = {'probes': [{'name': 'health', 'config': options, 'collects': []}]}
+            with self.subTest(options=options), patch('covenant.classes.plugins.EPTS_SYNC'), \
+                    self.assertRaises(CovenantConfigurationError):
+                plugin.safe_init()
 
     def test_dynamic_probe_and_redirects(self):
         plugin = CovenantHttpPlugin('credential-test')
