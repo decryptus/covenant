@@ -271,33 +271,11 @@ The template includes connection/probe success and certificate validity metrics.
 
 ### Restrict caller-supplied network targets
 
-Set the policy alongside `plugin` and `import_probes` (or `import_metrics`).
-All four options accept the same rule forms: an exact origin, a single-label
-hostname wildcard, a full hostname regex or a literal IP range (CIDR).
-The two import options take a file path; the file contains a YAML list.
-
-```yaml
-endpoints:
-  certificate:
-    plugin: ssl
-    import_probes: probes.d/secure-layer.yml
-    import_allowed_targets: rules/tls-allowed.yml
-    allowed_targets: ['tls://status.example.org:443']
-    import_disallowed_targets: rules/tls-denied.yml
-    disallowed_targets: ['tls://staging.services.example.org:443']
-```
-
-For example, [tls-allowed.yml](etc/covenant/rules/tls-allowed.yml) allows
-`tls://*.services.example.org:443`. [tls-denied.yml](etc/covenant/rules/tls-denied.yml)
-uses a regex to exclude development nodes within that same wildcard.
-
-Imports are read once at startup, relative to the main configuration file.
-Covenant adds local entries to the corresponding imported list. **An exclusion
-wins** even when the allow rule is an exact match. With exclusions alone, other
-destinations are permitted. An explicitly empty combined allow list denies all
-dynamic destinations; an empty deny list excludes none. An unreadable file or
-invalid rule prevents startup. A bare `'*'` must be the only entry in its
-combined list. A rejected collection follows the endpoint's failure metrics.
+Set `allowed_targets` on the endpoint, alongside `plugin` and `import_probes`.
+The same rule applies to a metrics endpoint that accepts a caller-supplied
+`target`. Omitting both allow and deny rules preserves free target selection. An empty allow list
+rejects every caller-supplied destination. A rejected collection follows the
+endpoint's configured failure metrics.
 
 | Plugin | Example rule | What is matched |
 | --- | --- | --- |
@@ -309,12 +287,36 @@ The TLS rule uses `tls://` regardless of the service name in the request.
 For example, `target=https://example.com` uses port 443. A hostname rule
 trusts DNS for that hostname. To allow only literal IP targets in a range,
 use a CIDR rule, for example `{scheme: tls, port: 443, cidr: '192.0.2.0/24'}`.
-A CIDR exclusion matches literal addresses; a DNS alias can resolve to the same IP.
-For untrusted callers, allow only the intended origins and control their DNS.
+CIDR exclusions match literal addresses. A DNS alias can resolve to the same address;
+for untrusted callers, allow only the intended origins and control their DNS.
+Use ASCII DNS names (Punycode for internationalized names) in rules.
 Rules also support the single-label wildcard and hostname regex forms described
 under `credential_targets`. Allowing a destination grants no credentials.
 A configured fixed URL or URI takes precedence over the caller's target and
 uses the endpoint's existing fixed-destination and redirect settings.
+
+To share destination rules, put the imports on the endpoint next to the local
+lists. For example, under `endpoints`:
+
+```yaml
+  secure-layer1:
+    plugin: ssl
+    import_probes: probes.d/secure-layer.yml
+    import_allowed_targets: rules/tls-allowed.yml
+    allowed_targets: ['tls://status.example.net:443']
+    import_disallowed_targets: rules/tls-disallowed.yml
+    disallowed_targets: ['tls://legacy.example.net:443']
+```
+
+Each file contains a plain YAML list of the same origin rules. Relative paths
+start at the main configuration directory. At startup Covenant combines each
+file with its corresponding inline list. In all four lists a rule such as
+`{scheme: tls, port: 443, regex: 'node[0-9]+[.]example[.]net'}` matches the
+whole hostname together with the specified scheme and port. A matching exclusion always wins,
+including on HTTP redirects. With exclusions alone, other destinations remain
+available. An empty combined allowlist rejects every dynamic destination.
+An empty exclusion list excludes none. An unreadable file, malformed list or
+invalid rule prevents startup. Restart after editing shared rules.
 
 ### File existence probe
 

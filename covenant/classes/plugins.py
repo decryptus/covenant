@@ -18,7 +18,7 @@ from covenant.classes.exceptions import CovenantConfigurationError, CovenantTarg
 from covenant.classes.target import CovenantRegistry, CovenantTarget
 from covenant.classes.collection import CollectionBusy, monotonic
 
-from covenant.services.credential_targets import EndpointTargetPolicy, NETWORK_TARGET_OPTIONS
+from covenant.services.credential_targets import DESTINATION_KEYS, DESTINATION_OPTIONS, EndpointTargets
 
 MAX_PENDING_COLLECTIONS = 256
 
@@ -165,13 +165,13 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
         if self.TARGET_ORIGINS is not None:
             component_configs = [item.get('config') for kind in ('metrics', 'probes')
                                  for item in self.config.get(kind, [])]
-            if any(isinstance(cfg, dict) and any(k in cfg for k in NETWORK_TARGET_OPTIONS)
+            if any(isinstance(cfg, dict) and any(key in cfg for key in DESTINATION_KEYS)
                    for cfg in component_configs + [self.config.get('vars')]):
-                raise CovenantConfigurationError('set network target rules on the endpoint alongside plugin')
-        if any(k in self.config for k in NETWORK_TARGET_OPTIONS):
+                raise CovenantConfigurationError('set destination rules on the endpoint alongside plugin')
+        if any(option in self.config for option in DESTINATION_OPTIONS):
             if self.TARGET_ORIGINS is None:
-                raise CovenantConfigurationError('network target rules require a plugin with destination checks')
-            self.allowed_targets = EndpointTargetPolicy(self.TARGET_ORIGINS, self.config)
+                raise CovenantConfigurationError('destination rules require a network plugin with destination checks')
+            self.allowed_targets = EndpointTargets(self.TARGET_ORIGINS, self.config)
         if self.config.get('credentials'):
             self.credentials = load_credentials(self.config['credentials'],
                                                 config_dir = self.config['covenant']['config_dir'])

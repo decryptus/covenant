@@ -17,16 +17,11 @@ from test_redis_credentials import redis_peer
 from test_templates import request
 
 
-_OMITTED = object()
-
-
-def endpoint(plugin_type, rules=_OMITTED, **options):
+def endpoint(plugin_type, rules, **options):
     plugin = plugin_type('limited')
-    plugin.config = {'probes': [
+    plugin.config = {'allowed_targets': rules, 'probes': [
         {'name': 'status', 'config': {}, 'collects': []}]}
     plugin.config.update(options)
-    if rules is not _OMITTED:
-        plugin.config['allowed_targets'] = rules
     with patch('covenant.classes.plugins.EPTS_SYNC'):
         plugin.safe_init()
     return plugin
@@ -45,66 +40,62 @@ class AllowedTargetTests(unittest.TestCase):
             self.assertEqual(len(hits), 2)
             self.assertEqual(denied, [])
 
-    def test_imported_exclusions_block_http_redirects_even_without_an_allowlist(self):
-        with tempfile.TemporaryDirectory() as folder, upstream() as (server, first, hits), upstream() as (_, second, denied):
-            path = Path(folder, 'exclude.yml')
-            path.write_text(yaml.safe_dump([second]))
-            plugin = endpoint(CovenantHttpPlugin, import_disallowed_targets=path.name,
-                              covenant={'config_dir': folder})
-            path.unlink()
+    def test_exclusion_blocks_http_redirect_even_when_wildcard_allows_it(self):
+        with upstream() as (server, first, hits), upstream() as (_, second, denied):
+            plugin = endpoint(CovenantHttpPlugin, ['*'], disallowed_targets=[second])
             server.location = second
             with self.assertLogs('covenant.plugins.http'):
                 plugin.do_probes(request(first))
             self.assertEqual(len(hits), 1)
             self.assertEqual(denied, [])
 
-    def test_imported_and_inline_rules_share_syntax_and_deny_wins(self):
-        with tempfile.TemporaryDirectory() as folder:
-            Path(folder, 'allow.yml').write_text(yaml.safe_dump(['tls://*.example.test']))
-            Path(folder, 'deny.yml').write_text(yaml.safe_dump([
-                {'scheme': 'tls', 'port': 443, 'regex': r'node[0-9]+\.example\.test'}]))
-            plugin = endpoint(CovenantSslPlugin, ['tls://local.test'],
-                              import_allowed_targets='allow.yml', import_disallowed_targets='deny.yml',
-                              disallowed_targets=['tls://old.example.test'], covenant={'config_dir': folder})
-            for host, expected in [('one.example.test', True), ('a.b.example.test', False),
-                                   ('local.test', True), ('other.test', False),
-                                   ('old.example.test', False), ('node12.example.test', False)]:
-                self.assertEqual(plugin.allowed_targets.allows('tls://' + host), expected, host)
+    def test_policy_imports_at_config_load(self):
+        from types import SimpleNamespace
+        rule = {'scheme': 'tls', 'port': 443, 'regex': r'node[0-9]+[.]example[.]net'}
+        with tempfile.TemporaryDirectory() as folder, patch.object(config.signal, 'signal'), \
+                patch.object(config, 'init_modules'), patch.dict(config.ENDPOINTS, clear=True), \
+                patch.object(config, 'DWHO_THREADS', []), patch('covenant.classes.plugins.EPTS_SYNC'):
+            root = Path(folder)
+            path = root / 'covenant.yml'
 
-    def test_redis_exclusion_precedes_connect_and_credential_check(self):
-        plugin = endpoint(CovenantRedisPlugin, ['*'], disallowed_targets=[
-            {'scheme': 'redis', 'port': 6379, 'cidr': '127.0.0.0/8'}])
-        with patch('covenant.plugins.predis.redis.from_url') as connect:
-            for host in ('127.0.0.1', '127.1', '2130706433', '[::ffff:127.0.0.1]'):
-                target = Mock(config={'credential_targets': ['*']}, credentials=None)
-                plugin._do_call(request('redis://' + host), targets=[target])
-                self.assertIsInstance(target.call_args[0][0], CovenantTargetFailed)
-            connect.assert_not_called()
+            def load(**options):
+                probe = {'plugin': 'ssl', 'probes': [{'name': 'status', 'collects': []}]}
+                probe.update(options)
+                path.write_text(yaml.safe_dump({'general': {}, 'endpoints': {'policy': probe}}))
+                config.load_conf(str(path), SimpleNamespace())
+                return config.ENDPOINTS['policy'].allowed_targets
 
-    def test_deny_only_wildcard_matches_case_and_absolute_dns_name(self):
-        plugin = endpoint(CovenantSslPlugin, disallowed_targets=['tls://*.example.test'])
-        for host in ('NODE.EXAMPLE.TEST.', 'node.example.test'):
-            with patch.object(plugin, '_connect') as connect:
-                plugin._do_call(request('https://' + host), targets=[Mock(config={})])
-                connect.assert_not_called()
-        self.assertTrue(plugin.allowed_targets.allows('tls://node.example.test:8443'))
-
-    def test_empty_and_invalid_imports(self):
-        with tempfile.TemporaryDirectory() as folder:
-            loc = {'config_dir': folder}
-            path = Path(folder, 'rules.yml')
+            (root / 'allowed.yml').write_text(yaml.safe_dump([rule]))
+            (root / 'blocked.yml').write_text(yaml.safe_dump([dict(rule, regex=r'node1[.]example[.]net')]))
+            (root / 'empty.yml').write_text('[]')
+            policy = load(import_allowed_targets='allowed.yml', allowed_targets=['tls://extra'],
+                          import_disallowed_targets='blocked.yml', disallowed_targets=['tls://node2.example.net'])
+            for host, expected in [('node3.example.net', True), ('extra', True), ('node1.example.net', False),
+                                   ('node2.example.net', False), ('other', False), ('node3.example.net.evil', False)]:
+                self.assertEqual(policy.allows('tls://' + host), expected, host)
+            policy = load(import_disallowed_targets='blocked.yml')
+            self.assertTrue(policy.allows('tls://other'))
+            self.assertFalse(policy.allows('tls://node1.example.net'))
+            self.assertFalse(load(import_allowed_targets='empty.yml').allows('tls://other'))
+            self.assertTrue(load(import_disallowed_targets='empty.yml').allows('tls://other'))
             for key in ('import_allowed_targets', 'import_disallowed_targets'):
-                for content in (None, '', 'rules: []', '[', '- tls://bad:0'):
-                    if content is None:
-                        if path.exists():
-                            path.unlink()
-                    else:
-                        path.write_text(content)
-                    with self.subTest(key=key, data=content), self.assertRaises(CovenantConfigurationError):
-                        endpoint(CovenantSslPlugin, covenant=loc, **{key: path.name})
-                path.write_text('[]')
-                plugin = endpoint(CovenantSslPlugin, covenant=loc, **{key: path.name})
-                self.assertEqual(plugin.allowed_targets.allows('tls://any.test'), key == 'import_disallowed_targets')
+                for content in (None, '{}', '[', yaml.safe_dump([dict(rule, regex='[')])):
+                    if content is not None:
+                        (root / 'bad.yml').write_text(content)
+                    with self.subTest(key=key, content=content), self.assertRaises(CovenantConfigurationError):
+                        load(**{key: 'missing.yml' if content is None else 'bad.yml'})
+
+    def test_example_wildcard_and_regex_exclusion(self):
+        from covenant.services.credential_targets import EndpointTargets, TlsTargetOrigins, load_origin_rules
+        directory = Path(__file__).resolve().parents[1] / 'etc' / 'covenant'
+        rules = {}
+        for key, filename in [('allowed_targets', 'tls-allowed.yml'), ('disallowed_targets', 'tls-disallowed.yml')]:
+            rules[key] = load_origin_rules({'import_' + key: 'rules/' + filename}, key, str(directory))
+        policy = EndpointTargets(TlsTargetOrigins, rules)
+        self.assertTrue(policy.allows('tls://api.example.net:443'))
+        self.assertFalse(policy.allows('tls://node12.example.net:443'))
+        self.assertFalse(policy.allows('tls://internal.api.example.net:443'))
+        self.assertFalse(policy.allows('tls://api.example.net:8443'))
 
     def test_fixed_http_origin_wins_over_the_requested_target(self):
         with upstream() as (_, fixed, hits), upstream() as (_, other, denied):
@@ -136,6 +127,24 @@ class AllowedTargetTests(unittest.TestCase):
                 connect.assert_not_called()
                 self.assertIsInstance(target.call_args[0][0], CovenantTargetFailed)
 
+    def test_redis_exclusion_precedes_connect_and_credential_check(self):
+        plugin = endpoint(CovenantRedisPlugin, ['*'], disallowed_targets=[
+            {'scheme': 'redis', 'port': 6379, 'cidr': '127.0.0.0/8'}])
+        with patch('covenant.plugins.predis.redis.from_url') as connect:
+            for host in ('127.0.0.1', '127.1', '2130706433', '[::ffff:127.0.0.1]'):
+                target = Mock(config={'credential_targets': ['*']}, credentials=None)
+                plugin._do_call(request('redis://' + host), targets=[target])
+                self.assertIsInstance(target.call_args[0][0], CovenantTargetFailed)
+            connect.assert_not_called()
+
+    def test_deny_only_wildcard_matches_case_and_absolute_dns_name(self):
+        plugin = endpoint(CovenantSslPlugin, ['*'], disallowed_targets=['tls://*.example.test'])
+        for host in ('NODE.EXAMPLE.TEST.', 'node.example.test'):
+            with patch.object(plugin, '_connect') as connect:
+                plugin._do_call(request('https://' + host), targets=[Mock(config={})])
+                connect.assert_not_called()
+        self.assertTrue(plugin.allowed_targets.allows('tls://node.example.test:8443'))
+
     def test_ssl_uses_socket_destination_even_with_an_allowed_common_name(self):
         plugin = endpoint(CovenantSslPlugin, ['tls://good.example:443'])
         with patch.object(plugin, '_connect', side_effect=OSError('test')) as connect:
@@ -154,13 +163,9 @@ class AllowedTargetTests(unittest.TestCase):
                 patch.object(config, 'DWHO_THREADS', []), patch('covenant.classes.plugins.EPTS_SYNC'):
             path = Path(folder, 'covenant.yml')
             path.write_text(yaml.safe_dump({'general': {}, 'endpoints': {'tls-test': {
-                'plugin': 'ssl', 'import_allowed_targets': 'shared.yml',
-                'disallowed_targets': ['tls://excluded.example'], 'probes': [
+                'plugin': 'ssl', 'allowed_targets': [], 'probes': [
                     {'name': 'status', 'config': {}, 'collects': []}]}}}))
-            Path(folder, 'shared.yml').write_text("- 'tls://*.example'\n")
             config.load_conf(str(path), SimpleNamespace())
-            self.assertTrue(config.ENDPOINTS['tls-test'].allowed_targets.allows('tls://ok.example'))
-            self.assertFalse(config.ENDPOINTS['tls-test'].allowed_targets.allows('tls://excluded.example'))
             self.assertFalse(config.ENDPOINTS['tls-test'].allowed_targets.allows('tls://example.com'))
         for rules in (None, 'tls://host', ['https://host'], ['tls://host:0']):
             with self.subTest(rules=rules), self.assertRaises(CovenantConfigurationError):
