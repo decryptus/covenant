@@ -12,6 +12,7 @@ Installation, configuration, public APIs and troubleshooting.
    certlord
    observations
    configuration-validation
+   release-0.0.81
    release-0.0.80
    release-0.0.79
    release-0.0.78

@@ -1,3 +1,10 @@
+covenant (0.0.81) stable; urgency=medium
+
+  * Validate builtintypes methods against an explicit list at configuration load.
+  * Require a task-local boolean allow_format for format and format_map.
+
+ -- Codex <codex@openai.com>  Thu, 05 Nov 2026 06:40:00 +0000
+
 covenant (0.0.80) stable; urgency=medium
 
   * Restrict caller-selected HTTP, Redis and TLS destinations with optional
