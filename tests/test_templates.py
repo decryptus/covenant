@@ -18,7 +18,7 @@ from sonicprobe.helpers import load_yaml
 from covenant.classes.exceptions import CovenantTargetFailed
 from covenant.classes.plugins import CovenantEPTObject
 from covenant.classes.target import CovenantRegistry, CovenantTarget
-from covenant.filters import fbuiltins, fjmespath, fregex  # Register filters.
+from covenant.filters import fbuiltins, fbuiltintypes, fjmespath, fregex  # Register filters.
 from covenant.plugins.http import CovenantHttpPlugin
 from covenant.plugins.pfilestat import CovenantFilestatPlugin
 
@@ -45,6 +45,43 @@ def request(target=None):
 
 
 class TemplateTests(unittest.TestCase):
+    def test_apache_scoreboard_counts_workers_with_the_shipped_filter_chain(self):
+        registry = CovenantRegistry()
+        target = CovenantTarget(registry=registry, **template('metrics.d/apache.yml')[0])
+        target('Scoreboard: __W.\n')
+        output = generate_latest(registry)
+        self.assertIn(b'scoreboard{state="idle"} 2.0\n', output)
+        self.assertIn(b'scoreboard{state="reply"} 1.0\n', output)
+
+    def test_builtintypes_methods_rejected_at_load_time(self):
+        for name in ('clear', 'append', 'pop', 'sort', '__getattribute__', 'real', 'unknown'):
+            with self.subTest(name=name), self.assertRaisesRegex(ValueError, 'method not allowed'):
+                CovenantTarget.load_tasks([{'@filter': 'builtintypes', 'func': name, 'allow_format': True}])
+
+    def test_formatting_requires_a_boolean_opt_in_on_each_task(self):
+        for name, template_value, args in [('format', '{0}', ['ok']),
+                                            ('format_map', '{value}', [{'value': 'ok'}])]:
+            def task(**settings):
+                return CovenantTarget.load_tasks([dict({'@filter': 'builtintypes', 'func': name,
+                                                        'args': args}, **settings)])[0]
+            with self.subTest(name=name):
+                self.assertEqual(task(allow_format=True)(template_value), 'ok')
+                for options in ({}, {'allow_format': False}, {'allow_format': 'true'},
+                                {'allow_format': 1}, {'allow_format': None}):
+                    with self.assertRaisesRegex(ValueError, 'allow_format'):
+                        task(**options)
+
+    def test_builtintypes_join_lookup_and_slice_conventions(self):
+        for method, value, args, expected in [
+                ('get', {'a': 3}, ['a'], 3), ('get', [8, 9], [], 8),
+                ('get', (8, 9), [1], 9), ('get', [8, 9, 10], [1, 3], [9, 10]),
+                ('join', ['a', 'b'], ['-'], 'a-b'), ('strip', '  42 ', [], '42')]:
+            with self.subTest(method=method, value=value):
+                filt = CovenantTarget.load_tasks([{'@filter': 'builtintypes', 'func': method, 'args': args}])[0]
+                self.assertEqual(filt(value), expected)
+        filt = CovenantTarget.load_tasks([{'@filter': 'builtintypes', 'func': 'get'}])[0]
+        self.assertIsInstance(filt([]), fbuiltintypes.CovenantNoResult)
+
     def test_regex_flag_names_aliases_and_numeric_masks(self):
         for flags in (['I', 'MULTILINE'], 10, '10'):
             tasks = CovenantTarget.load_tasks([{'@filter': 'regex', 'func': 'search',
