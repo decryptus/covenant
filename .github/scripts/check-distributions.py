@@ -41,6 +41,13 @@ for name in sys.argv[1:]:
         python = str(Path(temp) / 'bin/python')
         subprocess.run([python, '-m', 'pip', 'install', '--no-deps', str(wheels[0].resolve())], check=True)
         subprocess.run([python, '-c', 'from importlib.metadata import version; import sys; assert version(sys.argv[1]) == sys.argv[2]', name, version], cwd=temp, check=True)
+        if name == 'covenant':
+            samples = Path('etc/covenant')
+            installed = Path(temp) / 'share/covenant/examples'
+            for source in samples.rglob('*'):
+                if source.is_file():
+                    target = installed / source.relative_to(samples)
+                    assert target.read_bytes() == source.read_bytes(), target
         script = Path(temp) / 'bin' / name
         assert script.is_file()
         compile(script.read_bytes(), str(script), 'exec')

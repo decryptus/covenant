@@ -1,7 +1,7 @@
 version: '3.2'
 services:
   covenant:
-    image: decryptus/covenant:0.0.82
+    image: decryptus/covenant:0.0.83
     container_name: covenant
     environment:
       COVENANT_EXTRA_OPTS: --listen-addr 0.0.0.0

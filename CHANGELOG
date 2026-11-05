@@ -1,3 +1,10 @@
+covenant (0.0.83) stable; urgency=medium
+
+  * Restrict the sample TLS endpoint to example.com on port 443.
+  * Include the example configuration and its templates in the Python wheel.
+
+ -- Codex <codex@openai.com>  Thu, 05 Nov 2026 18:58:33 -0000
+
 covenant (0.0.82) stable; urgency=medium
 
   * Import endpoint allow and deny lists for dynamic HTTP, Redis and TLS targets.

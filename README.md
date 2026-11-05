@@ -62,7 +62,7 @@ orders_workers_active 3.0
 Edit `examples/quickstart/data/status.json`, then call the endpoint again to see the
 new values. Collection happens when the endpoint is scraped.
 
-The example pins `decryptus/covenant:0.0.82` and exposes port 9118 only on the local
+The example pins `decryptus/covenant:0.0.83` and exposes port 9118 only on the local
 host. If the first request arrives before the API is ready, retry it.
 
 ```sh
@@ -482,7 +482,7 @@ Docker is the simplest way to use the tested runtime. To run your own configurat
 docker run --rm --name covenant \
   -p 127.0.0.1:9118:9118 \
   -v "$PWD/covenant.yml:/etc/covenant/covenant.yml:ro" \
-  decryptus/covenant:0.0.82
+  decryptus/covenant:0.0.83
 ```
 
 For this bridge-network command, set `general.listen_addr: 0.0.0.0` in the
@@ -491,7 +491,9 @@ mounted YAML so the published port can reach the container.
 For a Python installation, `pip install covenant` installs the version published
 on PyPI, which may differ from GitHub or Docker Hub. Installing from the repository
 requires its dependencies and native build tools; the [Dockerfile](Dockerfile)
-provides the working build recipe.
+provides the working build recipe. The wheel installs the sample configuration,
+templates and rules under `share/covenant/examples/` in the Python installation
+prefix. In the Docker image they are under `/usr/local/share/covenant/examples/`.
 
 ```sh
 # Foreground, with an explicit configuration.
