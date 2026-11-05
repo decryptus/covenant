@@ -1,3 +1,10 @@
+covenant (0.0.78) stable; urgency=medium
+
+  * Keep collected values and raw exception messages out of collector logs.
+  * Require HTTPdis 0.6.38 to omit incoming query strings from access logs.
+
+ -- Codex <codex@openai.com>  Thu, 05 Nov 2026 03:30:24 +0000
+
 covenant (0.0.77) stable; urgency=medium
 
   * Let fixed HTTP targets disable proxy and netrc inheritance with trust_env.

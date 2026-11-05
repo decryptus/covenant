@@ -62,7 +62,7 @@ orders_workers_active 3.0
 Edit `examples/quickstart/data/status.json`, then call the endpoint again to see the
 new values. Collection happens when the endpoint is scraped.
 
-The example pins `decryptus/covenant:0.0.77` and exposes port 9118 only on the local
+The example pins `decryptus/covenant:0.0.78` and exposes port 9118 only on the local
 host. If the first request arrives before the API is ready, retry it.
 
 ```sh
@@ -409,7 +409,7 @@ Docker is the simplest way to use the tested runtime. To run your own configurat
 docker run --rm --name covenant \
   -p 127.0.0.1:9118:9118 \
   -v "$PWD/covenant.yml:/etc/covenant/covenant.yml:ro" \
-  decryptus/covenant:0.0.77
+  decryptus/covenant:0.0.78
 ```
 
 For this bridge-network command, set `general.listen_addr: 0.0.0.0` in the
@@ -593,9 +593,10 @@ credentials. Prefer `rediss://` with verified TLS when sending credentials.
 
 Covenant collector errors identify the configured target and exception type.
 HTTP errors also report the upstream status when a response is available.
-Use these fields to diagnose failures. HTTP access logs from HTTPdis or a
-reverse proxy may include the incoming request URL. Keep credentials in
-endpoint configuration and avoid putting secrets in the scrape URL.
+HTTPdis access logs retain the incoming route and HTTP status and omit its
+query string, including the value of `?target=`. Reverse proxies have their
+own access log settings. Keep credentials in endpoint configuration and avoid
+putting secrets in URL paths.
 
 | Symptom | Check |
 | --- | --- |
