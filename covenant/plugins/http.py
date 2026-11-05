@@ -48,6 +48,16 @@ def _response_limits(cfg):
     return timeout, limit
 
 
+def _trust_environment(cfg):
+    scoped = not (cfg.get('url') or cfg.get('uri')) or cfg.get('credential_targets') is not None
+    value = cfg.get('trust_env', not scoped)
+    if not isinstance(value, bool):
+        raise CovenantConfigurationError('HTTP trust_env must be a boolean')
+    if scoped and value:
+        raise CovenantConfigurationError('trust_env requires a fixed URL without credential_targets')
+    return value
+
+
 def _buffer_response(limit, response, **kwargs):
     # Requests consumes redirect bodies internally, even with stream=True.
     # Cache only the successful payload before its redirect or decoding logic runs.
@@ -95,6 +105,7 @@ class CovenantHttpPlugin(CovenantPlugBase):
         super(CovenantHttpPlugin, self).safe_init()
         for target in self.targets:
             _response_limits(target.config)
+            _trust_environment(target.config)
             CredentialTargets(target.config.get('credential_targets', []))
 
     def _do_call(self, obj, targets = None, registry = None): # pylint: disable=unused-argument
@@ -116,6 +127,8 @@ class CovenantHttpPlugin(CovenantPlugBase):
             if 'uri' in cfg and not cfg.get('url'):
                 cfg['url'] = cfg.pop('uri')
 
+            trust_env = _trust_environment(cfg)
+            cfg.pop('trust_env', None)
             dynamic = not cfg.get('url')
             rules = cfg.pop('credential_targets', None)
             if param_target and dynamic:
@@ -156,16 +169,14 @@ class CovenantHttpPlugin(CovenantPlugBase):
                 raise CovenantConfigurationError("invalid http method: %r" % method)
 
             try:
-                if dynamic or rules is not None:
-                    with requests.Session() as session:
-                        session.trust_env = False
+                with requests.Session() as session:
+                    session.trust_env = trust_env
+                    if dynamic or rules is not None:
                         adapter = CredentialAdapter(CredentialTargets(rules or []), cfg)
                         session.mount('http://', adapter)
                         session.mount('https://', adapter)
-                        cfg.setdefault('allow_redirects', method != 'head')
-                        req = session.request(method, **cfg)
-                else:
-                    req = getattr(requests, method)(**cfg)
+                    cfg.setdefault('allow_redirects', method != 'head')
+                    req = session.request(method, **cfg)
 
                 if req.status_code != requests.codes['ok']:
                     raise LookupError("upstream HTTP status %d" % req.status_code)

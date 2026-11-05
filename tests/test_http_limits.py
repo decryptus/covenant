@@ -76,6 +76,12 @@ class HttpLimitTests(unittest.TestCase):
         for dynamic in (True, False):
             self.assertEqual(self.fetch('/redirect', 4, dynamic, timeout=0.5, format='json'), 1234)
 
+    def test_fixed_target_can_stop_at_first_redirect(self):
+        with self.assertLogs('covenant.plugins.http'):
+            result = self.fetch('/redirect', 4, trust_env=False, allow_redirects=False)
+        self.assertIsInstance(result, CovenantTargetFailed)
+        self.assertIn('302', str(result))
+
     def test_slow_upstream_and_recovery(self):
         with self.assertLogs('covenant.plugins.http'):
             self.assertIsInstance(self.fetch('/slow', 4, timeout=0.1), CovenantTargetFailed)
@@ -91,5 +97,7 @@ class HttpLimitTests(unittest.TestCase):
                 with self.subTest(key=key, value=value), self.assertRaises(CovenantConfigurationError):
                     _response_limits({key: value})
         for name in ('nginx', 'apache', 'rabbitmq'):
-            for target in template('metrics.d/%s.yml' % name, {'max_response_bytes': 4096}):
-                self.assertEqual(target['config']['max_response_bytes'], 4096)
+            options = {'max_response_bytes': 4096, 'trust_env': False, 'allow_redirects': False}
+            for target in template('metrics.d/%s.yml' % name, options):
+                for key, value in options.items():
+                    self.assertEqual(target['config'][key], value)
