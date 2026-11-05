@@ -1,6 +1,6 @@
 cryptography>=3.2.1
 dwho>=0.3.61
-httpdis>=0.6.38
+httpdis>=0.6.39
 jmespath>=0.9.3
 packaging>=19.0
 pycurl
