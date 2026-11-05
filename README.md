@@ -587,6 +587,12 @@ credentials. Prefer `rediss://` with verified TLS when sending credentials.
 
 ## Troubleshooting
 
+Covenant collector errors identify the configured target and exception type.
+HTTP errors also report the upstream status when a response is available.
+Use these fields to diagnose failures. HTTP access logs from HTTPdis or a
+reverse proxy may include the incoming request URL. Keep credentials in
+endpoint configuration and avoid putting secrets in the scrape URL.
+
 | Symptom | Check |
 | --- | --- |
 | Cannot reach port 9118 | Container logs, port mapping and listen address |

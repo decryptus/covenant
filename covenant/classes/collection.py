@@ -125,10 +125,9 @@ class CollectionService(object):
             if monotonic() >= obj.deadline:
                 raise CollectionTimeout('collection result expired')
             if result.has_error():
-                LOG.error('failed on call: %r. (errors: %r)', uid, result.get_errors())
+                LOG.error('failed on call: %r', uid)
                 raise CollectionFailed('failed to get results. (errors: %r)' % result.get_errors())
             LOG.info('successful on call: %r', uid)
-            LOG.debug('result on call: %r', result.get_result())
             return result.get_result()
         finally:
             completion.close()
@@ -259,7 +258,7 @@ class CollectionCalls(object):
                     if call.result is not None:
                         obj = call.result
                         if obj.has_error():
-                            LOG.error('failed on call: %r. (errors: %r)', uid, obj.get_errors())
+                            LOG.error('failed on call: %r', uid)
                             return {'error': obj.get_errors(), 'result': None}
                         LOG.info('successful on call: %r', uid)
                         return {'error': None, 'result': obj.get_result()}

@@ -257,14 +257,10 @@ class CovenantSslPlugin(CovenantPlugBase):
                                              cfg['ip_protocol'],
                                              cfg['timeout'])
             except ssl.SSLError as e:
-                LOG.warning("ssl error on target: %r. exception: %r",
-                            target.name,
-                            e)
+                LOG.warning("TLS check failed for target %r: %s", target.name, type(e).__name__)
             except Exception as e:
                 data = CovenantTargetFailed(e)
-                LOG.exception("error on target: %r. exception: %r",
-                              target.name,
-                              e)
+                LOG.error("target %r failed: %s", target.name, type(e).__name__)
             else:
                 if data.get('connect_success'):
                     if not cfg['verify_peer']:

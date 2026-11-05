@@ -98,9 +98,7 @@ class CovenantRedisPlugin(CovenantPlugBase):
                 data = getattr(conn, command)(*command_args)
             except Exception as e:
                 data = CovenantTargetFailed(e)
-                LOG.exception("error on target: %r. exception: %r",
-                              target.name,
-                              e)
+                LOG.error("target %r failed: %s", target.name, type(e).__name__)
 
             target(data)
 

@@ -64,15 +64,7 @@ class CovenantCollect(object): # pylint: disable=useless-object-inheritance
 
     def set_labels_metric(self, labels, metricvalue):
         method = getattr(self.metric.labels(**labels), self.method)
-        try:
-            method(metricvalue)
-        except Exception as e:
-            LOG.exception("metric: %r, labels: %r, metricvalue: %r, error: %r",
-                          self.name,
-                          labels,
-                          metricvalue,
-                          e)
-            raise
+        method(metricvalue)
 
     def _build_labels_metrics(self):
         nb_labels   = len(self.labels)
@@ -187,8 +179,8 @@ class CovenantCollect(object): # pylint: disable=useless-object-inheritance
                 label.task_label(data)
                 try:
                     label.task_value(data, self.value_tasks, self.value, self.default)
-                except CovenantTaskError as e:
-                    LOG.warning("%s. (metric: %r, labelname: %r)", e, self.name, label.labelname)
+                except CovenantTaskError:
+                    LOG.warning("unable to collect value for metric %r, label %r", self.name, label.labelname)
         elif self.value_tasks:
             data = self._get_value_from_tasks(data)
 
@@ -206,9 +198,9 @@ class CovenantCollect(object): # pylint: disable=useless-object-inheritance
             elif self.validator(data):
                 getattr(self.metric, self.method)(data)
             else:
-                LOG.debug("unable to fetch a valid metricvalue. (metric: %r, data: %r)", self.name, data)
+                LOG.debug("invalid value for metric %r", self.name)
         except Exception as e:
-            LOG.exception("metric: %r, data: %r, error: %r", self.name, data, e)
+            LOG.error("metric %r failed: %s", self.name, type(e).__name__)
             raise
         finally:
             del data
