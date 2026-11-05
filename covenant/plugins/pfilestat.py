@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """covenant.plugins.pfilestat"""
 
+from contextlib import contextmanager
+
 import errno
 import json
 import grp
@@ -90,14 +92,14 @@ class CovenantFilestatPlugin(CovenantPlugBase):
     def _load_patterns(self, patterns):
         r = set()
 
-        if not patterns:
+        if patterns is None or patterns == '':
             return r
 
         if isinstance(patterns, string_types):
             patterns = [patterns]
 
         if not isinstance(patterns, (list, tuple)):
-            return r
+            raise ValueError("file path rules must be a regex or list of regexes")
 
         xsum = hashlib.md5(json.dumps(patterns).encode('utf-8')).hexdigest()
 
@@ -112,23 +114,83 @@ class CovenantFilestatPlugin(CovenantPlugBase):
         return r
 
     @staticmethod
-    def _check_path(xtype, xpath, patterns):
-        if xtype == 'include':
-            if not patterns:
-                return True
+    def _require_allowed(path, relative, includes, excludes):
+        name = os.path.relpath(path) if relative else path
+        if includes and not any(match(name) for match in includes):
+            raise ValueError("file path outside include_paths")
+        if any(match(name) or match(path) for match in excludes):
+            raise ValueError("file path denied by exclude_paths")
 
-            for pattern in patterns:
-                if pattern(xpath):
-                    return True
-        elif xtype == 'exclude':
-            if not patterns:
-                return False
+    @staticmethod
+    @contextmanager
+    def _entry(path, expected, follow):
+        # On Linux pin the inode before collecting permissions or metadata.
+        # A symlink swapped into an ancestor cannot redirect the returned data.
+        if (hasattr(os, 'O_PATH') and os.readlink in getattr(os, 'supports_dir_fd', ())
+                and os.path.isdir('/proc/self/fd')):
+            flags = os.O_PATH if follow else os.O_PATH | os.O_NOFOLLOW
+            fd = os.open(path, flags)
+            try:
+                ref = b'/proc/self/fd/%d' % fd
+                if os.readlink(ref) != expected:
+                    raise ValueError("file path changed during collection")
+                st = os.fstat(fd)
+                link = None
+                if stat.S_ISLNK(st.st_mode):
+                    if follow:
+                        raise ValueError("file path changed during collection")
+                    link = os.readlink(b'', dir_fd=fd)
+                yield st, ref, link
+            finally:
+                os.close(fd)
+        else:
+            st = os.stat(path) if follow else os.lstat(path)
+            if not os.path.samestat(st, os.lstat(expected)):
+                raise ValueError("file path changed during collection")
+            link = None
+            if stat.S_ISLNK(st.st_mode):
+                if follow:
+                    raise ValueError("file path changed during collection")
+                link = os.readlink(expected)
+            yield st, expected, link
 
-            for pattern in patterns:
-                if pattern(xpath):
-                    return True
+    @staticmethod
+    def _permissions(path):
+        return {name: os.access(path, mode) for name, mode in _PERMS}
 
-        return False
+    def _restricted_details(self, path, follow, includes, excludes):
+        if (not path or path.startswith(b'//') or os.path.normpath(path) != path
+                or b'..' in path.split(b'/')):
+            raise ValueError("filtered file probes require a normalized path")
+        relative = not os.path.isabs(path)
+        absolute = os.path.abspath(path)
+        self._require_allowed(absolute, relative, includes, excludes)
+
+        parent, name = os.path.split(absolute)
+        entry = os.path.join(os.path.realpath(parent), name) if name else absolute
+        self._require_allowed(entry, relative, includes, excludes)
+        if follow:
+            resolved = os.path.realpath(absolute)
+            self._require_allowed(resolved, relative, includes, excludes)
+            with self._entry(absolute, resolved, follow=True) as (st, ref, _):
+                return st, self._permissions(ref)
+
+        with self._entry(absolute, entry, follow=False) as (st, ref, link):
+            if link is None:
+                return st, self._permissions(ref)
+            # The link text and the target permissions describe separate inodes.
+            destination = os.path.join(os.path.dirname(entry), link)
+            resolved = os.path.realpath(destination)
+            self._require_allowed(resolved, relative, includes, excludes)
+            try:
+                with self._entry(destination, resolved, follow=True) as (_, target_ref, _link):
+                    details = self._permissions(target_ref)
+            except OSError as error:
+                if error.errno != errno.ENOENT:
+                    raise
+                details = {key: False for key, _ in _PERMS}
+            details.update(lnk_source=resolved, lnk_target=link)
+            return st, details
 
     def _result(self, cfg, param_target = None):
         if param_target and not cfg.get('path'):
@@ -147,30 +209,21 @@ class CovenantFilestatPlugin(CovenantPlugBase):
             follow = bool(cfg.pop('follow'))
 
         try:
-            if follow:
-                st = os.stat(b_path)
+            if include_paths or exclude_paths:
+                st, details = self._restricted_details(b_path, follow, include_paths, exclude_paths)
             else:
-                st = os.lstat(b_path)
+                st = os.stat(b_path) if follow else os.lstat(b_path)
+                details = self._permissions(b_path)
+                if stat.S_ISLNK(st.st_mode):
+                    details.update(lnk_source=os.path.realpath(b_path), lnk_target=os.readlink(b_path))
         except OSError as e:
             if e.errno == errno.ENOENT:
                 return data
             raise
 
-        if not self._check_path('include', b_path, include_paths):
-            raise ValueError("invalid path: %r, not in include paths" % b_path)
-
-        if self._check_path('exclude', b_path, exclude_paths):
-            raise ValueError("invalid path: %r, in exclude paths" % b_path)
-
         data.update(self._st_flags(st))
+        data.update(details)
         data['exists'] = True
-
-        for perm in _PERMS:
-            data[perm[0]] = os.access(b_path, perm[1])
-
-        if data.get('islnk'):
-            data['lnk_source'] = os.path.realpath(b_path)
-            data['lnk_target'] = os.readlink(b_path)
 
         try:
             pw = pwd.getpwuid(st.st_uid)

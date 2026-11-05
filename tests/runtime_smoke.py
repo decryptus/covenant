@@ -2,6 +2,7 @@
 """Isolated runtime probe: real YAML, plugins, HTTPdis socket and SIGTERM hook."""
 
 import os
+import re
 import shutil
 import signal
 import sys
@@ -63,7 +64,8 @@ def main():
             conf['general']['result_timeout'] = 0.05
         conf['endpoints'] = {
             'files': {'plugin': 'filestat', 'import_metrics': 'probes.d/file.yml'},
-            'file-probe': {'plugin': 'filestat', 'import_probes': 'probes.d/file.yml'},
+            'file-probe': {'plugin': 'filestat', 'import_probes': 'probes.d/file.yml',
+                           'vars': {'state_include_paths': '^' + re.escape(directory) + '/'}},
         }
         config_path = os.path.join(directory, 'covenant.yml')
         with open(config_path, 'w') as stream:
@@ -93,6 +95,12 @@ def main():
                 assert response.status_code == 200, (route, response.status_code, response.text)
                 assert b'file_exists 1.0\n' in response.content, response.content
                 assert 'text/plain' in response.headers['Content-Type']
+            outside_link = os.path.join(directory, 'outside-link')
+            os.symlink(os.path.abspath(__file__), outside_link)
+            for target, value in ((outside_link, 0), (config_path, 1)):
+                response = requests.get(base + '/probe/file-probe', params={'target': target}, timeout=3)
+                assert response.status_code == 200, response.text
+                assert ('file_exists %d.0\n' % value).encode() in response.content, response.text
             response = requests.get(base + '/server', timeout=3)
             assert response.status_code == 200, response.text
             assert b'version_info{' in response.content, response.content

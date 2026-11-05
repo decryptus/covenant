@@ -50,4 +50,4 @@ endpoints:
     import_probes: probes.d/file.yml
     vars:
       state_include_paths:
-      - ^/var/run/sshd\.pid$
+      - ^/(var/)?run/sshd\.pid$
