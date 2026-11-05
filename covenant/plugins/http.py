@@ -58,6 +58,10 @@ def _trust_environment(cfg):
     return value
 
 
+class ResponseSizeLimitExceeded(ValueError):
+    pass
+
+
 def _buffer_response(limit, response, **kwargs):
     # Requests consumes redirect bodies internally, even with stream=True.
     # Cache only the successful payload before its redirect or decoding logic runs.
@@ -66,7 +70,7 @@ def _buffer_response(limit, response, **kwargs):
         if response.status_code == requests.codes['ok']:
             for chunk in response.iter_content(min(READ_CHUNK_BYTES, limit + 1)):
                 if len(body) + len(chunk) > limit:
-                    raise ValueError('HTTP response exceeds max_response_bytes')
+                    raise ResponseSizeLimitExceeded('HTTP response exceeds max_response_bytes')
                 body.extend(chunk)
         response._content = bytes(body)
     finally:
@@ -187,9 +191,10 @@ class CovenantHttpPlugin(CovenantPlugBase):
                     data = req.text
             except Exception as e:
                 data = CovenantTargetFailed(e)
-                LOG.exception("error on target: %r. exception: %r",
-                              target.name,
-                              e)
+                if req is None:
+                    LOG.error("target %r failed: %s", target.name, type(e).__name__)
+                else:
+                    LOG.error("target %r failed: %s (HTTP %d)", target.name, type(e).__name__, req.status_code)
             finally:
                 if req is not None:
                     req.close()

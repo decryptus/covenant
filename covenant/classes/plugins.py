@@ -198,7 +198,7 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
                 r    = getattr(self, func)(obj)
             except Exception as e:
                 obj.add_error(str(e))
-                LOG.exception(e)
+                LOG.error("collection failed for endpoint %r: %s", self.name, type(e).__name__)
             else:
                 obj.set_result(r)
             finally:

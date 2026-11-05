@@ -23,6 +23,8 @@ class RuntimeCompatibilityTests(unittest.TestCase):
                                 universal_newlines=True, timeout=20)
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertIn('runtime compatibility OK: ' + mode, result.stdout)
+        self.assertNotIn('private exception detail', result.stdout)
+        self.assertNotIn('private plugin detail', result.stdout)
 
     def test_legacy_yaml_without_result_timeout(self):
         self.run_runtime('legacy')

@@ -250,9 +250,7 @@ class CovenantFilestatPlugin(CovenantPlugBase):
                 data = self._result(target.config, param_target)
             except Exception as e:
                 data = CovenantTargetFailed(e)
-                LOG.exception("error on target: %r. exception: %r",
-                              target.name,
-                              e)
+                LOG.error("target %r failed: %s", target.name, type(e).__name__)
 
             target(data)
 

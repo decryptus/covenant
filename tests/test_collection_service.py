@@ -23,7 +23,8 @@ class CollectionServiceTests(unittest.TestCase):
         return self.service.collect('test', 'metric', 'metrics', {'endpoint': 'test'})
 
     def test_legacy_job_contract_and_success(self):
-        with ThreadPoolExecutor(max_workers=1) as executor:
+        with self.assertLogs('covenant.collection', level='DEBUG') as logs, \
+                ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(self.collect)
             obj = self.endpoint.qget(timeout=1)
             self.assertEqual(obj.get_endpoint(), 'test')
@@ -34,6 +35,7 @@ class CollectionServiceTests(unittest.TestCase):
             obj()
             self.assertEqual(future.result(timeout=1), b'up 1\n')
             self.assertIsNone(obj.callback.__self__.result)
+        self.assertNotIn('up 1', '\n'.join(logs.output))
 
     def test_timeout_and_late_callback_release_result(self):
         self.service.result_timeout = 0.05
@@ -50,13 +52,15 @@ class CollectionServiceTests(unittest.TestCase):
         self.assertFalse(completion.event.is_set())
 
     def test_plugin_error_remains_a_domain_error(self):
-        with ThreadPoolExecutor(max_workers=1) as executor:
+        with self.assertLogs('covenant.collection', level='DEBUG') as logs, \
+                ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(self.collect)
             obj = self.endpoint.qget(timeout=1)
             obj.add_error('backend unavailable')
             obj()
             with self.assertRaisesRegex(CollectionFailed, 'backend unavailable'):
                 future.result(timeout=1)
+        self.assertNotIn('backend unavailable', '\n'.join(logs.output))
 
     def test_concurrent_results_do_not_cross_callers(self):
         self.service.result_timeout = 2

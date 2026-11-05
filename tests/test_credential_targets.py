@@ -1,5 +1,6 @@
 """HTTP credential rules and redirect behavior over real local sockets."""
 import os
+import socket
 from pathlib import Path
 import tempfile
 import threading
@@ -126,6 +127,23 @@ class CredentialTests(unittest.TestCase):
             with self.subTest(options=options), patch('covenant.classes.plugins.EPTS_SYNC'), \
                     self.assertRaises(CovenantConfigurationError):
                 plugin.safe_init()
+
+    def test_connection_error_logs_target_name_without_query_secret(self):
+        plugin = CovenantHttpPlugin('connection-check')
+        with socket.socket() as reserved:
+            reserved.bind(('127.0.0.1', 0))
+            url = 'http://127.0.0.1:%d/health?token=private-marker' % reserved.getsockname()[1]
+            for config in ({'url': url, 'trust_env': False}, {}):
+                plugin.targets = [CovenantTarget('health', config, [], plugin.registry)]
+                req = CovenantEPTObject('test', 'test:1', 'test', 'probes',
+                                        {'target': url}, {}, lambda obj: None)
+                with self.assertLogs('covenant', level='DEBUG') as logs:
+                    plugin.do_probes(req)
+                output = '\n'.join(logs.output)
+                self.assertIn('health', output)
+                self.assertIn('ConnectionError', output)
+                self.assertNotIn('private-marker', output)
+                self.assertNotIn('Traceback', output)
 
     def test_dynamic_probe_and_redirects(self):
         plugin = CovenantHttpPlugin('credential-test')

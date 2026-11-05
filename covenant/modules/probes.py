@@ -53,8 +53,8 @@ class ProbesModule(CollectionModuleCompat, DWhoModuleBase):
             return HttpResponse(data = result['result'])
         except HttpReqError:
             raise
-        except Exception:
-            LOG.exception("collection failed")
+        except Exception as e:
+            LOG.error("collection failed: %s", type(e).__name__)
             raise HttpReqError(500, "collection failed")
         finally:
             gc.collect()
