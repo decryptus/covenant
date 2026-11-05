@@ -17,10 +17,11 @@ from test_redis_credentials import redis_peer
 from test_templates import request
 
 
-def endpoint(plugin_type, rules):
+def endpoint(plugin_type, rules, **options):
     plugin = plugin_type('limited')
     plugin.config = {'allowed_targets': rules, 'probes': [
         {'name': 'status', 'config': {}, 'collects': []}]}
+    plugin.config.update(options)
     with patch('covenant.classes.plugins.EPTS_SYNC'):
         plugin.safe_init()
     return plugin
@@ -38,6 +39,63 @@ class AllowedTargetTests(unittest.TestCase):
                 plugin.do_probes(request(second))
             self.assertEqual(len(hits), 2)
             self.assertEqual(denied, [])
+
+    def test_exclusion_blocks_http_redirect_even_when_wildcard_allows_it(self):
+        with upstream() as (server, first, hits), upstream() as (_, second, denied):
+            plugin = endpoint(CovenantHttpPlugin, ['*'], disallowed_targets=[second])
+            server.location = second
+            with self.assertLogs('covenant.plugins.http'):
+                plugin.do_probes(request(first))
+            self.assertEqual(len(hits), 1)
+            self.assertEqual(denied, [])
+
+    def test_policy_imports_at_config_load(self):
+        from types import SimpleNamespace
+        rule = {'scheme': 'tls', 'port': 443, 'regex': r'node[0-9]+[.]example[.]net'}
+        with tempfile.TemporaryDirectory() as folder, patch.object(config.signal, 'signal'), \
+                patch.object(config, 'init_modules'), patch.dict(config.ENDPOINTS, clear=True), \
+                patch.object(config, 'DWHO_THREADS', []), patch('covenant.classes.plugins.EPTS_SYNC'):
+            root = Path(folder)
+            path = root / 'covenant.yml'
+
+            def load(**options):
+                probe = {'plugin': 'ssl', 'probes': [{'name': 'status', 'collects': []}]}
+                probe.update(options)
+                path.write_text(yaml.safe_dump({'general': {}, 'endpoints': {'policy': probe}}))
+                config.load_conf(str(path), SimpleNamespace())
+                return config.ENDPOINTS['policy'].allowed_targets
+
+            (root / 'allowed.yml').write_text(yaml.safe_dump([rule]))
+            (root / 'blocked.yml').write_text(yaml.safe_dump([dict(rule, regex=r'node1[.]example[.]net')]))
+            (root / 'empty.yml').write_text('[]')
+            policy = load(import_allowed_targets='allowed.yml', allowed_targets=['tls://extra'],
+                          import_disallowed_targets='blocked.yml', disallowed_targets=['tls://node2.example.net'])
+            for host, expected in [('node3.example.net', True), ('extra', True), ('node1.example.net', False),
+                                   ('node2.example.net', False), ('other', False), ('node3.example.net.evil', False)]:
+                self.assertEqual(policy.allows('tls://' + host), expected, host)
+            policy = load(import_disallowed_targets='blocked.yml')
+            self.assertTrue(policy.allows('tls://other'))
+            self.assertFalse(policy.allows('tls://node1.example.net'))
+            self.assertFalse(load(import_allowed_targets='empty.yml').allows('tls://other'))
+            self.assertTrue(load(import_disallowed_targets='empty.yml').allows('tls://other'))
+            for key in ('import_allowed_targets', 'import_disallowed_targets'):
+                for content in (None, '{}', '[', yaml.safe_dump([dict(rule, regex='[')])):
+                    if content is not None:
+                        (root / 'bad.yml').write_text(content)
+                    with self.subTest(key=key, content=content), self.assertRaises(CovenantConfigurationError):
+                        load(**{key: 'missing.yml' if content is None else 'bad.yml'})
+
+    def test_example_wildcard_and_regex_exclusion(self):
+        from covenant.services.credential_targets import EndpointTargets, TlsTargetOrigins, load_origin_rules
+        directory = Path(__file__).resolve().parents[1] / 'etc' / 'covenant'
+        rules = {}
+        for key, filename in [('allowed_targets', 'tls-allowed.yml'), ('disallowed_targets', 'tls-disallowed.yml')]:
+            rules[key] = load_origin_rules({'import_' + key: 'rules/' + filename}, key, str(directory))
+        policy = EndpointTargets(TlsTargetOrigins, rules)
+        self.assertTrue(policy.allows('tls://api.example.net:443'))
+        self.assertFalse(policy.allows('tls://node12.example.net:443'))
+        self.assertFalse(policy.allows('tls://internal.api.example.net:443'))
+        self.assertFalse(policy.allows('tls://api.example.net:8443'))
 
     def test_fixed_http_origin_wins_over_the_requested_target(self):
         with upstream() as (_, fixed, hits), upstream() as (_, other, denied):
