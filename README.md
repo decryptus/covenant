@@ -122,6 +122,20 @@ in both detached and foreground (`-f`) mode.
 An endpoint defines either metrics or probes, not both. The shipped module files
 provide the routes; `/probe/` and `/probes/` are both accepted for probes.
 
+### Filter configuration
+
+The YAML selects each filter and its method. A `regex` filter accepts flag
+names such as `MULTILINE` or `I`, lists such as `[MULTILINE, IGNORECASE]`,
+and integer masks (including decimal strings) made from flags available on
+the installed Python version. Omit `flags` to use the default. Invalid names,
+unknown mask bits and non-flag values cause an error at configuration loading.
+
+With `builtintypes`, choose the method for the kind of data you collect.
+For example, the Apache template uses `count` to count worker states.
+Use `format` and `format_map` only with trusted format strings. These methods
+interpret the collected string as a Python format template, allowing the
+source to choose fields and output widths.
+
 ## Define your own API metrics
 
 Here is the endpoint section from the quickstart, reduced to one metric. Place it
