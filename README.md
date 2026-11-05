@@ -263,6 +263,20 @@ curl --get --fail http://localhost:9118/probe/application-file \
 In Docker, mount the required host directory read-only at `/watched`. This tests
 file existence; a PID file's presence does not prove its process is running.
 
+When `state_include_paths` or `state_exclude_paths` is set, supply normalized
+paths (for example, `/watched/app.pid`). Covenant checks the requested name,
+the name after resolving parent directories, and the destination of a symlink.
+Every name must pass the inclusion rules and exclusions take precedence.
+This also applies with `state_follow: false`, because link metrics include
+the destination and its access permissions. An allowed missing file reports
+absence. The shipped template reports `file_exists 0` for a denied probe.
+
+For a directory alias, allow both spellings of the intended file. For example,
+`^/(var/)?run/sshd[.]pid$` supports both `/var/run/sshd.pid` and
+`/run/sshd.pid`. Existing rules that cover only the alias need updating.
+Use administrator-controlled directories for filtered probes. On systems
+without Linux path descriptors and procfs, file inspection uses pathname lookups.
+
 Template paths are resolved relative to the main configuration directory. The
 Docker image already includes `modules`, `metrics.d` and `probes.d` under
 `/etc/covenant`. Mounting an entire directory there hides those bundled files;

@@ -7,6 +7,7 @@ import shutil
 import tempfile
 import unittest
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -82,6 +83,91 @@ class FileTests(unittest.TestCase):
     def test_file_outside_include_list_is_rejected(self):
         with self.assertRaises(ValueError):
             self.plugin._result({'path': self.path, 'include_paths': ['^/other/']})
+
+    def test_dynamic_traversal_and_outgoing_links_are_rejected(self):
+        allowed = os.path.join(self.directory, 'allowed')
+        os.mkdir(allowed)
+        link = os.path.join(allowed, 'link')
+        os.symlink(self.path, link)
+        parent_link = os.path.join(allowed, 'parent')
+        os.symlink(self.directory, parent_link)
+        for follow in (False, True):
+            for path in (link, os.path.join(parent_link, os.path.basename(self.path)),
+                         os.path.join(allowed, '..', os.path.basename(self.path))):
+                with self.subTest(path=path, follow=follow), self.assertRaises(ValueError):
+                    self.plugin._result({'include_paths': '^' + re.escape(allowed) + '/',
+                                         'follow': follow}, path)
+
+    def test_missing_disallowed_paths_fail_before_reporting_absence(self):
+        missing = self.path + '.missing'
+        for rules in ({'include_paths': '^/other/'}, {'exclude_paths': re.escape(missing)}):
+            with self.assertRaises(ValueError):
+                self.plugin._result(rules, missing)
+
+    def test_deny_rule_applies_to_symlink_destination(self):
+        link = self.path + '.link'
+        os.symlink(self.path, link)
+        for follow in (False, True):
+            with self.assertRaises(ValueError):
+                self.plugin._result({'exclude_paths': re.escape(self.path) + '$',
+                                     'follow': follow}, link)
+
+    def test_link_replaced_between_resolution_and_inspection(self):
+        link = self.path + '.link'
+        outside = self.path + '.outside'
+        with open(outside, 'w') as stream:
+            stream.write('private')
+        os.symlink(self.path, link)
+        original = self.plugin._entry
+
+        def swap(path, expected, follow):
+            os.unlink(link)
+            os.symlink(outside, link)
+            return original(path, expected, follow)
+
+        with patch.object(self.plugin, '_entry', swap), self.assertRaises(ValueError):
+            self.plugin._result({'include_paths': re.escape(self.path) + r'(\.link)?$',
+                                 'follow': True}, link)
+
+    def test_broken_link_with_parent_segment_does_not_invent_a_file(self):
+        link = self.path + '.link'
+        os.symlink(os.path.join('absent-dir', '..', os.path.basename(self.path)), link)
+        result = self.plugin._result({'include_paths': re.escape(self.directory) + '/',
+                                      'follow': True}, link)
+        self.assertFalse(result['exists'])
+
+    def test_allowed_directory_alias_and_link_metadata(self):
+        real = os.path.join(self.directory, 'run')
+        alias = os.path.join(self.directory, 'var-run')
+        os.mkdir(real)
+        os.symlink(real, alias)
+        pidfile = os.path.join(real, 'sshd.pid')
+        os.rename(self.path, pidfile)
+        os.symlink('sshd.pid', os.path.join(real, 'current'))
+        policy = '^' + re.escape(self.directory) + '/(var-run|run)/(sshd[.]pid|current)$'
+        for follow in (False, True):
+            result = self.plugin._result({'include_paths': policy, 'follow': follow},
+                                         os.path.join(alias, 'current'))
+            self.assertTrue(result['exists'])
+            self.assertEqual(result['islnk'], not follow)
+            if not follow:
+                self.assertEqual(result['lnk_target'], b'sshd.pid')
+                self.assertEqual(result['lnk_source'], os.fsencode(pidfile))
+        os.remove(pidfile)
+        result = self.plugin._result({'include_paths': policy}, os.path.join(alias, 'current'))
+        self.assertTrue(result['islnk'])
+        self.assertFalse(result['readable'])
+
+    def test_portable_lookup_observes_allowed_link_and_denies_excluded_target(self):
+        link = self.path + '.link'
+        os.symlink(self.path, link)
+        with patch.object(os, 'supports_dir_fd', set()):
+            for follow in (False, True):
+                cfg = {'include_paths': re.escape(self.directory) + '/', 'follow': follow}
+                self.assertTrue(self.plugin._result(dict(cfg), link)['readable'])
+                cfg['exclude_paths'] = re.escape(self.path) + '$'
+                with self.assertRaises(ValueError):
+                    self.plugin._result(cfg, link)
 
     def test_unrestricted_file_still_exists(self):
         self.assertTrue(self.plugin._result({'path': self.path})['exists'])
