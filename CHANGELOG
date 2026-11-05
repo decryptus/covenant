@@ -1,3 +1,10 @@
+covenant (0.0.79) stable; urgency=medium
+
+  * Validate regex filter flag names and numeric masks when loading the configuration.
+  * Require HTTPdis 0.6.39 or later for generic client-facing exception responses.
+
+ -- Codex <codex@openai.com>  Thu, 05 Nov 2026 03:50:02 +0000
+
 covenant (0.0.78) stable; urgency=medium
 
   * Keep collected values and raw exception messages out of collector logs.
