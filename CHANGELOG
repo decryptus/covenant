@@ -1,3 +1,10 @@
+covenant (0.0.76) stable; urgency=medium
+
+  * Enforce filestat path filters on the requested and resolved paths.
+  * Import shared inclusion and exclusion files per filestat endpoint.
+
+ -- Codex <codex@openai.com>  Thu, 05 Nov 2026 02:02:24 +0000
+
 covenant (0.0.75) stable; urgency=medium
 
   * Scope Redis credentials and client certificates to approved dynamic destinations.
