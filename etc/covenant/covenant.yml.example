@@ -44,6 +44,8 @@ endpoints:
     import_metrics: metrics.d/redis.yml
   secure-layer1:
     plugin: ssl
+    # Optional: restrict dynamic TLS probes by destination host and port.
+    # allowed_targets: ['tls://example.com:443']
     vars:
       timeout: 10
     import_probes: probes.d/secure-layer.yml

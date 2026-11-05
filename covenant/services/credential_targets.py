@@ -1,4 +1,4 @@
-"""Destination rules for credentials used by network collectors."""
+"""Match network destinations for probe access and credential policies."""
 import os
 import re
 
@@ -14,6 +14,8 @@ def _origin(url, ports):
     if parts.scheme not in ports or not parts.hostname:
         raise ValueError('unsupported scheme or missing host')
     port = parts.port if parts.port is not None else ports[parts.scheme]
+    if not 1 <= port <= 65535:
+        raise ValueError('invalid destination port')
     return parts.scheme, parts.hostname.lower(), port
 
 
@@ -47,8 +49,58 @@ def _rule(value, ports):
     return scheme, port, 'cidr', ipaddress.ip_network(six.text_type(value['cidr']))
 
 
-class CredentialTargets(object):
+class TargetOrigins(object):
     DEFAULT_PORTS = {'http': 80, 'https': 443}
+    OPTION = 'allowed_targets'
+
+    def __init__(self, values):
+        self.unrestricted = values == ['*']
+        try:
+            if not isinstance(values, list):
+                raise ValueError('expected a list')
+            self.rules = [] if self.unrestricted else [_rule(value, self.DEFAULT_PORTS) for value in values]
+        except (TypeError, ValueError, re.error) as error:
+            raise CovenantConfigurationError('invalid %s: %s' % (self.OPTION, error))
+
+    def allows(self, url):
+        return self.allows_origin(*_origin(url, self.DEFAULT_PORTS))
+
+    def allows_origin(self, scheme, host, port):
+        if self.unrestricted:
+            return True
+        for protocol, number, kind, value in self.rules:
+            if protocol != scheme or number != port:
+                continue
+            if kind == 'host' and host == value:
+                return True
+            if kind == 'wildcard' and host.partition('.')[2] == value:
+                return True
+            if kind == 'regex' and value(host):
+                return True
+            if kind == 'cidr':
+                import ipaddress
+                try:
+                    if ipaddress.ip_address(six.text_type(host)) in value:
+                        return True
+                except ValueError:
+                    pass
+        return False
+
+    def require(self, url):
+        if not self.allows(url):
+            raise ValueError('destination denied by allowed_targets')
+
+
+class TlsTargetOrigins(TargetOrigins):
+    DEFAULT_PORTS = {'tls': 443}
+
+
+class RedisTargetOrigins(TargetOrigins):
+    DEFAULT_PORTS = {'redis': 6379, 'rediss': 6379}
+
+
+class CredentialTargets(TargetOrigins):
+    OPTION = 'credential_targets'
 
     @classmethod
     def load_imports(cls, config):
@@ -77,37 +129,6 @@ class CredentialTargets(object):
         cfg['credential_targets'] = rules
         del cfg['import_credential_targets']
 
-    def __init__(self, values):
-        self.unrestricted = values == ['*']
-        try:
-            if not isinstance(values, list):
-                raise ValueError('expected a list')
-            self.rules = [] if self.unrestricted else [_rule(value, self.DEFAULT_PORTS) for value in values]
-        except (TypeError, ValueError, re.error) as error:
-            raise CovenantConfigurationError('invalid credential_targets: %s' % error)
-
-    def allows(self, url):
-        scheme, host, port = _origin(url, self.DEFAULT_PORTS)
-        if self.unrestricted:
-            return True
-        for protocol, number, kind, value in self.rules:
-            if protocol != scheme or number != port:
-                continue
-            if kind == 'host' and host == value:
-                return True
-            if kind == 'wildcard' and host.partition('.')[2] == value:
-                return True
-            if kind == 'regex' and value(host):
-                return True
-            if kind == 'cidr':
-                import ipaddress
-                try:
-                    if ipaddress.ip_address(six.text_type(host)) in value:
-                        return True
-                except ValueError:
-                    pass
-        return False
-
 
 class RedisCredentialTargets(CredentialTargets):
-    DEFAULT_PORTS = {'redis': 6379, 'rediss': 6379}
+    DEFAULT_PORTS = RedisTargetOrigins.DEFAULT_PORTS

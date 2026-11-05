@@ -20,6 +20,8 @@ from sonicprobe.libs import network, urisup
 from covenant.classes.exceptions import CovenantConfigurationError
 from covenant.classes.plugins import CovenantPlugBase, CovenantTargetFailed, PLUGINS
 
+from covenant.services.credential_targets import TlsTargetOrigins
+
 LOG = logging.getLogger('covenant.plugins.ssl')
 
 _ALLOWED_OPTIONS = ('ALL',
@@ -41,6 +43,7 @@ _IP_PROTOCOLS    = {'ipv4': socket.AF_INET,
 
 class CovenantSslPlugin(CovenantPlugBase):
     PLUGIN_NAME = 'ssl'
+    TARGET_ORIGINS = TlsTargetOrigins
 
     @staticmethod
     def _dnsname_to_idn(name):
@@ -216,6 +219,9 @@ class CovenantSslPlugin(CovenantPlugBase):
             conn = None
 
             try:
+                if param_target and not cfg.get('uri') and self.allowed_targets is not None:
+                    if not self.allowed_targets.allows_origin('tls', host.lower(), int(port)):
+                        raise ValueError('destination denied by allowed_targets')
                 server_hostname = common_name or host
 
                 context = ssl.create_default_context()

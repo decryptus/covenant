@@ -62,7 +62,7 @@ orders_workers_active 3.0
 Edit `examples/quickstart/data/status.json`, then call the endpoint again to see the
 new values. Collection happens when the endpoint is scraped.
 
-The example pins `decryptus/covenant:0.0.79` and exposes port 9118 only on the local
+The example pins `decryptus/covenant:0.0.80` and exposes port 9118 only on the local
 host. If the first request arrives before the API is ready, retry it.
 
 ```sh
@@ -250,6 +250,8 @@ gauge and a scrape-failure counter.
 ```yaml
 secure-layer1:
   plugin: ssl
+  allowed_targets:
+    - tls://example.com:443
   vars:
     timeout: 10
   import_probes: probes.d/secure-layer.yml
@@ -261,6 +263,29 @@ curl --get --fail http://localhost:9118/probe/secure-layer1 \
 ```
 
 The template includes connection/probe success and certificate validity metrics.
+
+### Restrict caller-supplied network targets
+
+Set `allowed_targets` on the endpoint, alongside `plugin` and `import_probes`.
+The same rule applies to a metrics endpoint that accepts a caller-supplied
+`target`. An omitted list preserves free target selection. An empty list
+rejects every caller-supplied destination. A rejected collection follows the
+endpoint's configured failure metrics.
+
+| Plugin | Example rule | What is matched |
+| --- | --- | --- |
+| `http` | `https://api.example.com:443` | The prepared HTTP(S) origin on the initial request and on each redirect |
+| `redis` | `rediss://cache.example.com:6379` | Redis scheme, host and effective port before opening the client |
+| `ssl` | `tls://example.com:443` | Host and effective port passed to the TLS socket, including the verification connection |
+
+The TLS rule uses `tls://` regardless of the service name in the request.
+For example, `target=https://example.com` uses port 443. A hostname rule
+trusts DNS for that hostname. To allow only literal IP targets in a range,
+use a CIDR rule, for example `{scheme: tls, port: 443, cidr: '192.0.2.0/24'}`.
+Rules also support the single-label wildcard and hostname regex forms described
+under `credential_targets`. Allowing a destination grants no credentials.
+A configured fixed URL or URI takes precedence over the caller's target and
+uses the endpoint's existing fixed-destination and redirect settings.
 
 ### File existence probe
 
@@ -423,7 +448,7 @@ Docker is the simplest way to use the tested runtime. To run your own configurat
 docker run --rm --name covenant \
   -p 127.0.0.1:9118:9118 \
   -v "$PWD/covenant.yml:/etc/covenant/covenant.yml:ro" \
-  decryptus/covenant:0.0.79
+  decryptus/covenant:0.0.80
 ```
 
 For this bridge-network command, set `general.listen_addr: 0.0.0.0` in the
