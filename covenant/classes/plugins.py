@@ -128,6 +128,7 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
         return
 
     TARGET_ORIGINS = None
+    FIXED_TARGET_KEY = 'url'
 
     def __init__(self, name):
         self.allowed_targets = None
@@ -184,6 +185,17 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
             EPTS_SYNC.register(CovenantEPTSync(self.name, 'probe'))
         else:
             LOG.warning("no targets enabled for endpoint %r", self.name)
+
+        if (self.TARGET_ORIGINS is not None
+                and 'allowed_targets' not in self.config
+                and 'import_allowed_targets' not in self.config
+                and any(not target.config.get(self.FIXED_TARGET_KEY) for target in self.targets)):
+            LOG.warning(
+                "endpoint %r implicitly allows dynamic network targets; "
+                "Covenant 1.0.0 stable will require allowed_targets or import_allowed_targets. "
+                "Set allowed_targets: [] to disable them, list the permitted origins, "
+                "or explicitly set allowed_targets: ['*'] to retain unrestricted selection. "
+                "Exclusions remain effective; see the 1.0 migration guide.", self.name)
 
     def at_start(self):
         if self.name in EPTS_SYNC:

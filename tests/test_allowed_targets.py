@@ -73,7 +73,10 @@ class AllowedTargetTests(unittest.TestCase):
             for host, expected in [('node3.example.net', True), ('extra', True), ('node1.example.net', False),
                                    ('node2.example.net', False), ('other', False), ('node3.example.net.evil', False)]:
                 self.assertEqual(policy.allows('tls://' + host), expected, host)
-            policy = load(import_disallowed_targets='blocked.yml')
+            with self.assertLogs('covenant.plugins', level='WARNING') as warnings:
+                policy = load(import_disallowed_targets='blocked.yml')
+            self.assertEqual(len(warnings.records), 1)
+            self.assertIn('implicitly allows dynamic', warnings.output[0])
             self.assertTrue(policy.allows('tls://other'))
             self.assertFalse(policy.allows('tls://node1.example.net'))
             self.assertFalse(load(import_allowed_targets='empty.yml').allows('tls://other'))
@@ -184,3 +187,46 @@ class AllowedTargetTests(unittest.TestCase):
                 endpoint(CovenantSslPlugin, rules)
         with self.assertRaises(CovenantConfigurationError):
             endpoint(CovenantFilestatPlugin, [])
+
+
+class MigrationWarningTests(unittest.TestCase):
+    def initialize(self, plugin_type, configs, **options):
+        plugin = plugin_type('migration-endpoint')
+        plugin.config = {'probes': [
+            {'name': 'probe-%d' % index, 'config': cfg, 'collects': []}
+            for index, cfg in enumerate(configs)]}
+        plugin.config.update(options)
+        with patch('covenant.classes.plugins.EPTS_SYNC'):
+            plugin.safe_init()
+        return plugin
+
+    def test_implicit_dynamic_network_endpoints_warn_once_and_still_collect(self):
+        for plugin_type, key, url in (
+                (CovenantHttpPlugin, 'url', 'https://example.test'),
+                (CovenantRedisPlugin, 'url', 'redis://example.test'),
+                (CovenantSslPlugin, 'uri', 'https://example.test')):
+            with self.subTest(plugin=plugin_type.PLUGIN_NAME):
+                with self.assertLogs('covenant.plugins', level='WARNING') as captured:
+                    self.initialize(plugin_type, [{key: url}, {}, {}])
+                self.assertEqual(len(captured.records), 1)
+                warning = captured.output[0]
+                self.assertIn('migration-endpoint', warning)
+                self.assertIn('1.0.0 stable', warning)
+                self.assertNotIn(url, warning)
+        with upstream() as (_, url, calls):
+            with self.assertLogs('covenant.plugins', level='WARNING'):
+                plugin = self.initialize(CovenantHttpPlugin, [{}])
+            plugin.do_probes(request(url))
+            self.assertEqual(len(calls), 1)
+
+    def test_fixed_disabled_and_explicit_endpoints_have_no_migration_warning(self):
+        with patch('covenant.classes.plugins.LOG.warning') as warning:
+            for plugin_type, key in ((CovenantHttpPlugin, 'url'),
+                                     (CovenantRedisPlugin, 'url'),
+                                     (CovenantSslPlugin, 'uri')):
+                fixed = {key: 'https://fixed.test' if key == 'uri' else 'http://fixed.test'}
+                self.initialize(plugin_type, [fixed, {'enabled': False}])
+                for rules in ([], ['*']):
+                    self.initialize(plugin_type, [{}], allowed_targets=rules)
+            self.initialize(CovenantFilestatPlugin, [{}])
+            warning.assert_not_called()

@@ -38,7 +38,7 @@ class ReleaseSelectionTests(unittest.TestCase):
         return dict(line.split("=", 1) for line in output.read_text().splitlines())
 
     def test_missing_tag_is_selected(self):
-        self.assertEqual(self.select(), dict(tag="v0.0.68", create="true", publish="true"))
+        self.assertEqual(self.select(), dict(tag="v0.0.68", create="true", publish="true", prerelease="false"))
         self.assertEqual(self.git("tag"), "")  # Selection itself never writes a tag.
 
     def test_same_commit_can_retry(self):
@@ -63,7 +63,7 @@ class ReleaseSelectionTests(unittest.TestCase):
 
     def test_manual_tag_publishes_without_creation(self):
         self.assertEqual(self.select("refs/tags/v0.0.68"),
-                         dict(tag="v0.0.68", create="false", publish="true"))
+                         dict(tag="v0.0.68", create="false", publish="true", prerelease="false"))
 
     def test_wrong_manual_tag_fails(self):
         self.select("refs/tags/v0.0.69", success=False)
@@ -74,6 +74,25 @@ class ReleaseSelectionTests(unittest.TestCase):
     def test_mismatched_release_fails(self):
         (self.root / "RELEASE").write_text("0.0.69\n")
         self.select(success=False)
+
+    def test_release_candidate_is_marked_prerelease(self):
+        for name in ('VERSION', 'RELEASE'):
+            (self.root / name).write_text("1.0.0rc1\n")
+        self.git("add", ".")
+        self.git("commit", "-qm", "RC")
+        expected = dict(tag="v1.0.0rc1", create="true", publish="true", prerelease="true")
+        self.assertEqual(self.select(), expected)
+        self.git("tag", "v1.0.0rc1")
+        self.assertEqual(self.select()["prerelease"], "true")
+        self.assertEqual(self.select("refs/tags/v1.0.0rc1")["create"], "false")
+        self.git("commit", "--allow-empty", "-qm", "docs")
+        self.assertEqual(self.select()["publish"], "false")
+
+    def test_invalid_prerelease_suffix_is_rejected(self):
+        for value in ('1.0.0rc0', '1.0.0rc', '1.0.0rc01', '1.0.0-dev'):
+            for name in ('VERSION', 'RELEASE'):
+                (self.root / name).write_text(value + "\n")
+            self.select(success=False)
 
     def test_invalid_version_fails(self):
         (self.root / "VERSION").write_text("not-a-version\n")
