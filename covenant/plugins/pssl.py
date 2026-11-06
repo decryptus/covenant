@@ -44,6 +44,7 @@ _IP_PROTOCOLS    = {'ipv4': socket.AF_INET,
 class CovenantSslPlugin(CovenantPlugBase):
     PLUGIN_NAME = 'ssl'
     TARGET_ORIGINS = TlsTargetOrigins
+    FIXED_TARGET_KEY = 'uri'
 
     @staticmethod
     def _dnsname_to_idn(name):

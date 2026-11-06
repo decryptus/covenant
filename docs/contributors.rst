@@ -10,3 +10,4 @@ For installation and operation, return to :doc:`/index`.
 
    contributing
    observations-acceptance
+   release-plan-1.0

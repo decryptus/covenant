@@ -3,12 +3,14 @@
 set -euo pipefail
 
 version="$(cat VERSION)"
-[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Expected VERSION X.Y.Z' >&2; exit 1; }
+[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(rc[1-9][0-9]*)?$ ]] || { echo 'Expected VERSION X.Y.Z or X.Y.ZrcN' >&2; exit 1; }
 test "$version" = "$(cat RELEASE)"
 tag="v$version"
 sha="$(git rev-parse HEAD)"
 create=false
 publish=false
+prerelease=false
+[[ "$version" != *rc* ]] || prerelease=true
 
 if [[ "$GITHUB_REF" == refs/tags/* ]]; then
   test "${GITHUB_REF#refs/tags/}" = "$tag"
@@ -37,4 +39,5 @@ fi
   echo "tag=$tag"
   echo "create=$create"
   echo "publish=$publish"
+  echo "prerelease=$prerelease"
 } >> "$GITHUB_OUTPUT"

@@ -1,3 +1,11 @@
+covenant (1.0.0rc1) unstable; urgency=medium
+
+  * Warn at startup for implicit dynamic HTTP, Redis and TLS destinations.
+  * Document explicit policy migration before the stable 1.0.0 default change.
+  * Publish release candidates with prerelease metadata and immutable tags.
+
+ -- Codex <codex@openai.com>  Fri, 06 Nov 2026 12:09:40 -0000
+
 covenant (0.0.83) stable; urgency=medium
 
   * Restrict the sample TLS endpoint to example.com on port 443.

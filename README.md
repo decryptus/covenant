@@ -62,7 +62,7 @@ orders_workers_active 3.0
 Edit `examples/quickstart/data/status.json`, then call the endpoint again to see the
 new values. Collection happens when the endpoint is scraped.
 
-The example pins `decryptus/covenant:0.0.83` and exposes port 9118 only on the local
+The example pins `decryptus/covenant:1.0.0rc1` and exposes port 9118 only on the local
 host. If the first request arrives before the API is ready, retry it.
 
 ```sh
@@ -214,6 +214,20 @@ For business metrics such as queue length, a missing field is not necessarily ze
 Only add `on_noresult: {value: 0}` if zero is the intended meaning. A successful
 HTTP request also does not prove every expected field exists.
 
+## Migration to 1.0
+
+Version 1.0.0rc1 is a compatible preview. It logs a startup warning for each
+HTTP, Redis or TLS endpoint with enabled dynamic targets and no explicit
+allow policy. An exclusion list alone still triggers this warning.
+Declare `allowed_targets` or `import_allowed_targets` on the endpoint.
+The stable 1.0.0 release will reject dynamic destinations when this policy
+is omitted. A decision on stable publication is planned for 6 December 2026,
+after migration feedback and validation.
+
+Install the preview explicitly with `pip install covenant==1.0.0rc1` or
+`decryptus/covenant:1.0.0rc1`. Review the
+[migration guide](docs/migration-1.0.md) before upgrading existing deployments.
+
 ## Reuse the shipped templates
 
 | Source | Plugin | Template | Source requirements |
@@ -316,8 +330,8 @@ start at the main configuration directory. At startup Covenant combines each
 file with its corresponding inline list. In all four lists a rule such as
 `{scheme: tls, port: 443, regex: 'node[0-9]+[.]example[.]net'}` matches the
 whole hostname together with the specified scheme and port. A matching exclusion always wins,
-including on HTTP redirects. With exclusions alone, other destinations remain
-available. An empty combined allowlist rejects every dynamic destination.
+including on HTTP redirects. In this RC, exclusions alone allow other destinations and produce a migration
+warning. To keep this policy in 1.0.0 stable, also set `allowed_targets: ['*']`. An empty combined allowlist rejects every dynamic destination.
 An empty exclusion list excludes none. An unreadable file, malformed list or
 invalid rule prevents startup. Restart after editing shared rules.
 
@@ -482,7 +496,7 @@ Docker is the simplest way to use the tested runtime. To run your own configurat
 docker run --rm --name covenant \
   -p 127.0.0.1:9118:9118 \
   -v "$PWD/covenant.yml:/etc/covenant/covenant.yml:ro" \
-  decryptus/covenant:0.0.83
+  decryptus/covenant:1.0.0rc1
 ```
 
 For this bridge-network command, set `general.listen_addr: 0.0.0.0` in the

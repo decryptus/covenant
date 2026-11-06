@@ -4,8 +4,8 @@ description: covenant
 author: Adrien Delle Cave
 author_email: pypi@doowan.net
 copyright: '2018-2026 fjord-technologies'
-release: '0.0.83'
-version: '0.0.83'
+release: '1.0.0rc1'
+version: '1.0.0rc1'
 license: License GPL-3
 url: https://github.com/decryptus/covenant
 python_requires:
