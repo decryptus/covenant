@@ -13,6 +13,7 @@ Installation, configuration, public APIs and troubleshooting.
    observations
    configuration-validation
    migration-1.0
+   release-1.0.0rc2
    release-1.0.0rc1
    release-0.0.83
    release-0.0.82
