@@ -97,3 +97,9 @@ Current project runner: `unittest` for `tests`. CI helper tests use
   handoff, distinguish merged code from registry publication and deployment,
   report checks performed, and list any required surface still not updated with
   its concrete blocker. Never imply that a planned publication already happened.
+
+## Coding style and validation
+
+- Keep fixed routes, schemas, enum choices, limits and patterns in named constants. In Python use `UPPER_CASE` for module constants and `_UPPER_CASE` for private ones.
+- Centralize each identifier grammar, compile fixed regexes once and validate the entire identifier. Preserve existing selector semantics.
+- Write technical error messages in English and expose stable machine-readable error codes. Keep localized user-facing text in the presentation layer.
