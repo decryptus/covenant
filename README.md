@@ -290,8 +290,9 @@ and certificate validity.
 
 Set `allowed_targets` on the endpoint, alongside `plugin` and `import_probes`.
 The same rule applies to a metrics endpoint that accepts a caller-supplied
-`target`. Omitting both allow and deny rules preserves free target selection. An empty allow list
-rejects every caller-supplied destination. A rejected collection follows the
+`target`. In stable 1.0, omitting the allow rules rejects all caller-supplied destinations,
+including with a deny-only policy. Use an explicit allow list or `['*']` for
+unrestricted selection. Fixed administrator-configured destinations still work. A rejected collection follows the
 endpoint's configured failure metrics.
 
 | Plugin | Example rule | What is matched |
