@@ -2,7 +2,7 @@ covenant (1.0.0rc2) unstable; urgency=medium
 
   * Require HTTPdis 0.7.1 or later.
 
- -- Codex <codex@openai.com>  Sat, 07 Nov 2026 09:16:00 +0100
+ -- Adrien Delle Cave <pypi@doowan.net>  Sat, 07 Nov 2026 09:16:00 +0100
 
 covenant (1.0.0rc1) unstable; urgency=medium
 
@@ -10,49 +10,49 @@ covenant (1.0.0rc1) unstable; urgency=medium
   * Document explicit policy migration before the stable 1.0.0 default change.
   * Publish release candidates with prerelease metadata and immutable tags.
 
- -- Codex <codex@openai.com>  Fri, 06 Nov 2026 12:09:40 -0000
+ -- Adrien Delle Cave <pypi@doowan.net>  Fri, 06 Nov 2026 12:09:40 -0000
 
 covenant (0.0.83) stable; urgency=medium
 
   * Restrict the sample TLS endpoint to example.com on port 443.
   * Include the example configuration and its templates in the Python wheel.
 
- -- Codex <codex@openai.com>  Thu, 05 Nov 2026 18:58:33 -0000
+ -- Adrien Delle Cave <pypi@doowan.net>  Thu, 05 Nov 2026 18:58:33 -0000
 
 covenant (0.0.82) stable; urgency=medium
 
   * Import endpoint allow and deny lists for dynamic HTTP, Redis and TLS targets.
   * Combine shared and local rules at startup; exclusions take precedence.
 
- -- Codex <codex@openai.com>  Thu, 05 Nov 2026 08:00:00 +0000
+ -- Adrien Delle Cave <pypi@doowan.net>  Thu, 05 Nov 2026 08:00:00 +0000
 
 covenant (0.0.81) stable; urgency=medium
 
   * Validate builtintypes methods against an explicit list at configuration load.
   * Require a task-local boolean allow_format for format and format_map.
 
- -- Codex <codex@openai.com>  Thu, 05 Nov 2026 06:40:00 +0000
+ -- Adrien Delle Cave <pypi@doowan.net>  Thu, 05 Nov 2026 06:40:00 +0000
 
 covenant (0.0.80) stable; urgency=medium
 
   * Restrict caller-selected HTTP, Redis and TLS destinations with optional
     endpoint allowed_targets rules. Check each dynamic HTTP redirect.
 
- -- Codex <codex@openai.com>  Thu, 05 Nov 2026 07:00:00 +0000
+ -- Adrien Delle Cave <pypi@doowan.net>  Thu, 05 Nov 2026 07:00:00 +0000
 
 covenant (0.0.79) stable; urgency=medium
 
   * Validate regex filter flag names and numeric masks when loading the configuration.
   * Require HTTPdis 0.6.39 or later for generic client-facing exception responses.
 
- -- Codex <codex@openai.com>  Thu, 05 Nov 2026 03:50:02 +0000
+ -- Adrien Delle Cave <pypi@doowan.net>  Thu, 05 Nov 2026 03:50:02 +0000
 
 covenant (0.0.78) stable; urgency=medium
 
   * Keep collected values and raw exception messages out of collector logs.
   * Require HTTPdis 0.6.38 to omit incoming query strings from access logs.
 
- -- Codex <codex@openai.com>  Thu, 05 Nov 2026 03:30:24 +0000
+ -- Adrien Delle Cave <pypi@doowan.net>  Thu, 05 Nov 2026 03:30:24 +0000
 
 covenant (0.0.77) stable; urgency=medium
 
@@ -61,21 +61,21 @@ covenant (0.0.77) stable; urgency=medium
   * Require HTTPdis 0.6.35 or later for bounded HTTP request parsing.
   * Include shared filestat path lists in the example configuration.
 
- -- Codex <codex@openai.com>  Thu, 05 Nov 2026 03:02:30 +0000
+ -- Adrien Delle Cave <pypi@doowan.net>  Thu, 05 Nov 2026 03:02:30 +0000
 
 covenant (0.0.76) stable; urgency=medium
 
   * Enforce filestat path filters on the requested and resolved paths.
   * Import shared inclusion and exclusion files per filestat endpoint.
 
- -- Codex <codex@openai.com>  Thu, 05 Nov 2026 02:02:24 +0000
+ -- Adrien Delle Cave <pypi@doowan.net>  Thu, 05 Nov 2026 02:02:24 +0000
 
 covenant (0.0.75) stable; urgency=medium
 
   * Scope Redis credentials and client certificates to approved dynamic destinations.
   * Default native listeners to loopback and publish Compose ports on host loopback.
 
- -- Codex <codex@openai.com>  Wed, 04 Nov 2026 19:15:00 +0000
+ -- Adrien Delle Cave <pypi@doowan.net>  Wed, 04 Nov 2026 19:15:00 +0000
 
 covenant (0.0.74) stable; urgency=medium
 
@@ -83,7 +83,7 @@ covenant (0.0.74) stable; urgency=medium
   * Drop inherited groups, require configured service identities and report startup failures.
   * Bound successful HTTP payloads to 4 MiB by default and use a finite network timeout.
 
- -- Codex <codex@openai.com>  Wed, 04 Nov 2026 18:35:00 +0000
+ -- Adrien Delle Cave <pypi@doowan.net>  Wed, 04 Nov 2026 18:35:00 +0000
 
 covenant (0.0.73) stable; urgency=medium
 
@@ -91,7 +91,7 @@ covenant (0.0.73) stable; urgency=medium
   * Load shared credential_targets rules using import_credential_targets.
   * Document migration for existing authenticated dynamic probes.
 
- -- Codex <codex@openai.com>  Wed, 04 Nov 2026 18:00:00 +0000
+ -- Adrien Delle Cave <pypi@doowan.net>  Wed, 04 Nov 2026 18:00:00 +0000
 
 covenant (0.0.72) stable; urgency=medium
 
@@ -108,7 +108,7 @@ covenant (0.0.71) unstable; urgency=medium
   * Add Prometheus rules for expiry, retries, material and observation freshness.
   * Keep notification delivery in Alertmanager; update configuration examples.
 
- -- Codex <codex@openai.com>  Sat, 03 Oct 2026 17:00:00 +0000
+ -- Adrien Delle Cave <pypi@doowan.net>  Sat, 03 Oct 2026 17:00:00 +0000
 
 covenant (0.0.70) unstable; urgency=medium
 
@@ -116,7 +116,7 @@ covenant (0.0.70) unstable; urgency=medium
   * Bound result waits with configurable deadlines and clean late callbacks.
   * Fix relative configuration imports and exercise real runtime compatibility.
 
- -- Codex <codex@openai.com>  Sun, 27 Sep 2026 19:04:00 +0000
+ -- Adrien Delle Cave <pypi@doowan.net>  Sun, 27 Sep 2026 19:04:00 +0000
 
 covenant (0.0.69) unstable; urgency=medium
 
