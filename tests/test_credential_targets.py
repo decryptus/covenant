@@ -72,7 +72,7 @@ class CredentialTests(unittest.TestCase):
                 cfg = {'import_credential_targets': 'shared.yml', 'headers': {'X-Key': 'test'}}
                 if kind == 'probes':
                     cfg['credential_targets'] = [second]
-                plugin.config = {'covenant': {'config_dir': directory},
+                plugin.config = {'allowed_targets': ['*'], 'covenant': {'config_dir': directory},
                                  kind: [{'name': 'health', 'config': cfg, 'collects': []}]}
                 plugin.safe_init()
                 plugins.append(plugin)
@@ -96,7 +96,7 @@ class CredentialTests(unittest.TestCase):
                         path.write_text(content)
                     plugin = CovenantHttpPlugin('invalid-import')
                     cfg = {'import_credential_targets': path.name, 'credential_targets': inline}
-                    plugin.config = {'covenant': {'config_dir': directory},
+                    plugin.config = {'allowed_targets': ['*'], 'covenant': {'config_dir': directory},
                                      'probes': [{'name': 'health', 'config': cfg, 'collects': []}]}
                     with self.assertRaises(CovenantConfigurationError):
                         plugin.safe_init()
@@ -123,7 +123,7 @@ class CredentialTests(unittest.TestCase):
         for options in ({'trust_env': True}, {'url': 'http://fixed.test', 'trust_env': 'false'},
                         {'url': 'http://fixed.test', 'trust_env': True, 'credential_targets': []}):
             plugin = CovenantHttpPlugin('invalid-environment')
-            plugin.config = {'probes': [{'name': 'health', 'config': options, 'collects': []}]}
+            plugin.config = {'allowed_targets': ['*'], 'probes': [{'name': 'health', 'config': options, 'collects': []}]}
             with self.subTest(options=options), patch('covenant.classes.plugins.EPTS_SYNC'), \
                     self.assertRaises(CovenantConfigurationError):
                 plugin.safe_init()

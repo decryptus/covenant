@@ -132,7 +132,7 @@ class TargetOrigins(object):
 class EndpointTargets(TargetOrigins):
     def __init__(self, matcher, config):
         self.DEFAULT_PORTS = matcher.DEFAULT_PORTS
-        self.allowed = matcher(config.get('allowed_targets', ['*']))
+        self.allowed = matcher(config.get('allowed_targets', []))
         self.disallowed = matcher(config.get('disallowed_targets', []), option='disallowed_targets')
 
     def allows_origin(self, scheme, host, port):
