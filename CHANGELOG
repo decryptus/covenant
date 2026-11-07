@@ -1,3 +1,9 @@
+covenant (1.0.0rc2) unstable; urgency=medium
+
+  * Require HTTPdis 0.7.1 or later.
+
+ -- Codex <codex@openai.com>  Sat, 07 Nov 2026 09:16:00 +0100
+
 covenant (1.0.0rc1) unstable; urgency=medium
 
   * Warn at startup for implicit dynamic HTTP, Redis and TLS destinations.
