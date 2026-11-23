@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bookworm AS builder
+FROM python:3.15-slim-bookworm AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     autoconf automake build-essential libtool libcurl4-openssl-dev libssl-dev \
@@ -13,7 +13,7 @@ COPY etc/covenant ./etc/covenant
 RUN python -m pip install --no-cache-dir 'setuptools<81' wheel PyYAML \
     && python -m pip wheel --no-cache-dir --no-build-isolation --wheel-dir /wheels .
 
-FROM python:3.11-slim-bookworm
+FROM python:3.15-slim-bookworm
 LABEL maintainer="docker@doowan.net"
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash ca-certificates curl libcurl4 libmagic1 \
