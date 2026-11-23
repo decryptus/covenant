@@ -1,4 +1,4 @@
-cryptography>=3.2.1
+cryptography>=50.0.2
 dwho>=0.3.61
 httpdis>=0.7.1
 jmespath>=0.9.3
