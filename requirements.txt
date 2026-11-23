@@ -6,7 +6,7 @@ packaging>=19.0
 pycurl
 pyjq==2.6.0
 pyOpenSSL>=20.0.0
-pyyaml>=3.10
+pyyaml>=6.0.3
 prometheus-client>=0.6.0
 six>=1.13.0
 sonicprobe>=0.3.66
