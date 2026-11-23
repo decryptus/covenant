@@ -104,6 +104,20 @@ Current project runner: `unittest` for `tests`. CI helper tests use
 - Centralize each identifier grammar, compile fixed regexes once and validate the entire identifier. Preserve existing selector semantics.
 - Write technical error messages in English and expose stable machine-readable error codes. Keep localized user-facing text in the presentation layer.
 
+## Brand assets placement
+
+- Keep brand assets under `assets/brand/`: `svg/` for vector sources, `png/`
+  for raster exports, `favicon/` for favicons and app icons, and `social/` for
+  the GitHub social preview and Open Graph images.
+- Name new files without the project prefix and, for raster exports, with the
+  pixel width: `logo-horizontal.svg`, `logo-horizontal-1024.png`,
+  `logo-horizontal-dark-1024.png`.
+- Keep the GitHub social preview at
+  `assets/brand/social/social-preview-1280x640.png` (1280×640, under 1 MB),
+  derived from the existing logo. Do not redesign the brand.
+- Do not move or rename an existing asset without updating every reference
+  (README, HTML, packaging, build scripts) in the same change.
+
 ## Commit authorship
 
 Write every commit as `decryptus <decryptus@users.noreply.github.com>`, as both author and committer (run `git config user.name decryptus` and `git config user.email decryptus@users.noreply.github.com` before committing, including when rebasing). Do not add `Co-Authored-By` lines, session links or any mention of an assistant or tool in commit messages. Do not rewrite history already published on the default branch to fix older commits.
