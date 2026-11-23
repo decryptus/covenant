@@ -84,6 +84,10 @@ pygments_style = None
 #
 html_theme = 'alabaster'
 
+# Project brand assets shared with the README (assets/brand).
+html_logo = '../assets/brand/svg/logo-horizontal.svg'
+html_favicon = '../assets/brand/favicon/favicon.ico'
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
