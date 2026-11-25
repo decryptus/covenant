@@ -104,6 +104,19 @@ Current project runner: `unittest` for `tests`. CI helper tests use
 - Centralize each identifier grammar, compile fixed regexes once and validate the entire identifier. Preserve existing selector semantics.
 - Write technical error messages in English and expose stable machine-readable error codes. Keep localized user-facing text in the presentation layer.
 
+## Shared component placement
+
+- Before adding a dependency, implementing a local component or preparing a
+  release, inspect the current capabilities of DWho, HTTPdis and Sonicprobe and
+  reuse applicable functionality.
+- For a new generic capability, assess whether it belongs in one of these shared
+  libraries and record the placement decision in the contribution. Keep
+  product-specific business rules in this repository.
+- When a shared-library change is needed, validate it in its own repository
+  against its contracts, supported versions and existing consumers. Then update
+  this project's dependency and verify the integration before delivery. Follow
+  each repository's release procedures and existing authorization scope.
+
 ## Configuration file format
 
 - Prefer YAML (`.yaml` / `.yml`) over JSON for project configuration files: it is
