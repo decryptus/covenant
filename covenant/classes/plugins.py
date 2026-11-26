@@ -169,10 +169,9 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
             if any(isinstance(cfg, dict) and any(key in cfg for key in DESTINATION_KEYS)
                    for cfg in component_configs + [self.config.get('vars')]):
                 raise CovenantConfigurationError('set destination rules on the endpoint alongside plugin')
-        if any(option in self.config for option in DESTINATION_OPTIONS):
-            if self.TARGET_ORIGINS is None:
-                raise CovenantConfigurationError('destination rules require a network plugin with destination checks')
             self.allowed_targets = EndpointTargets(self.TARGET_ORIGINS, self.config)
+        elif any(option in self.config for option in DESTINATION_OPTIONS):
+            raise CovenantConfigurationError('destination rules require a network plugin with destination checks')
         if self.config.get('credentials'):
             self.credentials = load_credentials(self.config['credentials'],
                                                 config_dir = self.config['covenant']['config_dir'])
@@ -185,17 +184,6 @@ class CovenantPlugBase(threading.Thread, DWhoPluginBase):
             EPTS_SYNC.register(CovenantEPTSync(self.name, 'probe'))
         else:
             LOG.warning("no targets enabled for endpoint %r", self.name)
-
-        if (self.TARGET_ORIGINS is not None
-                and 'allowed_targets' not in self.config
-                and 'import_allowed_targets' not in self.config
-                and any(not target.config.get(self.FIXED_TARGET_KEY) for target in self.targets)):
-            LOG.warning(
-                "endpoint %r implicitly allows dynamic network targets; "
-                "Covenant 1.0.0 stable will require allowed_targets or import_allowed_targets. "
-                "Set allowed_targets: [] to disable them, list the permitted origins, "
-                "or explicitly set allowed_targets: ['*'] to retain unrestricted selection. "
-                "Exclusions remain effective; see the 1.0 migration guide.", self.name)
 
     def at_start(self):
         if self.name in EPTS_SYNC:
