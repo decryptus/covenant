@@ -113,7 +113,7 @@ jobs:
         run: docker load --input "$RUNNER_TEMP/covenant-image.tar.gz"
       - name: Log in to Docker Hub
         if: steps.release.outputs.publish == 'true'
-        uses: docker/login-action@v4
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           username: decryptus
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -152,7 +152,7 @@ jobs:
           name: python-distributions
           path: dist/
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: dist/
           skip-existing: true
