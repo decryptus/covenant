@@ -225,5 +225,16 @@ def documentation_links(app, pagename, templatename, context, doctree):
     context['body'] = re.sub(r'href="([^"]+)"', replace_link, context.get('body', ''))
 
 
+def copy_brand_assets(app, exception):
+    """Ship the logo referenced by the included README (assets/brand/svg/...)."""
+    if exception is None and app.builder.format == 'html':
+        import shutil
+        from pathlib import Path
+        brand = Path(app.srcdir).parent / 'assets' / 'brand' / 'svg'
+        if brand.is_dir():
+            shutil.copytree(brand, Path(app.outdir) / 'assets' / 'brand' / 'svg', dirs_exist_ok=True)
+
+
 def setup(app):
     app.connect('html-page-context', documentation_links)
+    app.connect('build-finished', copy_brand_assets)
