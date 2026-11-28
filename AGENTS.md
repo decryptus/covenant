@@ -177,6 +177,20 @@ Current project runner: `unittest` for `tests`. CI helper tests use
 - In YAML, quote ambiguous scalars (`"yes"`, `"no"`, `"on"`, `"off"`, versions such
   as `"1.10"`) to avoid implicit type conversion.
 
+## Brand assets placement
+
+- Keep brand assets under `assets/brand/`: `svg/` for vector sources, `png/`
+  for raster exports, `favicon/` for favicons and app icons, and `social/` for
+  the GitHub social preview and Open Graph images.
+- Name new files without the project prefix and, for raster exports, with the
+  pixel width: `logo-horizontal.svg`, `logo-horizontal-1024.png`,
+  `logo-horizontal-dark-1024.png`.
+- Keep the GitHub social preview at
+  `assets/brand/social/social-preview-1280x640.png` (1280×640, under 1 MB),
+  derived from the existing logo. Do not redesign the brand.
+- Do not move or rename an existing asset without updating every reference
+  (README, HTML, packaging, build scripts) in the same change.
+
 ## Commit authorship
 
 Write every commit as `decryptus <decryptus@users.noreply.github.com>`, as both author and committer (run `git config user.name decryptus` and `git config user.email decryptus@users.noreply.github.com` before committing, including when rebasing). Do not add `Co-Authored-By` lines, session links or any mention of an assistant or tool in commit messages. Do not rewrite history already published on the default branch to fix older commits.
